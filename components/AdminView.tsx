@@ -237,12 +237,12 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                              </div>
                              
                              <div>
-                                 <label className="block text-[10px] uppercase text-gray-500 mb-1">Custom Audio URL (MP3/Link)</label>
+                                 <label className="block text-[10px] uppercase text-gray-500 mb-1">Custom Audio URL (MP3/Dropbox)</label>
                                  <input 
                                     className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none font-mono text-xs" 
                                     value={editForm.customAudioUrl}
                                     onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})}
-                                    placeholder="https://example.com/song.mp3 (Leave empty to use Drive)"
+                                    placeholder="https://www.dropbox.com/s/xyz/song.mp3?dl=0"
                                  />
                              </div>
 
