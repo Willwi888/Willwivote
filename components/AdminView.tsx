@@ -306,7 +306,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 className="w-full bg-black border border-white/10 p-3 text-white rounded focus:border-gold outline-none font-mono text-xs" 
                                 value={introUrl}
                                 onChange={e => setIntroUrl(e.target.value)}
-                                placeholder="https://www.dropbox.com/s/..."
+                                placeholder="https://www.dropbox.com/scl/fi/.../song.mp3?rlkey=..."
                              />
                          </div>
                          <button 
@@ -362,12 +362,15 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                          <h3 className="text-white font-serif mb-2">Bulk Import (Titles & Links)</h3>
                          <div className="text-[10px] text-gray-500 mb-4 leading-relaxed border-l-2 border-gold pl-3">
                             <strong className="text-gold">IMPORTANT:</strong> Please use <strong>Individual File Links</strong>.<br/>
-                            Folder links (containing <code>/fo/</code>) will NOT work.<br/>
-                            Format: <code>Song Title | https://dropbox.com/.../song.mp3</code>
+                            <ul className="list-disc ml-4 mt-1 space-y-1">
+                                <li>Folder links (containing <code>/fo/</code>) will NOT work.</li>
+                                <li><strong>DO NOT remove</strong> the <code>?rlkey=...</code> part at the end of links. It is required for playback.</li>
+                            </ul>
+                            Format: <code>Song Title | https://dropbox.com/.../song.mp3?rlkey=...</code>
                          </div>
                          <textarea 
-                            className="w-full h-48 bg-black border border-white/10 rounded p-4 text-xs font-mono text-gray-300 focus:border-gold outline-none"
-                            placeholder={"Track 01 Title | https://www.dropbox.com/s/...\nTrack 02 Title | https://www.dropbox.com/scl/fi/..."}
+                            className="w-full h-64 bg-black border border-white/10 rounded p-4 text-xs font-mono text-gray-300 focus:border-gold outline-none"
+                            placeholder={"Track 01 Title | https://www.dropbox.com/s/...\nTrack 02 Title | https://www.dropbox.com/scl/fi/.../song.mp3?rlkey=..."}
                             value={importText}
                             onChange={(e) => setImportText(e.target.value)}
                          />
@@ -403,7 +406,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none font-mono text-xs" 
                                     value={editForm.customAudioUrl}
                                     onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})}
-                                    placeholder="https://www.dropbox.com/s/xyz/song.mp3?dl=0"
+                                    placeholder="https://www.dropbox.com/scl/fi/.../song.mp3?rlkey=..."
                                  />
                              </div>
 
@@ -462,30 +465,4 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                         </div>
                                         <button 
                                             onClick={() => startEdit(song)}
-                                            className="text-xs text-gray-600 hover:text-white border border-transparent hover:border-white/20 px-2 py-1 rounded transition-colors"
-                                        >
-                                            Edit
-                                        </button>
-                                    </div>
-                                    
-                                    <div className="mt-1">
-                                        {/* Use Context-aware player */}
-                                        <AudioPlayer 
-                                            id={song.id}
-                                            driveId={song.driveId}
-                                            src={song.customAudioUrl}
-                                            title={song.title}
-                                            showControls={isPlaying}
-                                        />
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                 )}
-            </div>
-        )}
-      </div>
-    </div>
-  );
-};
+                                            className="text-xs text-gray-600 hover:text-white border border-transparent hover:border-white/20 px-2 py-1 rounded transition-colors
