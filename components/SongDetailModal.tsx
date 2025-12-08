@@ -12,8 +12,6 @@ interface SongDetailModalProps {
   lang: Language;
   onVote: (id: number, reason?: string) => void;
   isVoted: boolean;
-  isPlaying: boolean;
-  onTogglePlay: () => void;
   canVote: boolean;
   defaultCover: string;
   savedReason: string;
@@ -26,8 +24,6 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   lang, 
   onVote, 
   isVoted,
-  isPlaying,
-  onTogglePlay,
   canVote,
   defaultCover,
   savedReason
@@ -59,8 +55,6 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   const handleConfirmVote = () => {
       onVote(song.id, reason);
       setVoteStage('view');
-      // Optional: Close modal after vote? Or keep open to let them read?
-      // onClose(); 
   };
 
   return (
@@ -97,12 +91,11 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 
                 {/* Main Player Overlay */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center z-10 p-6">
-                     <div onClick={(e) => { e.stopPropagation(); onTogglePlay(); }}>
+                     <div onClick={(e) => { e.stopPropagation(); }}>
                         <AudioPlayer 
+                            id={song.id}
                             driveId={song.driveId}
                             src={song.customAudioUrl}
-                            isPlaying={isPlaying}
-                            onToggle={() => {}}
                             title={song.title}
                             variant="featured"
                         />
@@ -148,10 +141,9 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                      {/* Playback Controls (Always visible in bar as well for better UX) */}
                      <div className="w-full">
                          <AudioPlayer 
+                             id={song.id}
                              driveId={song.driveId}
                              src={song.customAudioUrl}
-                             isPlaying={isPlaying}
-                             onToggle={onTogglePlay}
                              title={song.title}
                              showControls={true} // Show the scrubbing bar
                          />

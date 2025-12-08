@@ -5,6 +5,7 @@ import { Song } from '../types';
 import { Layout, FadeIn } from './Layout';
 import AudioPlayer from './AudioPlayer';
 import { HeartIcon, SearchIcon, PlayIcon, PauseIcon } from './Icons';
+import { useAudio } from './AudioContext';
 
 type Tab = 'dashboard' | 'songs';
 
@@ -24,7 +25,8 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   // Edit Form State
   const [editForm, setEditForm] = useState<Partial<Song>>({});
 
-  const [previewPlayingId, setPreviewPlayingId] = useState<number | null>(null);
+  // Use Global Audio context instead of local state for preview
+  const { playingId } = useAudio();
 
   // State for Bulk Import
   const [showImport, setShowImport] = useState(false);
@@ -72,6 +74,13 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const handleBulkImport = () => {
       if (!importText.trim()) return;
+      
+      // Validation: Check for Folder links which won't work
+      if (importText.includes('/fo/') || importText.includes('/t/')) {
+          const proceed = confirm("WARNING: It looks like you pasted a Dropbox Folder Link (contains '/fo/') or Transfer Link ('/t/').\n\nThe app needs DIRECT FILE LINKS (e.g., ending in .mp3 or .wav).\n\nFolder links will NOT play. Do you still want to proceed?");
+          if (!proceed) return;
+      }
+
       // Filter out empty lines
       const lines = importText.split(/\r?\n/).filter(line => line.trim() !== '');
       if (lines.length === 0) return;
@@ -83,8 +92,6 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       alert(`Success! Updated ${Math.min(lines.length, 40)} songs.`);
   };
 
-  // --- NEW: ROBUST BACKUP SYSTEM ---
-  
   const handleDownloadBackup = () => {
       const data = {
           songs: localSongs,
@@ -140,11 +147,6 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       reader.readAsText(file);
       // Reset input
       e.target.value = '';
-  };
-
-
-  const togglePreview = (id: number) => {
-      setPreviewPlayingId(prev => prev === id ? null : id);
   };
 
   if (!isAuthenticated) {
@@ -320,7 +322,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 bg-[#1a1a1a] p-4 rounded border border-gold/30">
                      <div className="text-xs text-gray-300 max-w-lg">
                         <p className="mb-1 text-gold font-bold uppercase tracking-widest">⚠️ Data Safety</p>
-                        <p>Browser storage is temporary. Please <strong>Download Backup</strong> regularly to save your 13,000+ words to your computer.</p>
+                        <p>Browser storage is temporary. Please <strong>Download Backup</strong> regularly.</p>
                      </div>
                      <div className="flex gap-2">
                          <input 
@@ -358,16 +360,14 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                  {showImport && (
                      <div className="bg-[#1a1a1a] p-6 rounded border border-white/10 mb-8 animate-slide-up">
                          <h3 className="text-white font-serif mb-2">Bulk Import (Titles & Links)</h3>
-                         <p className="text-[10px] text-gray-500 mb-4 leading-relaxed">
-                            Paste data for up to 40 tracks. One song per line.<br/>
-                            Supported Formats:<br/>
-                            1. Title Only: <span className="text-gray-400">My Song Name</span><br/>
-                            2. Link Only: <span className="text-gray-400">https://dropbox.com/...</span><br/>
-                            3. Title & Link: <span className="text-gray-400">My Song Name | https://dropbox.com/...</span>
-                         </p>
+                         <div className="text-[10px] text-gray-500 mb-4 leading-relaxed border-l-2 border-gold pl-3">
+                            <strong className="text-gold">IMPORTANT:</strong> Please use <strong>Individual File Links</strong>.<br/>
+                            Folder links (containing <code>/fo/</code>) will NOT work.<br/>
+                            Format: <code>Song Title | https://dropbox.com/.../song.mp3</code>
+                         </div>
                          <textarea 
                             className="w-full h-48 bg-black border border-white/10 rounded p-4 text-xs font-mono text-gray-300 focus:border-gold outline-none"
-                            placeholder={"Track 01 Title | https://www.dropbox.com/s/...\nTrack 02 Title\nhttps://www.dropbox.com/s/..."}
+                            placeholder={"Track 01 Title | https://www.dropbox.com/s/...\nTrack 02 Title | https://www.dropbox.com/scl/fi/..."}
                             value={importText}
                             onChange={(e) => setImportText(e.target.value)}
                          />
@@ -445,7 +445,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     // GRID LIST
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {localSongs.map(song => {
-                            const isPlaying = previewPlayingId === song.id;
+                            const isPlaying = playingId === song.id;
                             return (
                                 <div 
                                     key={song.id} 
@@ -469,11 +469,11 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     </div>
                                     
                                     <div className="mt-1">
+                                        {/* Use Context-aware player */}
                                         <AudioPlayer 
+                                            id={song.id}
                                             driveId={song.driveId}
                                             src={song.customAudioUrl}
-                                            isPlaying={isPlaying}
-                                            onToggle={() => togglePreview(song.id)}
                                             title={song.title}
                                             showControls={isPlaying}
                                         />

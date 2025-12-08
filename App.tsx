@@ -5,7 +5,8 @@ import { getSongs, getGlobalConfig } from './services/storage';
 import { Song, User, AppStep, MAX_VOTES, Language } from './types';
 import { TRANSLATIONS } from './constants';
 import AudioPlayer from './components/AudioPlayer';
-import { HeartIcon, SpinnerIcon, ArrowLeftIcon, CheckIcon, PlayIcon, PauseIcon } from './components/Icons';
+import { AudioProvider, useAudio } from './components/AudioContext';
+import { HeartIcon, ArrowLeftIcon, CheckIcon, PlayIcon } from './components/Icons';
 import { saveVote } from './services/storage';
 import { AdminView } from './components/AdminView';
 import { SongDetailModal } from './components/SongDetailModal';
@@ -20,7 +21,7 @@ const SOCIAL_LINKS = [
     { name: 'Website', url: 'https://willwi.com/' },
 ];
 
-// --- COMMON COMPONENTS (Moved Outside) ---
+// --- COMMON COMPONENTS ---
 
 const LangSwitcher: React.FC<{ lang: Language; setLang: (l: Language) => void }> = ({ lang, setLang }) => (
     <div className="absolute top-6 right-6 z-50 flex gap-4">
@@ -28,7 +29,7 @@ const LangSwitcher: React.FC<{ lang: Language; setLang: (l: Language) => void }>
             <button 
                 key={l}
                 onClick={() => setLang(l)}
-                className={`text-[10px] uppercase tracking-widest transition-colors ${lang === l ? 'text-white border-b border-white' : 'text-gray-400 hover:text-gray-200'}`}
+                className={`text-[10px] uppercase tracking-widest transition-colors ${lang === l ? 'text-white border-b border-white' : 'text-gray-400 hover:text-gray-200'} active:scale-95`}
             >
                 {l}
             </button>
@@ -41,28 +42,52 @@ const Footer: React.FC<{ t: any; onAdmin: () => void }> = ({ t, onAdmin }) => (
         <p className="text-[9px] text-gray-400 uppercase tracking-[0.2em] opacity-80">{t.copyright}</p>
         <button 
             onClick={onAdmin}
-            className="text-[9px] text-gray-500 hover:text-white transition-colors uppercase tracking-widest opacity-50 hover:opacity-100"
+            className="text-[9px] text-gray-500 hover:text-white transition-colors uppercase tracking-widest opacity-50 hover:opacity-100 active:scale-95 p-2"
         >
             {t.managerLogin}
         </button>
     </footer>
 );
 
-// --- VIEWS (Moved Outside to prevent re-render focus loss) ---
+// --- VIEWS ---
 
 const IntroView: React.FC<{ 
     t: any; 
-    introPlaying: boolean; 
-    toggleIntroPlay: () => void; 
     introAudioId: string; 
     handleStart: () => void;
     lang: Language;
     setLang: (l: Language) => void;
     onAdmin: () => void;
-}> = ({ t, introPlaying, toggleIntroPlay, introAudioId, handleStart, lang, setLang, onAdmin }) => {
+}> = ({ t, introAudioId, handleStart, lang, setLang, onAdmin }) => {
     const { setBgImage } = useContext(BackgroundContext);
+    const { playingId, isPlaying, playSong, pause, resume } = useAudio();
     
-    // Clear global background context because this view handles its own full-screen image
+    // Check if Intro is currently playing in global context
+    const isIntroPlaying = playingId === 'intro' && isPlaying;
+
+    const handleToggleIntro = () => {
+        if (isIntroPlaying) {
+            pause();
+        } else if (playingId === 'intro' && !isPlaying) {
+            resume();
+        } else {
+            // Start fresh
+            // Use 'intro' as ID so it doesn't conflict with song ID 1, 2, 3...
+            // Although getAudioUrl is called inside AudioPlayer, we need URL here for context.
+            // But wait, the context needs raw URL? 
+            // Our AudioContext expects `url` as second arg. We need to process it.
+            // Let's rely on the AudioPlayer component to handle the interaction or do it manually.
+            // Actually, best to use AudioPlayer component hidden or visible.
+            // But here we have a Custom Play Button.
+            // Let's simulate the click or use context directly.
+            // To use context directly, we need to import getAudioUrl here.
+            import('./constants').then(m => {
+                 const url = m.getAudioUrl(introAudioId);
+                 playSong('intro', url, "Intro");
+            });
+        }
+    };
+
     useEffect(() => {
       setBgImage(null);
       return () => setBgImage(null);
@@ -70,42 +95,36 @@ const IntroView: React.FC<{
 
     return (
       <div className="relative flex flex-col min-h-screen w-full overflow-hidden items-center justify-center text-center">
-        {/* FULL SCREEN BACKGROUND IMAGE */}
-        <div className="absolute inset-0 z-0">
-            <div className={`absolute inset-0 bg-black transition-opacity duration-1000 ${introPlaying ? 'opacity-20' : 'opacity-40'} z-10`}></div>
-            {/* Gradient Overlay for Text Readability */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 z-10 pointer-events-none"></div>
-            
+        {/* FULL SCREEN BACKGROUND */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+            <div className={`absolute inset-0 bg-black transition-opacity duration-1000 ${isIntroPlaying ? 'opacity-20' : 'opacity-40'} z-10`}></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 z-10"></div>
             <img 
                 src={ARTIST_IMAGE_URL} 
                 alt="Beloved Cover" 
-                className={`w-full h-full object-cover transition-transform duration-[20s] ease-in-out ${introPlaying ? 'scale-110' : 'scale-100'}`}
+                className={`w-full h-full object-cover transition-transform duration-[20s] ease-in-out ${isIntroPlaying ? 'scale-110' : 'scale-100'}`}
             />
         </div>
 
         <LangSwitcher lang={lang} setLang={setLang} />
         
-        {/* Main Content Content */}
-        <FadeIn delay={200} className="relative z-20 flex flex-col items-center justify-center max-w-md px-6">
-            
+        <FadeIn delay={200} className="relative z-20 flex flex-col items-center justify-center max-w-md px-6 w-full">
             <div className="mb-10 space-y-6">
                 <span className="block text-[10px] uppercase tracking-[0.6em] text-gray-300 font-sans opacity-90">{t.subtitle}</span>
-                <h1 className="font-serif text-6xl md:text-8xl text-white tracking-wider italic drop-shadow-2xl">
-                    Beloved
-                </h1>
+                <h1 className="font-serif text-6xl md:text-8xl text-white tracking-wider italic drop-shadow-2xl">Beloved</h1>
                 <div className="h-px w-16 bg-white/40 mx-auto"></div>
                 <h2 className="font-serif text-2xl text-gray-100 tracking-[0.2em] font-light drop-shadow-md">{t.title}</h2>
             </div>
 
-            {/* Central Play Button */}
+            {/* Central Play Button controlling Global Audio */}
             <button 
-                onClick={toggleIntroPlay}
+                onClick={handleToggleIntro}
                 className={`
-                    group w-20 h-20 rounded-full flex items-center justify-center border border-white/30 backdrop-blur-sm mb-12 transition-all duration-500
-                    ${introPlaying ? 'bg-white text-black scale-110 border-white' : 'bg-black/20 text-white hover:bg-white/10 hover:scale-105'}
+                    group w-20 h-20 rounded-full flex items-center justify-center border border-white/30 backdrop-blur-sm mb-12 transition-all duration-500 active:scale-90
+                    ${isIntroPlaying ? 'bg-white text-black scale-110 border-white' : 'bg-black/20 text-white hover:bg-white/10 hover:scale-105'}
                 `}
             >
-                {introPlaying ? (
+                {isIntroPlaying ? (
                     <div className="flex gap-1 h-6 items-center">
                          <span className="w-1 h-full bg-black animate-[pulse_1s_ease-in-out_infinite]"></span>
                          <span className="w-1 h-2/3 bg-black animate-[pulse_1.2s_ease-in-out_infinite]"></span>
@@ -116,24 +135,12 @@ const IntroView: React.FC<{
                 )}
             </button>
 
-            {/* Enter Button */}
             <button 
                 onClick={handleStart}
-                className="group relative px-14 py-4 bg-white/90 hover:bg-white text-black font-serif text-lg tracking-[0.3em] uppercase overflow-hidden transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+                className="group relative px-14 py-4 bg-white/90 hover:bg-white text-black font-serif text-lg tracking-[0.3em] uppercase overflow-hidden transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] active:scale-95 w-full md:w-auto"
             >
                 <span className="relative z-10">{t.enter}</span>
             </button>
-
-            {/* Hidden Audio Element */}
-            <div className="hidden">
-                <AudioPlayer 
-                    driveId={introAudioId} 
-                    isPlaying={introPlaying} 
-                    onToggle={toggleIntroPlay} 
-                    title="Intro"
-                />
-            </div>
-
         </FadeIn>
 
         <Footer t={t} onAdmin={onAdmin} />
@@ -151,20 +158,17 @@ const AuthView: React.FC<{
     setLang: (l: Language) => void;
 }> = ({ t, user, setUser, handleLogin, handleBack, lang, setLang }) => (
     <div className="flex flex-col min-h-screen p-8 pt-24 relative max-w-[500px] mx-auto">
-       <div className="absolute top-8 left-8">
-           <button onClick={handleBack} className="text-gray-500 hover:text-white transition-colors">
+       <div className="absolute top-8 left-8 z-30">
+           <button onClick={handleBack} className="text-gray-500 hover:text-white transition-colors p-2 active:scale-90">
                <ArrowLeftIcon />
            </button>
        </div>
-
        <LangSwitcher lang={lang} setLang={setLang} />
-
-       <FadeIn className="flex-1 flex flex-col justify-center w-full">
+       <FadeIn className="flex-1 flex flex-col justify-center w-full z-20">
            <div className="text-center mb-10">
                <h2 className="font-serif text-3xl text-white mb-2 italic">Identify</h2>
                <p className="text-[10px] text-gray-500 uppercase tracking-widest">{t.giftMessage}</p>
            </div>
-           
            <form onSubmit={handleLogin} className="space-y-6">
                <div className="space-y-1">
                    <label className="text-[10px] uppercase text-gray-600 tracking-widest ml-1">{t.name}</label>
@@ -173,7 +177,7 @@ const AuthView: React.FC<{
                        type="text" 
                        value={user.name}
                        onChange={e => setUser({...user, name: e.target.value})}
-                       className="w-full bg-transparent border-b border-gray-700 py-3 text-lg text-white placeholder-gray-800 focus:border-white outline-none transition-colors font-serif"
+                       className="w-full bg-transparent border-b border-gray-700 py-3 text-lg text-white placeholder-gray-800 focus:border-white outline-none transition-colors font-serif rounded-none"
                        placeholder="Name"
                    />
                </div>
@@ -184,15 +188,14 @@ const AuthView: React.FC<{
                        type="email" 
                        value={user.email}
                        onChange={e => setUser({...user, email: e.target.value})}
-                       className="w-full bg-transparent border-b border-gray-700 py-3 text-lg text-white placeholder-gray-800 focus:border-white outline-none transition-colors font-serif"
+                       className="w-full bg-transparent border-b border-gray-700 py-3 text-lg text-white placeholder-gray-800 focus:border-white outline-none transition-colors font-serif rounded-none"
                        placeholder="email@address.com"
                    />
                </div>
-               
                <button 
                    type="submit" 
                    disabled={!user.name || !user.email}
-                   className="w-full mt-8 bg-white text-black py-4 uppercase tracking-widest text-xs font-bold hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                   className="w-full mt-8 bg-white text-black py-4 uppercase tracking-widest text-xs font-bold hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
                >
                    {t.start}
                </button>
@@ -207,20 +210,19 @@ const VotingView: React.FC<{
     selectedIds: number[];
     MAX_VOTES: number;
     voteReasons: { [id: number]: string };
-    playingId: number | null;
-    togglePlay: (id: number) => void;
     toggleVote: (id: number) => void;
     handleSubmitVotes: () => void;
     handleBack: () => void;
     setDetailSongId: (id: number) => void;
-}> = ({ t, songs, selectedIds, MAX_VOTES, voteReasons, playingId, togglePlay, toggleVote, handleSubmitVotes, handleBack, setDetailSongId }) => {
+}> = ({ t, songs, selectedIds, MAX_VOTES, voteReasons, toggleVote, handleSubmitVotes, handleBack, setDetailSongId }) => {
     const progress = (selectedIds.length / MAX_VOTES) * 100;
+    const { playingId } = useAudio();
     
     return (
       <div className="min-h-screen pb-32 relative max-w-[500px] mx-auto">
            <div className="fixed top-0 left-0 w-full z-40 bg-[#050505]/90 backdrop-blur-md border-b border-white/5 transition-all duration-300">
                <div className="max-w-[500px] mx-auto px-6 py-4 flex items-center justify-between">
-                   <button onClick={handleBack} className="text-gray-500 hover:text-white">
+                   <button onClick={handleBack} className="text-gray-500 hover:text-white p-2 active:scale-90">
                        <ArrowLeftIcon className="w-5 h-5" />
                    </button>
                    <div className="text-center">
@@ -246,7 +248,7 @@ const VotingView: React.FC<{
                            <div 
                               onClick={() => setDetailSongId(song.id)}
                               className={`
-                                  relative group p-4 rounded-sm border transition-all duration-300 cursor-pointer
+                                  relative group p-4 rounded-sm border transition-all duration-300 cursor-pointer active:scale-[0.98]
                                   ${isSelected ? 'bg-white/5 border-gold/50' : 'bg-[#111] border-white/5 hover:border-white/20'}
                               `}
                            >
@@ -262,15 +264,23 @@ const VotingView: React.FC<{
                                        {isSelected && voteReasons[song.id] && (
                                            <p className="text-[10px] text-gray-500 italic mt-1 truncate">"{voteReasons[song.id]}"</p>
                                        )}
+                                       {/* Mini Equalizer if Playing */}
+                                       {isPlaying && (
+                                           <div className="absolute bottom-4 right-16 flex gap-0.5 h-3 items-end opacity-50">
+                                               <div className="w-0.5 bg-gold animate-[pulse_0.6s_ease-in-out_infinite] h-full"></div>
+                                               <div className="w-0.5 bg-gold animate-[pulse_0.8s_ease-in-out_infinite] h-2/3"></div>
+                                               <div className="w-0.5 bg-gold animate-[pulse_1.0s_ease-in-out_infinite] h-full"></div>
+                                           </div>
+                                       )}
                                    </div>
 
                                    <div className="flex items-center gap-3">
-                                       <div onClick={(e) => { e.stopPropagation(); togglePlay(song.id); }}>
+                                       {/* Audio Player is now just a remote button */}
+                                       <div onClick={(e) => { e.stopPropagation(); }} className="active:scale-90 transition-transform">
                                           <AudioPlayer 
+                                              id={song.id}
                                               driveId={song.driveId}
                                               src={song.customAudioUrl}
-                                              isPlaying={isPlaying} 
-                                              onToggle={() => {}} 
                                               title={song.title}
                                           />
                                        </div>
@@ -278,7 +288,7 @@ const VotingView: React.FC<{
                                            onClick={(e) => { e.stopPropagation(); toggleVote(song.id); }}
                                            disabled={!isSelected && selectedIds.length >= MAX_VOTES}
                                            className={`
-                                               w-8 h-8 flex items-center justify-center rounded-full border transition-all
+                                               w-8 h-8 flex items-center justify-center rounded-full border transition-all active:scale-90
                                                ${isSelected 
                                                    ? 'bg-gold border-gold text-black' 
                                                    : 'border-gray-700 text-gray-700 hover:border-white hover:text-white'
@@ -308,7 +318,7 @@ const VotingView: React.FC<{
                        onClick={handleSubmitVotes}
                        disabled={selectedIds.length !== MAX_VOTES}
                        className={`
-                           px-8 py-3 uppercase tracking-widest text-xs font-bold rounded-sm transition-all
+                           px-8 py-3 uppercase tracking-widest text-xs font-bold rounded-sm transition-all active:scale-95
                            ${selectedIds.length === MAX_VOTES 
                                ? 'bg-white text-black hover:bg-gold' 
                                : 'bg-white/10 text-gray-500 cursor-not-allowed'
@@ -333,63 +343,50 @@ const SuccessView: React.FC<{ t: any; setStep: (s: AppStep) => void }> = ({ t, s
             <p className="text-gray-400 text-xs tracking-widest uppercase max-w-xs mx-auto leading-relaxed mb-12">
                 {t.thankYouDesc}
             </p>
-            
             <div className="flex gap-6 justify-center">
                 {SOCIAL_LINKS.map(link => (
-                    <a 
-                      key={link.name} 
-                      href={link.url} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      className="text-[10px] text-gray-500 hover:text-white uppercase tracking-widest border-b border-transparent hover:border-white transition-all pb-1"
-                    >
+                    <a key={link.name} href={link.url} target="_blank" rel="noreferrer" className="text-[10px] text-gray-500 hover:text-white uppercase tracking-widest border-b border-transparent hover:border-white transition-all pb-1 active:scale-95">
                         {link.name}
                     </a>
                 ))}
             </div>
         </FadeIn>
-        
         <div className="absolute bottom-12">
-            <button onClick={() => setStep(AppStep.INTRO)} className="text-[10px] text-gray-700 hover:text-gray-500 uppercase tracking-widest">
+            <button onClick={() => setStep(AppStep.INTRO)} className="text-[10px] text-gray-700 hover:text-gray-500 uppercase tracking-widest active:scale-90 p-4">
                 {t.close}
             </button>
         </div>
     </div>
 );
 
+// --- MAIN APP WRAPPER ---
+// We define the content separately to use the Hook, then wrap it in Provider
 
-export default function App() {
+const AppContent = () => {
   const [step, setStep] = useState<AppStep>(AppStep.INTRO);
   const [user, setUser] = useState<User>({ name: '', email: '', timestamp: '', votes: [], voteReasons: {} });
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [voteReasons, setVoteReasons] = useState<{ [id: number]: string }>({});
   
-  const [playingId, setPlayingId] = useState<number | null>(null);
-  const [introPlaying, setIntroPlaying] = useState(false);
   const [songs, setSongs] = useState<Song[]>([]);
   const [lang, setLang] = useState<Language>('zh');
-
-  // Dynamic Intro Audio State
   const [introAudioId, setIntroAudioId] = useState(DEFAULT_FEATURED_AUDIO_ID);
-
-  // Modal State
   const [detailSongId, setDetailSongId] = useState<number | null>(null);
+
+  const { pause } = useAudio();
 
   useEffect(() => {
     setSongs(getSongs());
     const globalConfig = getGlobalConfig();
-    if (globalConfig.introAudioUrl) {
-        setIntroAudioId(globalConfig.introAudioUrl);
-    }
+    if (globalConfig.introAudioUrl) setIntroAudioId(globalConfig.introAudioUrl);
   }, [step]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [step]);
 
-  // Handlers
   const handleStart = () => {
-      setIntroPlaying(false);
+      pause(); // Stop intro music
       setStep(AppStep.AUTH);
   };
   
@@ -402,9 +399,7 @@ export default function App() {
   
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (user.name && user.email) {
-      setStep(AppStep.VOTING);
-    }
+    if (user.name && user.email) setStep(AppStep.VOTING);
   };
 
   const toggleVote = (id: number, reason?: string) => {
@@ -416,9 +411,7 @@ export default function App() {
     } else {
       if (selectedIds.length < MAX_VOTES) {
         setSelectedIds(prev => [...prev, id]);
-        if (reason) {
-            setVoteReasons(prev => ({ ...prev, [id]: reason }));
-        }
+        if (reason) setVoteReasons(prev => ({ ...prev, [id]: reason }));
       }
     }
   };
@@ -436,30 +429,16 @@ export default function App() {
     }
   };
 
-  const togglePlay = (id: number) => {
-    setIntroPlaying(false);
-    setPlayingId(prev => prev === id ? null : id);
-  };
-
-  const toggleIntroPlay = () => {
-    setPlayingId(null);
-    setIntroPlaying(!introPlaying);
-  };
-
   const t = TRANSLATIONS[lang];
   const currentSong = detailSongId ? songs.find(s => s.id === detailSongId) : null;
 
-  if (step === AppStep.ADMIN) {
-      return <AdminView onBack={handleBack} />;
-  }
+  if (step === AppStep.ADMIN) return <AdminView onBack={handleBack} />;
 
   return (
     <Layout className="bg-[#050505]">
         {step === AppStep.INTRO && (
             <IntroView 
                 t={t} 
-                introPlaying={introPlaying} 
-                toggleIntroPlay={toggleIntroPlay} 
                 introAudioId={introAudioId} 
                 handleStart={handleStart}
                 lang={lang}
@@ -487,8 +466,6 @@ export default function App() {
                 selectedIds={selectedIds}
                 MAX_VOTES={MAX_VOTES}
                 voteReasons={voteReasons}
-                playingId={playingId}
-                togglePlay={togglePlay}
                 toggleVote={toggleVote}
                 handleSubmitVotes={handleSubmitVotes}
                 handleBack={handleBack}
@@ -508,11 +485,17 @@ export default function App() {
             isVoted={currentSong ? selectedIds.includes(currentSong.id) : false}
             canVote={selectedIds.length < MAX_VOTES}
             onVote={toggleVote}
-            isPlaying={currentSong ? playingId === currentSong.id : false}
-            onTogglePlay={() => currentSong && togglePlay(currentSong.id)}
             defaultCover={ARTIST_IMAGE_URL}
             savedReason={currentSong && voteReasons[currentSong.id] ? voteReasons[currentSong.id] : ''}
         />
     </Layout>
   );
+};
+
+export default function App() {
+    return (
+        <AudioProvider>
+            <AppContent />
+        </AudioProvider>
+    );
 }

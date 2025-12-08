@@ -48,18 +48,30 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         overflow-x: hidden;
-        /* Disable text selection and image dragging */
+        /* Disable selection only for UI elements */
         user-select: none;
         -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
       }
       
+      /* CRITICAL: Enable text selection for Inputs */
+      input, textarea {
+        user-select: text !important;
+        -webkit-user-select: text !important;
+        cursor: text;
+      }
+      
+      button, a {
+        touch-action: manipulation;
+        cursor: pointer;
+      }
+
       img {
         -webkit-user-drag: none;
         user-drag: none;
-        pointer-events: none; /* Prevent right click on images specifically */
+        pointer-events: none;
       }
 
-      /* Film Grain Texture - Low Z-Index to prevent blocking clicks */
       .bg-noise {
         position: fixed;
         top: 0;
@@ -80,7 +92,6 @@
         scrollbar-width: none;
       }
       
-      /* Cinematic blur backdrop */
       .cinematic-backdrop {
         position: fixed;
         top: 0;
@@ -106,7 +117,6 @@
 }
 </script>
 </head>
-  <!-- Add oncontextmenu="return false" to disable right click globally -->
   <body oncontextmenu="return false;">
     <div class="bg-noise"></div>
     <div id="root" style="position: relative; z-index: 10;"></div>
