@@ -28,23 +28,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
+  const [retryCount, setRetryCount] = useState(0);
 
   // --- SMART URL PROCESSING ---
   const processUrl = (rawUrl: string) => {
       if (!rawUrl) return '';
       let url = rawUrl.trim();
 
-      // DROPBOX OPTIMIZATION
-      if (url.includes('dropbox.com')) {
-          // Replace www.dropbox.com with dl.dropboxusercontent.com for best streaming performance
-          // This supports scrubbing/seeking much better than the standard redirect
-          url = url.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
-          url = url.replace('dropbox.com', 'dl.dropboxusercontent.com'); // catch cases without www
-          
-          // Clean up parameters to ensure clean direct link
-          url = url.replace('?dl=0', '').replace('&dl=0', '');
-          url = url.replace('?dl=1', '').replace('&dl=1', '');
-          // Note: dl.dropboxusercontent.com implies direct download/stream
+      // DROPBOX OPTIMIZATION (Robust Regex)
+      // Converts www.dropbox.com or dropbox.com to dl.dropboxusercontent.com
+      // Also removes query parameters like ?dl=0 to ensure direct stream
+      if (url.match(/dropbox\.com/)) {
+          url = url.replace(/https?:\/\/(www\.)?dropbox\.com/, 'https://dl.dropboxusercontent.com');
+          // Remove query params to ensure raw file access
+          url = url.split('?')[0]; 
       }
       
       return url;
@@ -52,14 +49,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   // Determine final Source
   const getFinalSource = () => {
-    // 1. If custom 'src' is provided (from CMS override), use it.
     if (src && src.trim() !== '') {
         return processUrl(src);
     }
-    // 2. If 'driveId' is provided.
     if (driveId && driveId.trim() !== '') {
-        // The getAudioUrl helper now returns the input as-is if it's a link, 
-        // or a Google Drive export link if it's just an ID.
         const resolved = getAudioUrl(driveId);
         return processUrl(resolved);
     }
@@ -72,6 +65,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     // Reset state when source changes
     setIsLoading(false);
     setHasError(false);
+    setRetryCount(0);
     setCurrentTime(0);
     setDuration(0);
   }, [audioSrc]);
@@ -83,6 +77,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
     if (isPlaying) {
       setHasError(false);
+      // Ensure we attempt to load if it's not ready
+      if (audio.readyState === 0) {
+          audio.load();
+      }
+      
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         setIsLoading(true);
@@ -92,10 +91,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
              setIsLoading(false);
           })
           .catch((error) => {
-            console.error("Playback failed:", error);
-            setIsLoading(false);
-            if (error.name !== 'AbortError') {
+            // Only log serious errors, ignore AbortError (pause/interrupt)
+            if (error instanceof Error && error.name !== 'AbortError') {
+                 console.warn("Playback interrupted:", error.message);
                  setHasError(true);
+                 setIsLoading(false);
             }
           });
       }
@@ -103,10 +103,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       audio.pause();
       setIsLoading(false);
     }
-
-    return () => {
-        audio.pause();
-    };
   }, [isPlaying, audioSrc]);
 
   const handleCanPlay = () => {
@@ -114,6 +110,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   };
   
   const handleWaiting = () => {
+      // Only show loading if we are supposed to be playing
       if (isPlaying && !audioRef.current?.paused) setIsLoading(true);
   };
   
@@ -128,6 +125,28 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
         setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleError = (e: React.SyntheticEvent<HTMLAudioElement, Event>) => {
+    const target = e.currentTarget;
+    const err = target.error;
+    console.warn("Audio tag warning:", err ? `Code ${err.code}: ${err.message}` : "Unknown");
+    
+    // Auto-retry logic for network/format errors (Code 2 or 4)
+    if (retryCount < 1 && audioSrc && isPlaying) {
+        console.log("Attempting auto-retry...");
+        setRetryCount(prev => prev + 1);
+        setIsLoading(true);
+        setTimeout(() => {
+            if (audioRef.current) {
+                audioRef.current.load();
+                audioRef.current.play().catch(() => {});
+            }
+        }, 800);
+    } else {
+        setIsLoading(false); 
+        setHasError(true); 
     }
   };
 
@@ -160,6 +179,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         onContextMenu={(e) => { e.preventDefault(); return false; }}
     >
       <audio
+        key={audioSrc} // Force remount on source change to clear internal buffers
         ref={audioRef}
         src={audioSrc}
         onEnded={onToggle}
@@ -168,10 +188,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         onPlaying={handlePlaying}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
-        preload="auto" 
+        onError={handleError}
+        // CRITICAL FIX: Only preload if playing or controls are shown. 
+        // Prevents browser from choking on 40 simultaneous connections.
+        preload={isPlaying || showControls ? "auto" : "none"}
+        playsInline 
+        {...{ "webkit-playsinline": "true" } as any}
         controlsList="nodownload noplaybackrate"
-        {...{ referrerPolicy: "no-referrer" } as any}
-        onError={() => { setIsLoading(false); setHasError(true); }}
       />
       
       {/* Play/Pause Button */}
@@ -180,13 +203,12 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
           {variant === 'minimal' ? (
               <button
               onClick={(e) => { e.stopPropagation(); onToggle(); }}
-              aria-label={isPlaying ? `Pause ${title}` : `Play ${title}`}
               className={`
                   group/btn flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 outline-none
                   ${isPlaying ? 'text-white' : 'text-gray-500 hover:text-white'}
                   ${hasError ? 'text-red-500' : ''}
               `}
-              title={hasError ? "Unable to play source" : title}
+              title={hasError ? "Playback Error (Tap to retry)" : title}
               >
               {isLoading ? (
                   <SpinnerIcon className="w-4 h-4" />
@@ -197,7 +219,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                       <span className="w-0.5 h-full bg-current animate-[pulse_0.8s_ease-in-out_infinite]"></span>
                   </div>
               ) : hasError ? (
-                  <div className="w-2 h-2 rounded-full bg-red-500/50"></div>
+                  <div className="w-2 h-2 rounded-full bg-red-500/50 animate-pulse"></div>
               ) : (
                   <PlayIcon className="w-4 h-4 translate-x-0.5" />
               )}
@@ -207,8 +229,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               <button
               onClick={(e) => {
                   e.stopPropagation();
+                  // If error, try opening link directly as fallback
                   if (hasError && audioSrc) {
-                      window.open(audioSrc, '_blank');
+                      if (confirm("Playback failed. Open audio in new tab?")) {
+                          window.open(audioSrc, '_blank');
+                      }
                   } else {
                       onToggle();
                   }

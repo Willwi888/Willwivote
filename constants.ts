@@ -111,7 +111,6 @@ const rawLinks = [
 
 export const SONGS: Song[] = rawLinks.map((driveId, index) => ({
   id: index + 1,
-  // Since specific titles weren't provided, we use a stylized naming convention
   title: `Demo Track ${String(index + 1).padStart(2, '0')}`,
   driveId: driveId,
   lyrics: "",
@@ -119,15 +118,14 @@ export const SONGS: Song[] = rawLinks.map((driveId, index) => ({
 }));
 
 // SMART AUDIO URL HELPER
-// This function now intelligently handles both raw Google Drive IDs and full URL links (Dropbox, etc.)
 export const getAudioUrl = (input: string) => {
     if (!input) return '';
     
-    // If it's already a URL (e.g. user pasted a Dropbox link into the ID field)
+    // Direct link check
     if (input.startsWith('http')) {
         return input;
     }
 
-    // Otherwise, assume it's a Google Drive ID (backward compatibility)
+    // Google Drive: Use 'drive.google.com' for better binary file support
     return `https://drive.google.com/uc?export=download&id=${input}`;
 };

@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { getVotes, getLeaderboard, getSongs, updateSong, updateAllSongTitles, resetSongTitles, getGlobalConfig, saveGlobalConfig } from '../services/storage';
+import React, { useState, useEffect, useRef } from 'react';
+import { getVotes, getLeaderboard, getSongs, updateSong, updateSongsBulk, resetSongTitles, getGlobalConfig, saveGlobalConfig, restoreFromBackup } from '../services/storage';
 import { Song } from '../types';
 import { Layout, FadeIn } from './Layout';
 import AudioPlayer from './AudioPlayer';
@@ -29,6 +29,9 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   // State for Bulk Import
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
+  
+  // File Input Ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,19 +76,72 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       const lines = importText.split(/\r?\n/).filter(line => line.trim() !== '');
       if (lines.length === 0) return;
 
-      const updated = updateAllSongTitles(lines);
+      const updated = updateSongsBulk(lines);
       setLocalSongs(updated);
       setShowImport(false);
       setImportText('');
-      alert(`Success! Updated ${Math.min(lines.length, 40)} song titles.`);
+      alert(`Success! Updated ${Math.min(lines.length, 40)} songs.`);
   };
 
-  const handleExportConfig = () => {
-      const json = JSON.stringify(localSongs, null, 2);
-      navigator.clipboard.writeText(json).then(() => {
-          alert("All data (Titles, Lyrics, Links) copied to clipboard! Save this to a text file.");
-      });
+  // --- NEW: ROBUST BACKUP SYSTEM ---
+  
+  const handleDownloadBackup = () => {
+      const data = {
+          songs: localSongs,
+          globalConfig: { introAudioUrl: introUrl },
+          timestamp: new Date().toISOString()
+      };
+      
+      const jsonString = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `beloved_backup_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      alert("Backup file downloaded! Please save this file safely.");
   };
+
+  const handleRestoreClick = () => {
+      if (fileInputRef.current) {
+          fileInputRef.current.click();
+      }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          try {
+              const json = event.target?.result as string;
+              const data = JSON.parse(json);
+              
+              if (data.songs) {
+                  restoreFromBackup(data.songs);
+                  setLocalSongs(data.songs);
+              }
+              if (data.globalConfig) {
+                  saveGlobalConfig(data.globalConfig);
+                  setIntroUrl(data.globalConfig.introAudioUrl || '');
+              }
+              
+              alert("Data restored successfully!");
+          } catch (err) {
+              alert("Failed to restore backup. Invalid JSON file.");
+              console.error(err);
+          }
+      };
+      reader.readAsText(file);
+      // Reset input
+      e.target.value = '';
+  };
+
 
   const togglePreview = (id: number) => {
       setPreviewPlayingId(prev => prev === id ? null : id);
@@ -211,7 +267,6 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             <td className="p-4 font-serif text-gray-200">
                                 <div>{user.name}</div>
                                 <div className="text-[9px] text-gray-600 font-mono">{user.email}</div>
-                                {/* NEW: Display User Vote Reasons if available */}
                                 {user.voteReasons && Object.keys(user.voteReasons).length > 0 && (
                                     <div className="mt-2 text-[10px] text-gray-500 border-l border-white/10 pl-2">
                                         {Object.entries(user.voteReasons).map(([songId, reason]) => (
@@ -261,35 +316,58 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                      </div>
                  </div>
 
-                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 bg-[#111] p-4 rounded border border-white/10">
-                     <div className="text-xs text-gray-400 max-w-lg">
-                        <p className="mb-2 text-white font-bold">Song List Management</p>
-                        <p>Changes here are saved to this browser's memory. Use "Backup Data" to save your work locally.</p>
+                 {/* BACKUP & RESTORE SECTION */}
+                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 bg-[#1a1a1a] p-4 rounded border border-gold/30">
+                     <div className="text-xs text-gray-300 max-w-lg">
+                        <p className="mb-1 text-gold font-bold uppercase tracking-widest">⚠️ Data Safety</p>
+                        <p>Browser storage is temporary. Please <strong>Download Backup</strong> regularly to save your 13,000+ words to your computer.</p>
                      </div>
                      <div className="flex gap-2">
-                        <button 
-                            onClick={() => setShowImport(!showImport)} 
-                            className="bg-gold text-black hover:bg-yellow-500 text-xs px-4 py-2 rounded font-bold uppercase tracking-widest"
-                        >
-                            {showImport ? 'Close Import' : 'Bulk Import Titles'}
-                        </button>
-                        <button 
-                            onClick={handleExportConfig} 
-                            className="bg-white/10 text-white hover:bg-white/20 text-xs px-4 py-2 rounded uppercase tracking-widest"
-                        >
-                            Backup Data
-                        </button>
+                         <input 
+                            type="file" 
+                            accept=".json" 
+                            ref={fileInputRef} 
+                            style={{ display: 'none' }} 
+                            onChange={handleFileChange}
+                         />
+                         <button 
+                            onClick={handleRestoreClick}
+                             className="bg-white/10 text-white hover:bg-white hover:text-black text-xs px-4 py-2 rounded uppercase tracking-widest border border-white/20 transition-all"
+                         >
+                             Restore Backup
+                         </button>
+                         <button 
+                            onClick={handleDownloadBackup} 
+                            className="bg-gold text-black hover:bg-yellow-400 text-xs px-4 py-2 rounded font-bold uppercase tracking-widest transition-all"
+                         >
+                             Download Backup
+                         </button>
                      </div>
+                 </div>
+
+                 <div className="flex gap-2 mb-4 justify-end">
+                     <button 
+                        onClick={() => setShowImport(!showImport)} 
+                        className="text-gold hover:underline text-xs uppercase tracking-widest"
+                    >
+                        {showImport ? 'Close Bulk Import' : 'Open Bulk Import Tool'}
+                    </button>
                  </div>
 
                  {/* BULK IMPORT PANEL */}
                  {showImport && (
-                     <div className="bg-[#1a1a1a] p-6 rounded border border-gold/30 mb-8 animate-slide-up">
-                         <h3 className="text-white font-serif mb-2">Bulk Import Titles</h3>
-                         <p className="text-[10px] text-gray-500 mb-4">Paste your list of song titles below (one per line). This will instantly update the first N tracks.</p>
+                     <div className="bg-[#1a1a1a] p-6 rounded border border-white/10 mb-8 animate-slide-up">
+                         <h3 className="text-white font-serif mb-2">Bulk Import (Titles & Links)</h3>
+                         <p className="text-[10px] text-gray-500 mb-4 leading-relaxed">
+                            Paste data for up to 40 tracks. One song per line.<br/>
+                            Supported Formats:<br/>
+                            1. Title Only: <span className="text-gray-400">My Song Name</span><br/>
+                            2. Link Only: <span className="text-gray-400">https://dropbox.com/...</span><br/>
+                            3. Title & Link: <span className="text-gray-400">My Song Name | https://dropbox.com/...</span>
+                         </p>
                          <textarea 
                             className="w-full h-48 bg-black border border-white/10 rounded p-4 text-xs font-mono text-gray-300 focus:border-gold outline-none"
-                            placeholder={"Song Title 1\nSong Title 2\nSong Title 3..."}
+                            placeholder={"Track 01 Title | https://www.dropbox.com/s/...\nTrack 02 Title\nhttps://www.dropbox.com/s/..."}
                             value={importText}
                             onChange={(e) => setImportText(e.target.value)}
                          />
@@ -298,7 +376,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 onClick={handleBulkImport}
                                 className="bg-white text-black px-6 py-2 rounded text-xs font-bold uppercase hover:bg-gray-200"
                              >
-                                Update Titles
+                                Update Songs
                              </button>
                          </div>
                      </div>

@@ -108,16 +108,40 @@ export const updateSong = (id: number, updates: Partial<Song>) => {
   return updatedSongs;
 };
 
-export const updateAllSongTitles = (titles: string[]) => {
+/**
+ * Bulk updates songs. Supports formats:
+ * 1. "Song Title" (Updates title only)
+ * 2. "http..." (Updates audio URL only)
+ * 3. "Song Title | http..." (Updates both)
+ */
+export const updateSongsBulk = (lines: string[]) => {
   const currentSongs = getSongs();
   const updatedSongs = currentSongs.map((s, index) => {
-      if (index < titles.length && titles[index].trim() !== "") {
-          return { ...s, title: titles[index].trim() };
+      if (index < lines.length && lines[index].trim() !== "") {
+          const line = lines[index].trim();
+          
+          // Case 3: Title | URL
+          if (line.includes('|')) {
+              const [title, url] = line.split('|').map(p => p.trim());
+              return { ...s, title: title || s.title, customAudioUrl: url || s.customAudioUrl };
+          } 
+          // Case 2: URL Only
+          else if (line.startsWith('http')) {
+              return { ...s, customAudioUrl: line };
+          }
+          // Case 1: Title Only
+          else {
+              return { ...s, title: line };
+          }
       }
       return s;
   });
   localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(updatedSongs));
   return updatedSongs;
+};
+
+export const restoreFromBackup = (songs: Song[]) => {
+    localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(songs));
 };
 
 export const resetSongTitles = () => {
