@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { getVotes, getLeaderboard, getSongs, updateSong, updateAllSongTitles, resetSongTitles } from '../services/storage';
+
+import React, { useState, useEffect } from 'react';
+import { getVotes, getLeaderboard, getSongs, updateSong, updateAllSongTitles, resetSongTitles, getGlobalConfig, saveGlobalConfig } from '../services/storage';
 import { Song } from '../types';
 import { Layout, FadeIn } from './Layout';
 import AudioPlayer from './AudioPlayer';
@@ -17,6 +18,9 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [localSongs, setLocalSongs] = useState<Song[]>([]);
   const [editingSongId, setEditingSongId] = useState<number | null>(null);
   
+  // Global Config State
+  const [introUrl, setIntroUrl] = useState('');
+  
   // Edit Form State
   const [editForm, setEditForm] = useState<Partial<Song>>({});
 
@@ -32,10 +36,17 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setIsAuthenticated(true);
       setError(false);
       setLocalSongs(getSongs());
+      const config = getGlobalConfig();
+      setIntroUrl(config.introAudioUrl || '');
     } else {
       setError(true);
       setPassword('');
     }
+  };
+
+  const handleSaveGlobalConfig = () => {
+      saveGlobalConfig({ introAudioUrl: introUrl });
+      alert("Homepage Intro Audio Updated!");
   };
 
   const startEdit = (song: Song) => {
@@ -58,18 +69,21 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const handleBulkImport = () => {
       if (!importText.trim()) return;
-      const lines = importText.split(/\r?\n/);
+      // Filter out empty lines
+      const lines = importText.split(/\r?\n/).filter(line => line.trim() !== '');
+      if (lines.length === 0) return;
+
       const updated = updateAllSongTitles(lines);
       setLocalSongs(updated);
       setShowImport(false);
       setImportText('');
-      alert(`Successfully updated ${Math.min(lines.length, 40)} song titles.`);
+      alert(`Success! Updated ${Math.min(lines.length, 40)} song titles.`);
   };
 
   const handleExportConfig = () => {
       const json = JSON.stringify(localSongs, null, 2);
       navigator.clipboard.writeText(json).then(() => {
-          alert("Data copied to clipboard.");
+          alert("All data (Titles, Lyrics, Links) copied to clipboard! Save this to a text file.");
       });
   };
 
@@ -197,8 +211,18 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             <td className="p-4 font-serif text-gray-200">
                                 <div>{user.name}</div>
                                 <div className="text-[9px] text-gray-600 font-mono">{user.email}</div>
+                                {/* NEW: Display User Vote Reasons if available */}
+                                {user.voteReasons && Object.keys(user.voteReasons).length > 0 && (
+                                    <div className="mt-2 text-[10px] text-gray-500 border-l border-white/10 pl-2">
+                                        {Object.entries(user.voteReasons).map(([songId, reason]) => (
+                                            <div key={songId} className="mb-1">
+                                                <span className="text-gold">#{songId.toString().padStart(2,'0')}:</span> <span className="italic">"{reason}"</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </td>
-                            <td className="p-4 text-right opacity-50 whitespace-nowrap">
+                            <td className="p-4 text-right opacity-50 whitespace-nowrap align-top">
                                 {new Date(user.timestamp).toLocaleDateString()}
                             </td>
                             </tr>
@@ -212,14 +236,73 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ) : (
             // --- CMS TAB ---
             <div className="space-y-6 animate-fade-in pb-20">
-                 <div className="flex justify-between items-center mb-6">
-                     <p className="text-xs text-gray-500">
-                         Click "Edit" on any song card to modify details. Play to preview with controls.
-                     </p>
-                     <div className="flex gap-2">
-                        <button onClick={handleExportConfig} className="bg-white/10 text-white text-xs px-3 py-2 rounded">Backup Data</button>
+                 {/* GLOBAL SETTINGS - HOMEPAGE AUDIO */}
+                 <div className="bg-[#111] p-6 rounded border border-white/20 mb-8">
+                     <h3 className="text-white font-serif mb-4 flex items-center gap-2">
+                         <PlayIcon className="w-4 h-4 text-gold" />
+                         Homepage / Intro Music
+                     </h3>
+                     <div className="flex gap-4 items-end">
+                         <div className="flex-1">
+                             <label className="block text-[10px] uppercase text-gray-500 mb-2">Google Drive ID or Direct Link</label>
+                             <input 
+                                className="w-full bg-black border border-white/10 p-3 text-white rounded focus:border-gold outline-none font-mono text-xs" 
+                                value={introUrl}
+                                onChange={e => setIntroUrl(e.target.value)}
+                                placeholder="Paste Google Drive ID here (e.g., 1Li45...)"
+                             />
+                         </div>
+                         <button 
+                            onClick={handleSaveGlobalConfig}
+                            className="bg-white text-black px-6 py-3 rounded text-xs font-bold uppercase hover:bg-gold transition-colors h-[42px]"
+                         >
+                            Update
+                         </button>
                      </div>
                  </div>
+
+                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 bg-[#111] p-4 rounded border border-white/10">
+                     <div className="text-xs text-gray-400 max-w-lg">
+                        <p className="mb-2 text-white font-bold">Song List Management</p>
+                        <p>Changes here are saved to this browser's memory. Use "Backup Data" to save your work locally.</p>
+                     </div>
+                     <div className="flex gap-2">
+                        <button 
+                            onClick={() => setShowImport(!showImport)} 
+                            className="bg-gold text-black hover:bg-yellow-500 text-xs px-4 py-2 rounded font-bold uppercase tracking-widest"
+                        >
+                            {showImport ? 'Close Import' : 'Bulk Import Titles'}
+                        </button>
+                        <button 
+                            onClick={handleExportConfig} 
+                            className="bg-white/10 text-white hover:bg-white/20 text-xs px-4 py-2 rounded uppercase tracking-widest"
+                        >
+                            Backup Data
+                        </button>
+                     </div>
+                 </div>
+
+                 {/* BULK IMPORT PANEL */}
+                 {showImport && (
+                     <div className="bg-[#1a1a1a] p-6 rounded border border-gold/30 mb-8 animate-slide-up">
+                         <h3 className="text-white font-serif mb-2">Bulk Import Titles</h3>
+                         <p className="text-[10px] text-gray-500 mb-4">Paste your list of song titles below (one per line). This will instantly update the first N tracks.</p>
+                         <textarea 
+                            className="w-full h-48 bg-black border border-white/10 rounded p-4 text-xs font-mono text-gray-300 focus:border-gold outline-none"
+                            placeholder={"Song Title 1\nSong Title 2\nSong Title 3..."}
+                            value={importText}
+                            onChange={(e) => setImportText(e.target.value)}
+                         />
+                         <div className="flex justify-end mt-4">
+                             <button 
+                                onClick={handleBulkImport}
+                                className="bg-white text-black px-6 py-2 rounded text-xs font-bold uppercase hover:bg-gray-200"
+                             >
+                                Update Titles
+                             </button>
+                         </div>
+                     </div>
+                 )}
 
                  {editingSongId !== null ? (
                      // EDIT FORM

@@ -14,6 +14,7 @@ export interface User {
   email: string;
   timestamp: string;
   votes: number[]; // Array of Song IDs
+  voteReasons?: { [songId: number]: string }; // Map song ID to reason string
 }
 
 export enum AppStep {

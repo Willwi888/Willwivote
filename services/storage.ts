@@ -4,6 +4,27 @@ import { SONGS as DEFAULT_SONGS } from '../constants';
 
 const VOTE_STORAGE_KEY = 'beloved_2026_votes';
 const SONG_METADATA_KEY = 'beloved_2026_song_metadata';
+const GLOBAL_CONFIG_KEY = 'beloved_2026_global_config';
+
+// --- GLOBAL CONFIG (Intro Song) ---
+export interface GlobalConfig {
+  introAudioUrl: string;
+}
+
+export const getGlobalConfig = (): GlobalConfig => {
+  if (typeof window === 'undefined') return { introAudioUrl: '' };
+  try {
+    const data = localStorage.getItem(GLOBAL_CONFIG_KEY);
+    return data ? JSON.parse(data) : { introAudioUrl: '' };
+  } catch (e) {
+    return { introAudioUrl: '' };
+  }
+};
+
+export const saveGlobalConfig = (config: GlobalConfig) => {
+  localStorage.setItem(GLOBAL_CONFIG_KEY, JSON.stringify(config));
+};
+
 
 // --- VOTING LOGIC ---
 
