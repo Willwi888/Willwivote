@@ -29,22 +29,44 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
 
-  // Helper function to process URLs for best playback
-  const getPlayableUrl = (inputSrc?: string, inputDriveId?: string) => {
-    if (inputSrc && inputSrc.trim() !== '') {
-        let url = inputSrc.trim();
-        // Smart handling for Dropbox links to ensure streaming instead of download page
-        if (url.includes('dropbox.com')) {
-             // Convert www.dropbox.com to dl.dropboxusercontent.com for direct streaming
-             url = url.replace('www.dropbox.com', 'dl.dropboxusercontent.com').replace('?dl=0', '');
-        }
-        return url;
+  // --- SMART URL PROCESSING ---
+  const processUrl = (rawUrl: string) => {
+      if (!rawUrl) return '';
+      let url = rawUrl.trim();
+
+      // DROPBOX OPTIMIZATION
+      if (url.includes('dropbox.com')) {
+          // Replace www.dropbox.com with dl.dropboxusercontent.com for best streaming performance
+          // This supports scrubbing/seeking much better than the standard redirect
+          url = url.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+          url = url.replace('dropbox.com', 'dl.dropboxusercontent.com'); // catch cases without www
+          
+          // Clean up parameters to ensure clean direct link
+          url = url.replace('?dl=0', '').replace('&dl=0', '');
+          url = url.replace('?dl=1', '').replace('&dl=1', '');
+          // Note: dl.dropboxusercontent.com implies direct download/stream
+      }
+      
+      return url;
+  };
+
+  // Determine final Source
+  const getFinalSource = () => {
+    // 1. If custom 'src' is provided (from CMS override), use it.
+    if (src && src.trim() !== '') {
+        return processUrl(src);
     }
-    if (inputDriveId && inputDriveId.trim() !== '') return getAudioUrl(inputDriveId);
+    // 2. If 'driveId' is provided.
+    if (driveId && driveId.trim() !== '') {
+        // The getAudioUrl helper now returns the input as-is if it's a link, 
+        // or a Google Drive export link if it's just an ID.
+        const resolved = getAudioUrl(driveId);
+        return processUrl(resolved);
+    }
     return '';
   };
 
-  const audioSrc = getPlayableUrl(src, driveId);
+  const audioSrc = getFinalSource();
 
   useEffect(() => {
     // Reset state when source changes
@@ -73,7 +95,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
             console.error("Playback failed:", error);
             setIsLoading(false);
             if (error.name !== 'AbortError') {
-                 // Only show error if it wasn't a manual pause/stop
                  setHasError(true);
             }
           });
@@ -84,7 +105,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }
 
     return () => {
-        // Cleanup: ensure pause is called if component unmounts while playing
         audio.pause();
     };
   }, [isPlaying, audioSrc]);
@@ -148,7 +168,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         onPlaying={handlePlaying}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
-        preload="none" 
+        preload="auto" 
         controlsList="nodownload noplaybackrate"
         {...{ referrerPolicy: "no-referrer" } as any}
         onError={() => { setIsLoading(false); setHasError(true); }}

@@ -118,4 +118,16 @@ export const SONGS: Song[] = rawLinks.map((driveId, index) => ({
   credits: ""
 }));
 
-export const getAudioUrl = (id: string) => `https://drive.google.com/uc?export=download&id=${id}`;
+// SMART AUDIO URL HELPER
+// This function now intelligently handles both raw Google Drive IDs and full URL links (Dropbox, etc.)
+export const getAudioUrl = (input: string) => {
+    if (!input) return '';
+    
+    // If it's already a URL (e.g. user pasted a Dropbox link into the ID field)
+    if (input.startsWith('http')) {
+        return input;
+    }
+
+    // Otherwise, assume it's a Google Drive ID (backward compatibility)
+    return `https://drive.google.com/uc?export=download&id=${input}`;
+};

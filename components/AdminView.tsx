@@ -244,12 +244,12 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                      </h3>
                      <div className="flex gap-4 items-end">
                          <div className="flex-1">
-                             <label className="block text-[10px] uppercase text-gray-500 mb-2">Google Drive ID or Direct Link</label>
+                             <label className="block text-[10px] uppercase text-gray-500 mb-2">Dropbox Link</label>
                              <input 
                                 className="w-full bg-black border border-white/10 p-3 text-white rounded focus:border-gold outline-none font-mono text-xs" 
                                 value={introUrl}
                                 onChange={e => setIntroUrl(e.target.value)}
-                                placeholder="Paste Google Drive ID here (e.g., 1Li45...)"
+                                placeholder="https://www.dropbox.com/s/..."
                              />
                          </div>
                          <button 
@@ -320,7 +320,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                              </div>
                              
                              <div>
-                                 <label className="block text-[10px] uppercase text-gray-500 mb-1">Custom Audio URL (MP3/Dropbox)</label>
+                                 <label className="block text-[10px] uppercase text-gray-500 mb-1">Audio Link (Dropbox Supported)</label>
                                  <input 
                                     className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none font-mono text-xs" 
                                     value={editForm.customAudioUrl}

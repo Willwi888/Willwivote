@@ -48,8 +48,17 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         overflow-x: hidden;
+        /* Disable text selection and image dragging */
+        user-select: none;
+        -webkit-user-select: none;
       }
       
+      img {
+        -webkit-user-drag: none;
+        user-drag: none;
+        pointer-events: none; /* Prevent right click on images specifically */
+      }
+
       /* Film Grain Texture - Low Z-Index to prevent blocking clicks */
       .bg-noise {
         position: fixed;
@@ -97,9 +106,9 @@
 }
 </script>
 </head>
-  <body>
+  <!-- Add oncontextmenu="return false" to disable right click globally -->
+  <body oncontextmenu="return false;">
     <div class="bg-noise"></div>
     <div id="root" style="position: relative; z-index: 10;"></div>
   </body>
 </html>
-    
