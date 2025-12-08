@@ -22,5 +22,6 @@ export const SONGS: Song[] = rawLinks.map((driveId, index) => ({
   driveId: driveId,
 }));
 
-// Use 'view' instead of 'download' which is often friendlier for streaming in <audio> tags
-export const getAudioUrl = (id: string) => `https://drive.google.com/uc?export=view&id=${id}`;
+// Using drive.google.com is standard. 
+// We rely on removing crossOrigin in the player to fix the playback issues.
+export const getAudioUrl = (id: string) => `https://drive.google.com/uc?export=download&id=${id}`;

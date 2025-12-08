@@ -4,11 +4,11 @@ import { PlayIcon, PauseIcon, SpinnerIcon } from './Icons';
 
 interface AudioPlayerProps {
   driveId?: string;
-  src?: string; // Allow direct source
+  src?: string; 
   isPlaying: boolean;
   onToggle: () => void;
   title: string;
-  variant?: 'minimal' | 'featured'; // Style variants
+  variant?: 'minimal' | 'featured'; 
 }
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({ 
@@ -23,7 +23,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  // Determine the source URL
   const audioSrc = src || (driveId ? getAudioUrl(driveId) : '');
 
   useEffect(() => {
@@ -35,11 +34,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       if (playPromise !== undefined) {
         setIsLoading(true);
         playPromise
-          .then(() => setIsLoading(false))
+          .then(() => {})
           .catch((error) => {
             console.error("Playback failed:", error);
             setIsLoading(false);
-            setHasError(true);
+            if (error.name !== 'AbortError') setHasError(true);
           });
       }
     } else {
@@ -48,79 +47,58 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }
   }, [isPlaying]);
 
+  const handleCanPlay = () => isPlaying && setIsLoading(false);
+  const handleWaiting = () => isPlaying && setIsLoading(true);
+  const handlePlaying = () => setIsLoading(false);
+
   return (
     <div 
         className="flex items-center" 
-        onContextMenu={(e) => e.preventDefault()}
+        onContextMenu={(e) => { e.preventDefault(); return false; }}
     >
       <audio
         ref={audioRef}
         src={audioSrc}
         onEnded={onToggle}
-        preload="none"
-        controlsList="nodownload"
-        onError={() => {
-            setIsLoading(false);
-            setHasError(true);
-        }}
+        onCanPlay={handleCanPlay}
+        onWaiting={handleWaiting}
+        onPlaying={handlePlaying}
+        preload="none" 
+        controlsList="nodownload noplaybackrate"
+        {...{ referrerPolicy: "no-referrer" } as any}
+        onError={() => { setIsLoading(false); setHasError(true); }}
       />
       
       {variant === 'minimal' ? (
         <button
-          onClick={(e) => {
-              e.stopPropagation();
-              onToggle();
-          }}
-          aria-label={isPlaying ? `暫停試聽 ${title}` : `試聽 ${title}`}
+          onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          aria-label={isPlaying ? `Pause ${title}` : `Play ${title}`}
           className={`
-            flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 outline-none
+            group/btn flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 outline-none
             ${isPlaying 
-              ? 'bg-primary text-black scale-110 shadow-lg shadow-white/20' 
-              : 'bg-surfaceHighlight text-white hover:bg-accent'
+              ? 'text-white' 
+              : 'text-gray-500 hover:text-white'
             }
-            ${hasError ? '!bg-red-900/50 !text-red-300 cursor-not-allowed' : ''}
+            ${hasError ? 'text-red-500' : ''}
           `}
           disabled={hasError}
         >
           {isLoading ? (
             <SpinnerIcon className="w-4 h-4" />
           ) : isPlaying ? (
-            <PauseIcon className="w-3 h-3" />
+            // Minimal Pause Icon (Vertical Bars)
+            <div className="flex gap-1 h-3 items-center">
+                <span className="w-0.5 h-full bg-current animate-[pulse_1s_ease-in-out_infinite]"></span>
+                <span className="w-0.5 h-2/3 bg-current animate-[pulse_1.2s_ease-in-out_infinite]"></span>
+                <span className="w-0.5 h-full bg-current animate-[pulse_0.8s_ease-in-out_infinite]"></span>
+            </div>
           ) : (
-            <PlayIcon className="w-3 h-3 translate-x-0.5" />
+             <PlayIcon className="w-4 h-4 translate-x-0.5" />
           )}
         </button>
       ) : (
-        // Featured Variant (Larger, more elegant)
-        <button
-          onClick={(e) => {
-              e.stopPropagation();
-              onToggle();
-          }}
-          className={`
-            flex items-center gap-4 px-6 py-3 rounded-full border transition-all duration-500 group
-            ${isPlaying 
-                ? 'bg-white border-white text-black shadow-[0_0_30px_rgba(255,255,255,0.2)]' 
-                : 'bg-transparent border-white/20 text-white hover:border-white/50 hover:bg-white/5'
-            }
-          `}
-        >
-           <div className={`
-             flex items-center justify-center w-6 h-6 rounded-full border transition-colors
-             ${isPlaying ? 'border-black/20' : 'border-white/20 group-hover:border-white'}
-           `}>
-              {isLoading ? (
-                <SpinnerIcon className="w-3 h-3" />
-              ) : isPlaying ? (
-                <PauseIcon className="w-3 h-3" />
-              ) : (
-                <PlayIcon className="w-3 h-3 translate-x-0.5" />
-              )}
-           </div>
-           <span className="text-xs uppercase tracking-[0.2em] font-medium">
-             {isPlaying ? 'Now Playing' : 'Listen Message'}
-           </span>
-        </button>
+        // Featured Variant is handled by parent CSS mostly, this provides internal logic hooks if needed
+        null 
       )}
     </div>
   );

@@ -1,33 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Layout, FadeIn } from './components/Layout';
-import { SONGS } from './constants';
-import { User, AppStep, MAX_VOTES } from './types';
+import React, { useState, useEffect, useContext } from 'react';
+import { Layout, FadeIn, BackgroundContext } from './components/Layout';
+import { getSongs } from './services/storage';
+import { Song, User, AppStep, MAX_VOTES } from './types';
 import AudioPlayer from './components/AudioPlayer';
-import { CheckIcon, HeartIcon, SearchIcon, MoreIcon } from './components/Icons';
+import { HeartIcon, SpinnerIcon } from './components/Icons';
 import { saveVote } from './services/storage';
 import { AdminView } from './components/AdminView';
 
 // --- CONFIGURATION ---
 const FEATURED_AUDIO_ID = "1Li45a4NhWYbrsuNDEPUOLos_q_dXbFYb";
-
-// 使用 Google Drive 的 Thumbnail 接口以獲得更穩定的圖片載入 (sz=w1000 代表寬度 1000px)
-// ID: 1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9
 const ARTIST_IMAGE_URL = "https://drive.google.com/thumbnail?id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9&sz=w1000";
 
 const SOCIAL_LINKS = [
-    { name: 'Website', url: 'https://willwi.com/' },
-    { name: 'YouTube', url: 'https://www.youtube.com/@Willwi888' },
     { name: 'Spotify', url: 'https://open.spotify.com/artist/3ascZ8Rb2KDw4QyCy29Om4' },
-    { name: 'Apple Music', url: 'https://music.apple.com/us/artist/willwi/1798471457' },
-    { name: 'Amazon Music', url: 'https://music.amazon.com/artists/B0DYFC8CTG/willwi' },
-    { name: 'TIDAL', url: 'https://tidal.com/artist/70636776' },
     { name: 'Instagram', url: 'https://www.instagram.com/willwi888' },
-    { name: 'Facebook', url: 'https://www.facebook.com/Willwi888' },
-    { name: 'X (Twitter)', url: 'https://x.com/@willwi888' },
-    { name: 'Email', url: 'mailto:will@willwi.com' },
+    { name: 'Website', url: 'https://willwi.com/' },
 ];
-
-type FilterType = 'all' | 'liked';
 
 export default function App() {
   const [step, setStep] = useState<AppStep>(AppStep.INTRO);
@@ -35,8 +23,11 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [playingId, setPlayingId] = useState<number | null>(null);
   const [introPlaying, setIntroPlaying] = useState(false);
-  const [filter, setFilter] = useState<FilterType>('all');
-  const [imgError, setImgError] = useState(false);
+  const [songs, setSongs] = useState<Song[]>([]);
+
+  useEffect(() => {
+    setSongs(getSongs());
+  }, [step]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -77,11 +68,7 @@ export default function App() {
 
   const togglePlay = (id: number) => {
     setIntroPlaying(false);
-    if (playingId === id) {
-      setPlayingId(null);
-    } else {
-      setPlayingId(id);
-    }
+    setPlayingId(prev => prev === id ? null : id);
   };
 
   const toggleIntroPlay = () => {
@@ -91,149 +78,152 @@ export default function App() {
 
   // --- Views ---
 
-  const IntroView = () => (
-    <div className="flex flex-col gap-8 pt-6 pb-20">
-      {/* Image Section - Adjusted for Album Cover Style */}
-      <FadeIn className="w-full relative mx-auto max-w-sm px-6">
-        {/* Changed to aspect-square (1:1) to match the provided photo better */}
-        <div className="relative aspect-square overflow-hidden rounded-sm shadow-2xl bg-surfaceHighlight border border-white/10 group">
-          {!imgError ? (
-            <img 
-              src={ARTIST_IMAGE_URL}
-              alt="Willwi Beloved" 
-              className="w-full h-full object-cover object-top opacity-95 transition-all duration-700 group-hover:scale-105"
-              onError={() => setImgError(true)}
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-center p-8">
-               <span className="font-serif text-5xl text-white/10 mb-2">W</span>
-               <span className="text-[9px] text-gray-600 uppercase tracking-widest">Image Unavailable</span>
+  const IntroView = () => {
+    const { setBgImage } = useContext(BackgroundContext);
+    
+    useEffect(() => {
+      setBgImage(ARTIST_IMAGE_URL);
+      return () => setBgImage(null);
+    }, [setBgImage]);
+
+    return (
+      <div className="flex flex-col min-h-screen px-8 pt-12 pb-20 relative overflow-hidden">
+        {/* Decorative Top Line */}
+        <FadeIn delay={0} className="w-px h-16 bg-gradient-to-b from-transparent via-white/30 to-transparent mx-auto mb-8" />
+
+        <FadeIn delay={200} className="relative z-10 flex flex-col items-center flex-1 justify-center">
+            {/* Main Title Block */}
+            <div className="text-center mb-12">
+                <span className="block text-[10px] uppercase tracking-[0.5em] text-gray-400 mb-4 font-sans">The 2026 Collection</span>
+                <h1 className="font-serif text-6xl md:text-7xl text-white tracking-wide italic mb-2 drop-shadow-2xl">
+                    Beloved
+                </h1>
+                <div className="h-px w-12 bg-white/20 mx-auto mt-6 mb-6"></div>
+                <h2 className="font-serif text-2xl text-gray-300 tracking-widest font-light">摯愛</h2>
             </div>
-          )}
-          
-          {/* Enhanced Gradient for readability on suit/shirt */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-100"></div>
-          
-          <div className="absolute bottom-6 left-0 right-0 text-center p-4">
-             <h2 className="font-serif text-3xl mb-2 text-white tracking-widest drop-shadow-lg">摯愛</h2>
-             <p className="text-[9px] uppercase tracking-[0.6em] text-gray-300 drop-shadow-md font-light">2026 Collection</p>
-          </div>
-        </div>
-      </FadeIn>
 
-      {/* Content Section */}
-      <div className="flex flex-col items-center justify-center space-y-8 text-center px-6">
-        <FadeIn delay={200}>
-           <div className="max-w-xs mx-auto">
-             <p className="text-xs leading-7 font-light text-gray-400 font-sans tracking-wide">
-               <span className="text-white">40 首作品</span>，選出你心中的前 10 首。<br/>
-               每一票，都是一次真實的陪伴。<br/>
-               為了完成 2026 全新大碟《摯愛》，<br/>
-               我想讓這張專輯保留你們的痕跡。
-             </p>
-           </div>
-        </FadeIn>
-        
-        {/* Featured Audio Player */}
-        <FadeIn delay={300} className="w-full flex justify-center">
-             <AudioPlayer 
-                driveId={FEATURED_AUDIO_ID}
-                isPlaying={introPlaying}
-                onToggle={toggleIntroPlay}
-                title="Special Message from Willwi"
-                variant="featured"
-             />
-        </FadeIn>
-
-        <FadeIn delay={400}>
-            <div className="space-y-4 w-full max-w-sm border-t border-white/5 pt-6">
-                 <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[10px] text-gray-500 font-light uppercase tracking-wider">
-                    {SOCIAL_LINKS.slice(0, 5).map(link => (
-                        <a key={link.name} href={link.url} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{link.name}</a>
-                    ))}
+            {/* Album Art Card */}
+            <div className="relative group w-64 h-64 mx-auto mb-12 cursor-pointer" onClick={toggleIntroPlay}>
+                <div className={`absolute inset-0 bg-white/5 rounded-sm transform transition-transform duration-700 ease-out ${introPlaying ? 'scale-105 rotate-2' : 'scale-100 rotate-0'}`}></div>
+                <div className="relative w-full h-full overflow-hidden shadow-2xl border border-white/10 rounded-sm">
+                    <img 
+                        src={ARTIST_IMAGE_URL} 
+                        alt="Beloved Cover" 
+                        className={`w-full h-full object-cover transition-all duration-[2s] ease-in-out ${introPlaying ? 'scale-110 opacity-80' : 'scale-100 opacity-100'}`}
+                    />
+                    
+                    {/* Overlay Play Button */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+                         <div className={`w-12 h-12 rounded-full border border-white/30 flex items-center justify-center backdrop-blur-sm transition-all duration-500 ${introPlaying ? 'bg-white text-black border-transparent' : 'text-white hover:bg-white/10 hover:scale-110'}`}>
+                            {introPlaying ? (
+                                <div className="w-2.5 h-2.5 bg-black rounded-[1px]" />
+                            ) : (
+                                <div className="w-0 h-0 border-l-[10px] border-l-current border-y-[6px] border-y-transparent ml-1" />
+                            )}
+                         </div>
+                    </div>
+                </div>
+                {/* Audio Component (Hidden logic) */}
+                <div className="hidden">
+                     <AudioPlayer 
+                        driveId={FEATURED_AUDIO_ID}
+                        isPlaying={introPlaying}
+                        onToggle={toggleIntroPlay}
+                        title="Intro"
+                     />
                 </div>
             </div>
+
+            <div className="max-w-xs mx-auto text-center space-y-8">
+                <p className="font-serif text-lg leading-relaxed text-gray-300 italic">
+                    "40 demos. 10 tracks.<br/>
+                    One final album defined by you."
+                </p>
+                
+                <button 
+                    onClick={handleStart}
+                    className="group relative px-10 py-4 overflow-hidden rounded-sm transition-all duration-500"
+                >
+                    <span className="absolute inset-0 w-full h-full bg-white/5 group-hover:bg-white/10 transition-colors border border-white/20"></span>
+                    <span className="relative z-10 font-sans text-[10px] font-medium tracking-[0.3em] uppercase text-white group-hover:tracking-[0.4em] transition-all duration-500">
+                        Enter Experience
+                    </span>
+                </button>
+            </div>
         </FadeIn>
 
-        <FadeIn delay={500} className="pt-2">
-          <button 
-            onClick={handleStart}
-            className="group relative px-12 py-4 overflow-hidden rounded-full bg-white text-black transition-transform hover:scale-105 active:scale-95 duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-          >
-            <span className="relative z-10 text-xs font-bold tracking-[0.25em] uppercase">Start Voting</span>
-          </button>
+        <FadeIn delay={600} className="mt-auto pt-12 flex justify-center gap-8">
+            {SOCIAL_LINKS.map(link => (
+                <a 
+                    key={link.name} 
+                    href={link.url} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-[9px] uppercase tracking-widest text-gray-600 hover:text-white transition-colors border-b border-transparent hover:border-white/50 pb-0.5"
+                >
+                    {link.name}
+                </a>
+            ))}
         </FadeIn>
       </div>
-    </div>
-  );
+    );
+  };
 
   const AuthView = () => (
-    <div className="flex flex-col h-full justify-center px-6 min-h-[70vh]">
-       <FadeIn>
-        <div className="mb-12 text-center">
-             <h2 className="font-serif text-3xl text-white mb-2">Identification</h2>
-             <p className="text-[10px] text-gray-600 uppercase tracking-[0.3em]">Access Verification</p>
+    <div className="flex flex-col min-h-screen items-center justify-center px-8 relative">
+       {/* Background Decoration */}
+       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+
+       <FadeIn className="w-full max-w-sm">
+        <div className="text-center mb-16">
+             <div className="w-px h-12 bg-white/20 mx-auto mb-6"></div>
+             <h2 className="font-serif text-3xl text-white italic mb-3">Identification</h2>
+             <p className="text-[10px] text-gray-500 uppercase tracking-[0.3em] font-sans">Exclusive Access</p>
         </div>
-      </FadeIn>
       
-      <FadeIn delay={100}>
-        <form onSubmit={handleLogin} className="w-full max-w-sm mx-auto space-y-8">
-          
-          <div className="group relative">
-            <input 
-              type="text" 
-              required
-              id="name"
-              value={user.name}
-              onChange={e => setUser({...user, name: e.target.value})}
-              className="peer w-full bg-transparent border-b border-gray-700 py-4 text-center text-lg text-white font-serif focus:outline-none focus:border-white transition-colors placeholder-transparent"
-              placeholder="Name"
-              autoComplete="off"
-            />
-            <label 
-                htmlFor="name"
-                className="absolute left-0 right-0 top-4 text-center text-xs uppercase tracking-widest text-gray-600 transition-all pointer-events-none
-                           peer-focus:-top-4 peer-focus:text-[10px] peer-focus:text-gray-400
-                           peer-valid:-top-4 peer-valid:text-[10px] peer-valid:text-gray-400"
-            >
-                Your Name
-            </label>
-          </div>
-          
-          <div className="group relative">
-            <input 
-              type="email" 
-              required
-              id="email"
-              value={user.email}
-              onChange={e => setUser({...user, email: e.target.value})}
-              className="peer w-full bg-transparent border-b border-gray-700 py-4 text-center text-lg text-white font-serif focus:outline-none focus:border-white transition-colors placeholder-transparent"
-              placeholder="Email"
-              autoComplete="off"
-            />
-             <label 
-                htmlFor="email"
-                className="absolute left-0 right-0 top-4 text-center text-xs uppercase tracking-widest text-gray-600 transition-all pointer-events-none
-                           peer-focus:-top-4 peer-focus:text-[10px] peer-focus:text-gray-400
-                           peer-valid:-top-4 peer-valid:text-[10px] peer-valid:text-gray-400"
-            >
-                Email Address
-            </label>
+        <form onSubmit={handleLogin} className="space-y-12">
+          <div className="space-y-8">
+            <div className="relative group">
+                <input 
+                type="text" 
+                required
+                value={user.name}
+                onChange={e => setUser({...user, name: e.target.value})}
+                className="block py-3 px-0 w-full text-lg text-center text-white bg-transparent border-0 border-b border-white/20 appearance-none focus:outline-none focus:ring-0 focus:border-white peer font-serif placeholder-transparent transition-colors"
+                placeholder="Name"
+                autoComplete="off"
+                />
+                <label className="absolute text-xs text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[50%] peer-focus:left-0 peer-focus:right-0 peer-focus:text-center peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6 peer-focus:text-white tracking-widest uppercase w-full text-center">
+                    Your Name
+                </label>
+            </div>
+
+            <div className="relative group">
+                <input 
+                type="email" 
+                required
+                value={user.email}
+                onChange={e => setUser({...user, email: e.target.value})}
+                className="block py-3 px-0 w-full text-lg text-center text-white bg-transparent border-0 border-b border-white/20 appearance-none focus:outline-none focus:ring-0 focus:border-white peer font-serif placeholder-transparent transition-colors"
+                placeholder="Email"
+                autoComplete="off"
+                />
+                 <label className="absolute text-xs text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[50%] peer-focus:left-0 peer-focus:right-0 peer-focus:text-center peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6 peer-focus:text-white tracking-widest uppercase w-full text-center">
+                    Email Address
+                </label>
+            </div>
           </div>
 
-          <div className="pt-12 text-center">
+          <div className="text-center pt-4">
              <button 
               type="submit"
               disabled={!user.name || !user.email}
-              className="
-                group relative inline-flex items-center justify-center px-12 py-3 overflow-hidden transition-all
-                disabled:opacity-30 disabled:cursor-not-allowed
-              "
+              className="group relative inline-block transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <span className="relative text-xs font-bold uppercase tracking-[0.3em] text-white group-hover:text-gray-300 transition-colors border-b border-transparent group-hover:border-gray-500 pb-1">
-                Enter Collection
+              <span className="relative z-10 text-[10px] font-bold uppercase tracking-[0.4em] text-white group-hover:text-gray-300 transition-colors">
+                Proceed
               </span>
+              <span className="absolute -bottom-2 left-1/2 w-0 h-px bg-white group-hover:w-full group-hover:left-0 transition-all duration-500 ease-out"></span>
             </button>
           </div>
         </form>
@@ -245,124 +235,116 @@ export default function App() {
     const remaining = MAX_VOTES - selectedIds.length;
     const isComplete = remaining === 0;
 
-    const filteredSongs = filter === 'liked' 
-      ? SONGS.filter(s => selectedIds.includes(s.id))
-      : SONGS;
-
     return (
-      <div className="pb-32 relative pt-2">
-        {/* Header UI */}
-        <header className="flex flex-col gap-6 mb-8 px-2">
-            <div className="flex justify-between items-end border-b border-white/10 pb-4">
+      <div className="relative min-h-screen pb-32">
+        {/* Sticky Elegant Header */}
+        <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/5 transition-all duration-300">
+            <div className="px-6 py-6 flex justify-between items-end max-w-[500px] mx-auto">
                 <div>
-                    <h2 className="font-serif text-2xl text-white mb-1">Candidates</h2>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Select your top 10</p>
+                    <h1 className="font-serif text-2xl text-white italic">The List</h1>
                 </div>
-                <div className="text-right">
-                    <span className={`text-2xl font-serif ${isComplete ? "text-white" : "text-gray-500"}`}>{selectedIds.length}</span>
-                    <span className="text-sm text-gray-700 mx-1">/</span>
-                    <span className="text-sm text-gray-700">{MAX_VOTES}</span>
+                <div className="flex flex-col items-end">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Selection</span>
+                    <div className="flex items-baseline gap-1">
+                        <span className={`font-serif text-xl ${isComplete ? "text-white" : "text-gray-400"}`}>{selectedIds.length}</span>
+                        <span className="font-serif text-sm text-gray-700">/</span>
+                        <span className="font-serif text-sm text-gray-700">{MAX_VOTES}</span>
+                    </div>
                 </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setFilter('all')}
-                  className={`text-[10px] uppercase tracking-widest transition-colors ${filter === 'all' ? 'text-white border-b border-white pb-0.5' : 'text-gray-600 hover:text-gray-400'}`}
-                >
-                    All Tracks
-                </button>
-                <button 
-                  onClick={() => setFilter('liked')}
-                  className={`text-[10px] uppercase tracking-widest transition-colors ${filter === 'liked' ? 'text-white border-b border-white pb-0.5' : 'text-gray-600 hover:text-gray-400'}`}
-                >
-                    Selection
-                </button>
             </div>
         </header>
 
-        {/* Unified List Style */}
-        <ul className="space-y-1" role="list">
-          {filteredSongs.map((song) => {
+        {/* Track List */}
+        <div className="px-4 py-4 space-y-2">
+          {songs.map((song, index) => {
             const isSelected = selectedIds.includes(song.id);
             const isPlaying = playingId === song.id;
             const disabled = !isSelected && isComplete;
 
             return (
-              <li 
+              <div 
                 key={song.id}
+                onClick={() => !isPlaying && togglePlay(song.id)}
                 className={`
-                    group flex items-center justify-between p-4 rounded transition-colors duration-200
-                    ${isPlaying ? 'bg-white/5' : 'hover:bg-white/[0.02]'}
+                    group relative flex items-center p-4 rounded-sm border transition-all duration-500 cursor-pointer
+                    ${isPlaying ? 'bg-white/5 border-white/10' : 'bg-transparent border-transparent hover:bg-white/[0.02]'}
                 `}
               >
+                 {/* Visualizer Background for Playing Item */}
+                 {isPlaying && (
+                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"></div>
+                 )}
+
                 <div className="flex items-center gap-5 flex-1 min-w-0">
-                  {/* Play/Index Column */}
-                  <div className="w-8 flex-shrink-0 flex items-center justify-center relative">
-                      <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${isPlaying || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                         <AudioPlayer 
-                            driveId={song.driveId} 
-                            isPlaying={isPlaying} 
-                            onToggle={() => togglePlay(song.id)}
-                            title={song.title}
-                        />
-                      </div>
-                      <span className={`text-xs font-mono text-gray-700 transition-opacity duration-200 ${isPlaying || isSelected ? 'opacity-0' : 'opacity-100 group-hover:opacity-0'}`}>
-                          {String(song.id).padStart(2, '0')}
-                      </span>
+                  {/* Play Control */}
+                  <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center">
+                       <div className="relative z-10" onClick={(e) => { e.stopPropagation(); togglePlay(song.id); }}>
+                            <AudioPlayer 
+                                driveId={song.driveId} 
+                                isPlaying={isPlaying} 
+                                onToggle={() => {}} // Handled by parent div for smoother UX
+                                title={song.title}
+                                variant="minimal"
+                            />
+                       </div>
                   </div>
                   
-                  {/* Title Column */}
-                  <div className="flex flex-col min-w-0 pr-4">
-                    <span className={`truncate text-sm font-medium tracking-wide transition-colors ${isPlaying ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>
+                  {/* Text Info */}
+                  <div className="flex flex-col min-w-0">
+                    <span className={`font-serif text-lg leading-tight transition-colors duration-300 ${isPlaying ? 'text-white italic' : 'text-gray-400 group-hover:text-gray-200'}`}>
                         {song.title}
+                    </span>
+                    <span className="text-[9px] text-gray-700 font-mono mt-1 tracking-widest uppercase">
+                        Track No. {String(song.id).padStart(2, '0')}
                     </span>
                   </div>
                 </div>
 
-                {/* Action Column */}
-                <div className="flex items-center pl-4 border-l border-white/5">
-                    <button
-                        onClick={(e) => toggleVote(song.id, e)}
-                        disabled={disabled}
-                        className={`
-                            flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300
-                            ${isSelected 
-                                ? 'text-white scale-110' 
-                                : 'text-gray-800 hover:text-gray-500'}
-                            ${disabled ? 'opacity-0 cursor-default' : 'cursor-pointer'}
-                        `}
-                        aria-label={isSelected ? "Remove vote" : "Vote for track"}
-                    >
-                        <HeartIcon className="w-4 h-4" filled={isSelected} />
-                    </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-
-        {/* Elegant Submission Bar */}
-        <div className={`fixed bottom-0 left-0 w-full z-30 transition-transform duration-500 bg-black/90 backdrop-blur-md border-t border-white/10 ${selectedIds.length > 0 ? 'translate-y-0' : 'translate-y-full'}`}>
-            <div className="max-w-[480px] mx-auto px-6 py-4 flex justify-between items-center">
-                <div className="flex flex-col">
-                    <span className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Progress</span>
-                    <div className="h-1 w-24 bg-gray-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-white transition-all duration-500" style={{ width: `${(selectedIds.length / MAX_VOTES) * 100}%` }}></div>
-                    </div>
-                </div>
+                {/* Vote Button */}
                 <button
-                    onClick={handleSubmitVotes}
-                    disabled={!isComplete}
+                    onClick={(e) => toggleVote(song.id, e)}
+                    disabled={disabled}
                     className={`
-                        px-8 py-3 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-300
-                        ${isComplete 
-                            ? 'bg-white text-black hover:bg-gray-200' 
-                            : 'bg-white/10 text-gray-500 cursor-not-allowed'}
+                        w-12 h-12 flex items-center justify-center rounded-full transition-all duration-500 ml-2 relative z-20
+                        ${isSelected ? 'opacity-100 scale-100' : 'opacity-30 hover:opacity-100 grayscale hover:grayscale-0 scale-90 hover:scale-100'}
+                        ${disabled ? 'opacity-0 pointer-events-none' : ''}
                     `}
                 >
-                    {isComplete ? 'Submit Votes' : 'Select 10'}
+                    <HeartIcon className={`w-6 h-6 transition-all duration-500 ${isSelected ? 'fill-white text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'fill-transparent text-white'}`} filled={isSelected} />
                 </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Floating Action Bar */}
+        <div className={`fixed bottom-8 left-0 right-0 px-6 z-50 transition-all duration-700 transform ${selectedIds.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+            <div className="max-w-[400px] mx-auto">
+                <div className="absolute inset-0 bg-white/10 backdrop-blur-xl rounded-full shadow-2xl border border-white/10"></div>
+                <div className="relative flex items-center justify-between px-6 py-3">
+                    <div className="flex flex-col">
+                        <span className="text-[8px] uppercase tracking-widest text-gray-400">Your Selection</span>
+                        <div className="h-0.5 w-24 bg-gray-700 mt-1.5 rounded-full overflow-hidden">
+                            <div 
+                                className="h-full bg-white shadow-[0_0_10px_white] transition-all duration-500 ease-out" 
+                                style={{ width: `${(selectedIds.length / MAX_VOTES) * 100}%` }}
+                            />
+                        </div>
+                    </div>
+                    
+                    <button
+                        onClick={handleSubmitVotes}
+                        disabled={!isComplete}
+                        className={`
+                            px-6 py-2 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-500
+                            ${isComplete 
+                                ? 'bg-white text-black hover:bg-gray-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]' 
+                                : 'text-gray-500 cursor-not-allowed'}
+                        `}
+                    >
+                        {isComplete ? 'Confirm' : 'Select 10'}
+                    </button>
+                </div>
             </div>
         </div>
       </div>
@@ -370,44 +352,39 @@ export default function App() {
   };
 
   const SuccessView = () => (
-    <div className="flex flex-col h-full justify-center items-center text-center space-y-12 my-auto min-h-[70vh]">
-        <FadeIn>
-            <div className="w-16 h-16 border border-white/20 rounded-full flex items-center justify-center mx-auto mb-8">
-                <HeartIcon className="w-6 h-6 text-white" filled />
-            </div>
-            <h1 className="font-serif text-3xl mb-4 text-white">Thank You</h1>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500">Submission Received</p>
+    <div className="flex flex-col min-h-screen justify-center items-center px-8 text-center relative overflow-hidden">
+        {/* Ambient Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/5 blur-[100px] rounded-full pointer-events-none"></div>
+
+        <FadeIn className="relative z-10">
+            <h1 className="font-serif text-5xl md:text-6xl text-white italic mb-6">Thank You</h1>
+            <div className="w-12 h-px bg-white/30 mx-auto mb-8"></div>
+            <p className="font-sans text-[10px] uppercase tracking-[0.4em] text-gray-400 leading-relaxed">
+                Your voice has been recorded.<br/>
+                The album awaits.
+            </p>
         </FadeIn>
 
-        <FadeIn delay={200}>
-            <div className="max-w-sm mx-auto font-sans font-light text-sm leading-loose text-gray-400 space-y-4">
-                <p className="text-gray-200">Dear {user.name},</p>
-                <p>Your choices have been permanently recorded.<br/>Thank you for shaping this album.</p>
-                
-                <div className="py-8 border-y border-white/5 mt-8 w-full max-w-[280px] mx-auto">
-                    <p className="text-[9px] text-gray-600 mb-6 uppercase tracking-widest">Your Top 10 Selection</p>
-                    <ul className="space-y-3">
-                        {selectedIds.sort((a,b) => a - b).map(id => (
-                            <li key={id} className="text-xs text-gray-300 flex justify-between items-center">
-                                <span className="font-serif text-[10px] text-gray-600">{String(id).padStart(2,'0')}</span>
-                                <span className="text-gray-400">{SONGS.find(s => s.id === id)?.title}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-                <p className="text-[10px] text-gray-600 mt-8">
-                    Confirmation sent to <span className="text-gray-400 border-b border-gray-800 pb-0.5">{user.email}</span>
-                </p>
+        <FadeIn delay={400} className="mt-16 w-full max-w-sm border-t border-white/10 pt-8">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-left">
+                {selectedIds.sort((a,b) => a-b).map(id => {
+                     const song = songs.find(s => s.id === id);
+                     return (
+                        <div key={id} className="flex items-baseline gap-2 text-gray-500">
+                            <span className="font-serif text-xs text-gray-700 w-4">{String(id).padStart(2, '0')}</span>
+                            <span className="text-[10px] uppercase tracking-wider truncate">{song?.title}</span>
+                        </div>
+                     );
+                })}
             </div>
-        </FadeIn>
-        
-        <FadeIn delay={800}>
-            <button 
-                onClick={() => window.location.reload()}
-                className="text-[9px] uppercase tracking-widest text-gray-600 hover:text-white transition-colors mt-8"
-            >
-                Return Home
-            </button>
+            <div className="mt-8 text-center">
+                 <button 
+                    onClick={() => window.location.reload()}
+                    className="text-[9px] text-gray-600 hover:text-white uppercase tracking-widest transition-colors"
+                >
+                    Close
+                </button>
+            </div>
         </FadeIn>
     </div>
   );
@@ -420,14 +397,10 @@ export default function App() {
       {step === AppStep.SUCCESS && <SuccessView />}
       {step === AppStep.ADMIN && <AdminView onBack={() => setStep(AppStep.INTRO)} />}
       
-      {/* Footer Admin Link - Subtle */}
       {step === AppStep.INTRO && (
-        <div className="fixed bottom-4 right-4 z-50">
-           <button 
-             onClick={() => setStep(AppStep.ADMIN)}
-             className="text-[9px] text-gray-800 hover:text-gray-600 uppercase tracking-widest transition-colors"
-           >
-             Admin
+        <div className="fixed bottom-4 right-4 z-50 opacity-20 hover:opacity-100 transition-opacity">
+           <button onClick={() => setStep(AppStep.ADMIN)} className="p-2">
+             <div className="w-1 h-1 bg-white rounded-full"></div>
            </button>
         </div>
       )}

@@ -1,24 +1,38 @@
 import React from 'react';
 
+// Shared background state for the cinematic blur
+export const BackgroundContext = React.createContext<{
+  setBgImage: (url: string | null) => void;
+}>({ setBgImage: () => {} });
+
 export const Layout: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => {
+  const [bgImage, setBgImage] = React.useState<string | null>(null);
+
   return (
-    <div className={`min-h-screen w-full max-w-[480px] mx-auto px-6 py-8 flex flex-col ${className}`}>
-      {children}
-    </div>
+    <BackgroundContext.Provider value={{ setBgImage }}>
+      {bgImage && (
+        <div 
+          className="cinematic-backdrop" 
+          style={{ backgroundImage: `url(${bgImage})` }}
+        />
+      )}
+      <div className={`min-h-screen w-full max-w-[500px] mx-auto flex flex-col relative z-10 ${className}`}>
+        {children}
+      </div>
+    </BackgroundContext.Provider>
   );
 };
 
-export const FadeIn: React.FC<{ children: React.ReactNode; className?: string; delay?: number }> = ({ children, className = "", delay = 0 }) => (
+export const FadeIn: React.FC<{ 
+  children?: React.ReactNode; 
+  className?: string; 
+  delay?: number;
+  direction?: 'up' | 'none';
+}> = ({ children, className = "", delay = 0, direction = 'up' }) => (
   <div 
-    className={`animate-fade-in opacity-0 ${className}`}
-    style={{ animation: `fadeIn 0.8s ease-out forwards ${delay}ms` }}
+    className={`${direction === 'up' ? 'animate-slide-up' : 'animate-fade-in'} opacity-0 ${className}`}
+    style={{ animationDelay: `${delay}ms` }}
   >
-    <style>{`
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-    `}</style>
     {children}
   </div>
 );
