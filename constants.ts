@@ -1,7 +1,74 @@
-import { Song } from './types';
 
-// Helper to extract ID from drive link if needed, but we will hardcode the IDs for stability
-// Based on the provided links in the prompt.
+import { Song, Language } from './types';
+
+// --- TRANSLATIONS ---
+export const TRANSLATIONS = {
+  zh: {
+    title: "摯愛",
+    subtitle: "2026 大碟票選活動",
+    enter: "進入體驗",
+    copyright: "© 2025 Willwi Music. All Rights Reserved.",
+    managerLogin: "Manager Login",
+    name: "您的名字",
+    email: "電子郵件",
+    start: "開始",
+    selection: "已選曲目",
+    confirm: "確認投票",
+    selectMore: "請選擇 10 首",
+    lyrics: "歌詞",
+    credits: "致謝",
+    close: "關閉",
+    votingRule: "請從下方試聽並選出您心中的 10 首摯愛。",
+    thankYou: "感謝您的參與",
+    thankYouDesc: "您的聲音已記錄，這張專輯因您而生。",
+    mySelection: "我的選擇",
+    back: "返回",
+  },
+  en: {
+    title: "BELOVED",
+    subtitle: "The 2026 Collection",
+    enter: "Enter Experience",
+    copyright: "© 2025 Willwi Music. All Rights Reserved.",
+    managerLogin: "Manager Login",
+    name: "Your Name",
+    email: "Email Address",
+    start: "Proceed",
+    selection: "Selection",
+    confirm: "Submit Votes",
+    selectMore: "Select 10 Tracks",
+    lyrics: "Lyrics",
+    credits: "Credits",
+    close: "Close",
+    votingRule: "Listen and select your top 10 beloved tracks.",
+    thankYou: "Thank You",
+    thankYouDesc: "Your voice has been recorded. The album awaits.",
+    mySelection: "My Selection",
+    back: "Back",
+  },
+  jp: {
+    title: "最愛",
+    subtitle: "2026 コレクション",
+    enter: "体験する",
+    copyright: "© 2025 Willwi Music. All Rights Reserved.",
+    managerLogin: "管理者ログイン",
+    name: "お名前",
+    email: "メールアドレス",
+    start: "次へ",
+    selection: "選択中",
+    confirm: "投票する",
+    selectMore: "10曲を選んでください",
+    lyrics: "歌詞",
+    credits: "クレジット",
+    close: "閉じる",
+    votingRule: "試聴して、あなたの最愛の10曲を選んでください。",
+    thankYou: "ありがとうございます",
+    thankYouDesc: "あなたの声は記録されました。",
+    mySelection: "選択した曲",
+    back: "戻る",
+  }
+};
+
+// Helper to extract ID from drive link if needed
 const rawLinks = [
   "1Li45a4NhWYbrsuNDEPUOLos_q_dXbFYb", "1vjTJvdzuSnsbSTo3lwo42hEJhkdRs90n", "1vS56CRaIhsMKAmiPe2J8rFUKnAVElxDT", "15UTVstZSuSKxmSorirZXhwN0-seE8h2g",
   "1Z6q6pezf5GLApHJAYS6DoVhrWNljr4Zz", "137rgVEGSg3cQ9jhCv5MnBd9OP9Gk5qx1", "1IVeh7-lZgTZYOXNt-9pDtoGssYPGhLCL", "1r2DJz_jPFak3Y0YtDAzL7OAyVGskh8ep",
@@ -18,10 +85,10 @@ const rawLinks = [
 export const SONGS: Song[] = rawLinks.map((driveId, index) => ({
   id: index + 1,
   // Since specific titles weren't provided, we use a stylized naming convention
-  title: `Demo Track No. ${String(index + 1).padStart(2, '0')}`,
+  title: `Demo Track ${String(index + 1).padStart(2, '0')}`,
   driveId: driveId,
+  lyrics: "",
+  credits: ""
 }));
 
-// Using drive.google.com is standard. 
-// We rely on removing crossOrigin in the player to fix the playback issues.
 export const getAudioUrl = (id: string) => `https://drive.google.com/uc?export=download&id=${id}`;

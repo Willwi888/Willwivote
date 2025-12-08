@@ -1,3 +1,4 @@
+
 import { User, Song } from '../types';
 import { SONGS as DEFAULT_SONGS } from '../constants';
 
@@ -49,15 +50,25 @@ export const getLeaderboard = (songs: Song[]) => {
 export const getSongs = (): Song[] => {
   if (typeof window === 'undefined') return DEFAULT_SONGS;
   
-  // Try to get custom titles from local storage
+  // Try to get custom data from local storage
   const savedMetadata = localStorage.getItem(SONG_METADATA_KEY);
   if (savedMetadata) {
     try {
       const parsed = JSON.parse(savedMetadata);
-      // Merge default config (Drive IDs) with saved titles
+      // Merge default config with saved data
       return DEFAULT_SONGS.map(defaultSong => {
         const saved = parsed.find((p: Song) => p.id === defaultSong.id);
-        return saved ? { ...defaultSong, title: saved.title } : defaultSong;
+        if (saved) {
+             return { 
+                 ...defaultSong, 
+                 title: saved.title || defaultSong.title,
+                 customAudioUrl: saved.customAudioUrl,
+                 customImageUrl: saved.customImageUrl,
+                 lyrics: saved.lyrics,
+                 credits: saved.credits
+             };
+        }
+        return defaultSong;
       });
     } catch (e) {
       console.error("Failed to parse song metadata", e);
@@ -67,19 +78,18 @@ export const getSongs = (): Song[] => {
   return DEFAULT_SONGS;
 };
 
-export const updateSongTitle = (id: number, newTitle: string) => {
+export const updateSong = (id: number, updates: Partial<Song>) => {
   const currentSongs = getSongs();
   const updatedSongs = currentSongs.map(s => 
-    s.id === id ? { ...s, title: newTitle } : s
+    s.id === id ? { ...s, ...updates } : s
   );
   localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(updatedSongs));
-  return updatedSongs; // Return for state update
+  return updatedSongs;
 };
 
 export const updateAllSongTitles = (titles: string[]) => {
   const currentSongs = getSongs();
   const updatedSongs = currentSongs.map((s, index) => {
-      // If we have a title for this index, use it, otherwise keep existing
       if (index < titles.length && titles[index].trim() !== "") {
           return { ...s, title: titles[index].trim() };
       }

@@ -1,8 +1,12 @@
+
 export interface Song {
   id: number;
   title: string;
-  driveId: string;
-  duration?: string;
+  driveId: string; // Keep for fallback
+  customAudioUrl?: string; // Allow admin to override
+  customImageUrl?: string; // Allow admin to override
+  lyrics?: string;
+  credits?: string;
 }
 
 export interface User {
@@ -17,7 +21,9 @@ export enum AppStep {
   AUTH = 'AUTH',
   VOTING = 'VOTING',
   SUCCESS = 'SUCCESS',
-  ADMIN = 'ADMIN', // New step for backend view
+  ADMIN = 'ADMIN',
 }
+
+export type Language = 'zh' | 'en' | 'jp';
 
 export const MAX_VOTES = 10;
