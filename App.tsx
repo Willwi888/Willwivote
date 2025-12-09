@@ -3,7 +3,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Layout, FadeIn, BackgroundContext } from './components/Layout';
 import { getSongs, getGlobalConfig, extractYouTubeId } from './services/storage';
 import { Song, User, AppStep, MAX_VOTES, Language } from './types';
-import { TRANSLATIONS } from './constants';
+import { TRANSLATIONS, getYouTubeThumbnail } from './constants';
 import { AudioProvider, useAudio } from './components/AudioContext';
 import { HeartIcon, ArrowLeftIcon, CheckIcon, PlayIcon, PauseIcon, VolumeIcon } from './components/Icons';
 import { saveVote } from './services/storage';
@@ -11,8 +11,8 @@ import { AdminView } from './components/AdminView';
 import { SongDetailModal } from './components/SongDetailModal';
 
 // --- CONFIGURATION ---
+// Switched to a reliable YouTube ID for demonstration
 const DEFAULT_FEATURED_AUDIO_ID = "jfKfPfyJRdk"; 
-// High-quality Album Cover Image (Artist Image)
 const ARTIST_IMAGE_URL = "https://drive.google.com/thumbnail?id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9&sz=w1000";
 
 const SOCIAL_LINKS = [
@@ -135,11 +135,18 @@ const IntroView: React.FC<{
     const { setBgImage } = useContext(BackgroundContext);
     const { initializeAudio, isPlaying, playingId, playSong, pause } = useAudio();
     
+    const introYoutubeId = extractYouTubeId(introAudioId);
+    
     // Playback Logic
     const togglePlayback = () => {
+        if (introYoutubeId) {
+            // YouTube is handled by the iframe interaction
+            return;
+        }
         if (isPlaying && playingId === 'intro') {
             pause();
         } else {
+            // If it's audio only
             playSong('intro', introAudioId || '', t.title);
         }
     };
@@ -158,13 +165,13 @@ const IntroView: React.FC<{
       <div className="relative min-h-screen w-full flex flex-col bg-[#030303] overflow-x-hidden">
         
         {/* 1. BACKGROUND ATMOSPHERE (Blur Layer) */}
-        <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+        <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
              <img 
                  src={ARTIST_IMAGE_URL} 
                  alt="Background Atmosphere" 
-                 className="w-full h-full object-cover blur-[100px] brightness-50 scale-110"
+                 className="w-full h-full object-cover blur-[100px] scale-125 brightness-50"
              />
-             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black"></div>
+             <div className="absolute inset-0 bg-black/60"></div>
         </div>
 
         {/* 2. HEADER (Fixed Top) */}
@@ -180,45 +187,70 @@ const IntroView: React.FC<{
              <LangSwitcher lang={lang} setLang={setLang} />
         </header>
 
-        {/* 3. CENTER STAGE (Pure Album Cover) */}
-        <main className="relative z-20 flex-1 flex flex-col items-center justify-center p-6 pb-20">
+        {/* 3. CENTER STAGE (Album Cover + Glow) */}
+        <main className="relative z-20 flex-1 flex flex-col items-center justify-center p-4 py-20 min-h-[600px]">
             
-            {/* Main Visual - The "Fixed" Cover Image */}
-            <div className="relative w-full max-w-[85vw] md:max-w-[400px] aspect-[4/5] md:aspect-square shadow-[0_30px_60px_rgba(0,0,0,0.8)] animate-fade-in group">
-                {/* The Image */}
-                <img 
-                    src={ARTIST_IMAGE_URL} 
-                    alt="Beloved Album Cover" 
-                    className="w-full h-full object-cover object-top rounded-[2px] opacity-100 transition-transform duration-[1.5s] ease-out group-hover:scale-[1.01]"
-                />
-                
-                {/* Play Button Overlay (Minimal) */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-black/10 backdrop-blur-[1px]">
-                     <button 
-                        onClick={togglePlayback}
-                        className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all transform hover:scale-110"
-                    >
-                        {isPlaying && playingId === 'intro' ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6 translate-x-1" />}
-                    </button>
-                </div>
+            {/* THE GLOW (Subtle Dynamic) - Positioned behind the image container */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[80%] max-w-4xl bg-gold/10 blur-[90px] rounded-full animate-pulse-slow pointer-events-none z-10"></div>
+
+            {/* MEDIA CONTAINER */}
+            <div className="relative z-20 w-full max-w-[90vw] md:max-w-4xl h-[55vh] md:h-[65vh] shadow-[0_30px_60px_rgba(0,0,0,0.8)] bg-black/20 backdrop-blur-sm group transition-all duration-700 border border-white/5 rounded-sm overflow-hidden">
+                {introYoutubeId ? (
+                     <iframe 
+                        className="w-full h-full object-contain pointer-events-auto"
+                        src={`https://www.youtube.com/embed/${introYoutubeId}?rel=0&modestbranding=1&playsinline=1&controls=1&color=white&iv_load_policy=3`}
+                        title="Intro Video"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    ></iframe>
+                ) : (
+                    <img 
+                        src={ARTIST_IMAGE_URL} 
+                        alt="Beloved Album Cover" 
+                        className="w-full h-full object-contain object-center opacity-95 transition-opacity duration-700"
+                    />
+                )}
             </div>
 
-            {/* TYPOGRAPHY & ENTER BUTTON */}
-            <div className="relative z-30 mt-12 flex flex-col items-center text-center space-y-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
-                <h2 className="font-serif italic text-5xl md:text-7xl text-white drop-shadow-2xl tracking-wide opacity-95">
+            {/* TYPOGRAPHY & ACTIONS (Below Image) */}
+            <div className="relative z-30 mt-12 flex flex-col items-center text-center space-y-8">
+                <h2 className="font-serif italic text-4xl md:text-6xl text-white drop-shadow-2xl tracking-wide opacity-90">
                     {t.title}
                 </h2>
                 
-                <button 
-                    onClick={onEnterClick}
-                    className="group relative px-12 py-4 overflow-hidden transition-all duration-500"
-                >
-                    <span className="relative z-10 font-serif text-xs md:text-sm tracking-[0.4em] uppercase text-gray-300 group-hover:text-gold transition-colors duration-300 flex items-center gap-3">
-                        {t.enter}
-                        <ArrowLeftIcon className="w-3 h-3 rotate-180 opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1" />
-                    </span>
-                    <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:via-gold/80 transition-all duration-500"></div>
-                </button>
+                {/* ACTION BUTTONS GROUP */}
+                <div className="flex items-center gap-6">
+                    {/* Play Button (Only if NOT YouTube video, or strictly for audio mode) */}
+                    {!introYoutubeId && (
+                        <button 
+                            onClick={togglePlayback}
+                            className={`
+                                w-14 h-14 rounded-full border border-white/20 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:border-gold hover:text-gold
+                                ${isPlaying && playingId === 'intro' ? 'bg-white text-black border-transparent shadow-[0_0_20px_rgba(255,255,255,0.3)]' : 'bg-black/30 text-white backdrop-blur-md'}
+                            `}
+                            title="Play Intro Audio"
+                        >
+                            {isPlaying && playingId === 'intro' ? (
+                                <PauseIcon className="w-5 h-5" />
+                            ) : (
+                                <PlayIcon className="w-5 h-5 translate-x-0.5" />
+                            )}
+                        </button>
+                    )}
+
+                    {/* Main Enter Button */}
+                    <button 
+                        onClick={onEnterClick}
+                        className="group relative px-12 py-4 overflow-hidden transition-all duration-500 hover:scale-105"
+                    >
+                        <div className="absolute inset-0 bg-white/10 backdrop-blur-sm border border-white/20 group-hover:border-gold/60 transition-colors duration-500 rounded-[2px]"></div>
+                        <span className="relative z-10 font-serif text-sm md:text-base tracking-[0.3em] uppercase text-gray-200 group-hover:text-gold transition-colors duration-300 flex items-center gap-3">
+                            {t.enter}
+                            <ArrowLeftIcon className="w-4 h-4 rotate-180 opacity-60 group-hover:opacity-100 transition-all duration-300" />
+                        </span>
+                    </button>
+                </div>
             </div>
 
         </main>
@@ -356,9 +388,8 @@ const VotingView: React.FC<{
 
                {songs.map((song, index) => {
                    const isSelected = selectedIds.includes(song.id);
-                   
-                   // FORCE UNIFIED ALBUM COVER
-                   const thumbnail = ARTIST_IMAGE_URL;
+                   const isYouTube = !!song.youtubeId;
+                   const thumbnail = song.customImageUrl || ARTIST_IMAGE_URL;
                    
                    return (
                        <FadeIn key={song.id} delay={index * 30} className="w-full">
@@ -374,9 +405,9 @@ const VotingView: React.FC<{
                                    {String(index + 1).padStart(2, '0')}
                                </span>
 
-                               {/* Thumbnail (Fixed Album Cover) */}
-                               <div className="relative w-16 h-16 md:w-20 md:h-20 shrink-0 bg-black overflow-hidden border border-white/10 group-hover:border-gold/30 transition-all rounded-[2px] shadow-lg">
-                                   <img src={thumbnail} className="w-full h-full object-cover object-top opacity-80 group-hover:opacity-100 transition-opacity duration-500" alt={song.title} />
+                               {/* Thumbnail (Full Color) */}
+                               <div className="relative w-24 h-14 md:w-32 md:h-20 shrink-0 bg-black overflow-hidden border border-white/10 group-hover:border-gold/30 transition-all rounded-[2px] shadow-lg">
+                                   <img src={thumbnail} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" alt={song.title} />
                                    
                                    {/* Play Icon Overlay */}
                                    <div className="absolute inset-0 flex items-center justify-center">

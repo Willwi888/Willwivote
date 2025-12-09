@@ -1,16 +1,15 @@
 
 import { User, Song } from '../types';
-import { SONGS as DEFAULT_SONGS } from '../constants';
+import { SONGS as DEFAULT_SONGS, MASTER_SONG_DATA } from '../constants';
 import { supabase } from './supabaseClient';
 
 const VOTE_STORAGE_KEY = 'beloved_2026_votes';
 const SONG_METADATA_KEY = 'beloved_2026_song_metadata';
 const GLOBAL_CONFIG_KEY = 'beloved_2026_global_config';
 
-// --- GLOBAL CONFIG (Intro Song & Google Sheet) ---
 export interface GlobalConfig {
   introAudioUrl: string;
-  googleSheetUrl?: string; // New field for GAS URL
+  googleSheetUrl?: string;
 }
 
 export const getGlobalConfig = (): GlobalConfig => {
@@ -19,7 +18,6 @@ export const getGlobalConfig = (): GlobalConfig => {
     const data = localStorage.getItem(GLOBAL_CONFIG_KEY);
     return data ? JSON.parse(data) : { introAudioUrl: '' };
   } catch (e) {
-    console.warn("LocalStorage access failed (possibly incognito mode)", e);
     return { introAudioUrl: '' };
   }
 };
@@ -27,23 +25,23 @@ export const getGlobalConfig = (): GlobalConfig => {
 export const saveGlobalConfig = (config: GlobalConfig) => {
   try {
     localStorage.setItem(GLOBAL_CONFIG_KEY, JSON.stringify(config));
-  } catch (e) {
-    console.warn("LocalStorage save failed", e);
-  }
+  } catch (e) {}
 };
 
-// --- GOOGLE SHEET INTEGRATION ---
+// --- GOOGLE SHEET INTEGRATION (No-CORS Mode) ---
 const submitToGoogleSheet = async (user: User, scriptUrl: string) => {
     try {
+        // NOTE: 'no-cors' means we CANNOT read the response status. 
+        // It will appear as "opaque" in dev tools, but the POST request DOES go through.
         await fetch(scriptUrl, {
             method: 'POST',
             mode: 'no-cors', 
             headers: {
-                'Content-Type': 'text/plain'
+                'Content-Type': 'text/plain' // Avoid preflight OPTIONS
             },
             body: JSON.stringify(user)
         });
-        console.log("Sent to Google Sheet");
+        console.log("Submitted to Google Sheet (Opaque Response)");
     } catch (e) {
         console.error("Google Sheet Sync Error:", e);
     }
@@ -52,6 +50,7 @@ const submitToGoogleSheet = async (user: User, scriptUrl: string) => {
 // --- VOTING LOGIC ---
 
 export const saveVote = async (user: User) => {
+  // 1. Local Storage
   const currentData = getLocalVotes();
   if (!currentData.find(u => u.email === user.email)) {
       const newData = [...currentData, user];
@@ -60,6 +59,7 @@ export const saveVote = async (user: User) => {
       } catch (e) {}
   }
 
+  // 2. Supabase
   if (supabase) {
       try {
           await supabase.from('votes').insert([{ 
@@ -74,9 +74,13 @@ export const saveVote = async (user: User) => {
       }
   }
 
+  // 3. Google Sheet (CRITICAL FIX: Ensure this runs)
   const config = getGlobalConfig();
   if (config.googleSheetUrl && config.googleSheetUrl.startsWith('https://script.google.com/')) {
+      // Don't await this to block UI, just fire it
       submitToGoogleSheet(user, config.googleSheetUrl);
+  } else {
+      console.warn("No Google Sheet URL configured in Admin Panel");
   }
 };
 
@@ -119,27 +123,52 @@ export const getLeaderboard = (songs: Song[], votes: User[]) => {
     .sort((a, b) => b.count - a.count);
 };
 
-// --- SONG MANAGEMENT LOGIC ---
+// --- SONG MANAGEMENT LOGIC (MERGED WITH MASTER DATA) ---
 
 export const getSongs = (): Song[] => {
   if (typeof window === 'undefined') return DEFAULT_SONGS;
+  
+  let mergedSongs = [...DEFAULT_SONGS];
+
+  // 1. Hydrate with Master Data (Constants) - Priority 1 (Base)
+  mergedSongs = mergedSongs.map(s => {
+      const master = MASTER_SONG_DATA[s.id];
+      return master ? { ...s, ...master } : s;
+  });
+
+  // 2. Hydrate with Local Storage (Admin Edits) - Priority 2 (Overrides)
   try {
       const savedMetadata = localStorage.getItem(SONG_METADATA_KEY);
       if (savedMetadata) {
         const parsed = JSON.parse(savedMetadata);
         if (Array.isArray(parsed) && parsed.length > 0) {
-            return DEFAULT_SONGS.map(defaultSong => {
-                const saved = parsed.find((p: Song) => p.id === defaultSong.id);
-                return saved ? { ...defaultSong, ...saved } : defaultSong;
+            mergedSongs = mergedSongs.map(currentSong => {
+                const saved = parsed.find((p: Song) => p.id === currentSong.id);
+                // We keep lyrics/credits from Master if Local is empty, 
+                // BUT if Admin specifically edited them, Local takes precedence.
+                // For now, let's treat Local as 'updates'.
+                if (saved) {
+                    return {
+                        ...currentSong,
+                        title: saved.title || currentSong.title,
+                        youtubeId: saved.youtubeId || currentSong.youtubeId,
+                        customAudioUrl: saved.customAudioUrl || currentSong.customAudioUrl,
+                        customImageUrl: saved.customImageUrl || currentSong.customImageUrl,
+                        // Only override lyrics if saved version has them
+                        lyrics: saved.lyrics || currentSong.lyrics,
+                        credits: saved.credits || currentSong.credits,
+                    };
+                }
+                return currentSong;
             });
         }
       }
   } catch (e) {}
-  return DEFAULT_SONGS;
+
+  return mergedSongs;
 };
 
-// ROBUST YOUTUBE EXTRACTION
-// Supports standard, short, embed, and mobile URLs
+// Robust YouTube ID extractor
 export const extractYouTubeId = (text: string): string | null => {
     if (!text) return null;
     const match = text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
@@ -150,7 +179,6 @@ export const updateSong = (id: number, updates: Partial<Song>) => {
   const currentSongs = getSongs();
   let finalUpdates = { ...updates };
   
-  // Auto-extract ID if URL provided
   if (updates.customAudioUrl && !updates.youtubeId) {
       const extractedId = extractYouTubeId(updates.customAudioUrl);
       if (extractedId) finalUpdates.youtubeId = extractedId;
@@ -189,7 +217,6 @@ export const updateSongsBulk = (lines: string[]) => {
       if (ytId) {
           newYoutubeId = ytId;
           newCustomAudioUrl = ''; 
-          // Extract title logic
           const textWithoutUrl = line.replace(/https?:\/\/\S+/g, '').trim();
           const cleanRawTitle = textWithoutUrl.replace(/^[-|]\s+/, '').replace(/\s+[-|]$/, '').trim();
           if (cleanRawTitle.length > 1) newTitle = cleanTitleText(cleanRawTitle);

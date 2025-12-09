@@ -3,7 +3,7 @@ import React, { createContext, useContext, useRef, useState, useEffect } from 'r
 
 // The shape of our Audio Context
 interface AudioContextType {
-  playingId: number | string | null; // Can be a Song ID (number) or 'intro' (string)
+  playingId: number | string | null;
   isLoading: boolean;
   isPlaying: boolean;
   error: boolean;
@@ -15,7 +15,7 @@ interface AudioContextType {
   resume: () => void;
   seek: (time: number) => void;
   setVolume: (vol: number) => void;
-  initializeAudio: () => void; // New method for mobile unlocking
+  initializeAudio: () => void; 
   currentTitle: string;
 }
 
@@ -29,10 +29,8 @@ export const useAudio = () => {
 
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  
-  // State
   const [playingId, setPlayingId] = useState<number | string | null>(null);
-  const [currentSrc, setCurrentSrc] = useState<string>(''); // Keep track of current URL
+  const [currentSrc, setCurrentSrc] = useState<string>('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -41,229 +39,113 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [volume, setVolumeState] = useState(1);
   const [currentTitle, setCurrentTitle] = useState('');
 
-  // --- STALL RECOVERY MONITOR ---
+  // Setup Audio Object
   useEffect(() => {
-    if (!isPlaying || !audioRef.current) return;
+    const audio = new Audio();
+    audio.preload = "auto";
+    audioRef.current = audio;
 
-    let lastTime = audioRef.current.currentTime;
-    let stuckCount = 0;
+    const handleEnded = () => {
+        setIsPlaying(false);
+        setPlayingId(null);
+    };
 
-    const checkInterval = setInterval(() => {
-       const audio = audioRef.current;
-       if (!audio) return;
+    const handleTimeUpdate = () => {
+        if (!isNaN(audio.currentTime)) setCurrentTime(audio.currentTime);
+    };
 
-       if (Math.abs(audio.currentTime - lastTime) < 0.1 && audio.readyState < 3) {
-           stuckCount++;
-           if (stuckCount > 6) { // 3 seconds stuck
-               console.debug("Audio buffering slow...");
-               stuckCount = 0;
-           }
-       } else {
-           stuckCount = 0;
-           lastTime = audio.currentTime;
-       }
-    }, 500);
+    const handleError = () => {
+        if (!audio.src || audio.src === window.location.href) return;
+        console.error("Audio Error:", audio.error);
+        setIsLoading(false);
+        setIsPlaying(false);
+        setError(true);
+    };
 
-    return () => clearInterval(checkInterval);
-  }, [isPlaying]);
+    const handleCanPlay = () => {
+        setIsLoading(false);
+        if (audio.duration) setDuration(audio.duration);
+    };
+    
+    // Bind
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('error', handleError);
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('pause', () => setIsPlaying(false));
+    audio.addEventListener('play', () => setIsPlaying(true));
 
-  // Safety Timeout for Loading State
-  useEffect(() => {
-    let loadTimeout: ReturnType<typeof setTimeout>;
-    if (isLoading) {
-        loadTimeout = setTimeout(() => {
-            if (isLoading) {
-                console.warn("Audio loading timed out.");
-                setIsLoading(false);
-            }
-        }, 15000);
-    }
-    return () => clearTimeout(loadTimeout);
-  }, [isLoading]);
-
-  useEffect(() => {
-    try {
-        const audio = new Audio();
-        // IMPORTANT: Set preload to NONE for mobile to avoid 403s on speculative loading
-        audio.preload = "none";
-        audioRef.current = audio;
-
-        // Event Listeners
-        const handleCanPlay = () => {
-            setIsLoading(false);
-            setError(false);
-            if (audio.duration && !isNaN(audio.duration)) {
-                setDuration(audio.duration);
-            }
-        };
-
-        const handleWaiting = () => setIsLoading(true);
-        const handlePlaying = () => {
-            setIsLoading(false);
-            setIsPlaying(true);
-            setError(false);
-        };
-        const handlePause = () => setIsPlaying(false);
-        const handleEnded = () => {
-            setIsPlaying(false);
-            setPlayingId(null);
-            setCurrentSrc('');
-        };
-        const handleError = (e: Event) => {
-            const err = audio.error;
-            // Ignore if src is empty or matches current location (reset state)
-            if (!audio.src || audio.src === window.location.href || audio.src === '') return;
-            if (err && err.code === 20) return; // Abort error
-
-            console.warn(`Audio Playback Warning: ${err ? err.message : 'Unknown error'}`);
-            setIsLoading(false);
-            setError(true);
-            setIsPlaying(false);
-        };
-        const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-        const handleLoadedMetadata = () => {
-            setDuration(audio.duration);
-            setError(false);
-        };
-        
-        audio.addEventListener('canplay', handleCanPlay);
-        audio.addEventListener('waiting', handleWaiting);
-        audio.addEventListener('playing', handlePlaying);
-        audio.addEventListener('pause', handlePause);
-        audio.addEventListener('ended', handleEnded);
-        audio.addEventListener('error', handleError);
-        audio.addEventListener('timeupdate', handleTimeUpdate);
-        audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-
-        return () => {
-          audio.pause();
-          audio.src = '';
-          audio.removeEventListener('canplay', handleCanPlay);
-          audio.removeEventListener('waiting', handleWaiting);
-          audio.removeEventListener('playing', handlePlaying);
-          audio.removeEventListener('pause', handlePause);
-          audio.removeEventListener('ended', handleEnded);
-          audio.removeEventListener('error', handleError);
-          audio.removeEventListener('timeupdate', handleTimeUpdate);
-          audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-        };
-    } catch (e) {
-        console.error("Critical Audio Initialization Error:", e);
-    }
+    return () => {
+        audio.pause();
+        audio.src = '';
+        audio.removeEventListener('ended', handleEnded);
+        audio.removeEventListener('timeupdate', handleTimeUpdate);
+        audio.removeEventListener('error', handleError);
+        audio.removeEventListener('canplay', handleCanPlay);
+    };
   }, []);
 
+  // MOBILE UNLOCK FUNCTION
+  // Must be called inside a click event handler (e.g. "Enter Studio")
   const initializeAudio = () => {
       const audio = audioRef.current;
       if (!audio) return;
-      if (audio.paused) {
-          // Play a very short silent buffer to unlock the audio context on iOS/Android
-          const SILENT_AUDIO = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAgZGF0YQQAAAAAAA==';
-          // Ensure we don't interrupt active playback if called redundantly
-          if (!playingId) {
-             audio.src = SILENT_AUDIO;
-             audio.load();
-             audio.play().catch(() => {});
-          }
+      
+      // We play a silent buffer or just play/pause to unlock the AudioContext
+      if (audio.paused && !playingId) {
+          audio.play().then(() => {
+              audio.pause();
+          }).catch(e => {
+              console.log("Audio unlock attempted (silent fail expected if no interaction)", e);
+          });
       }
   };
 
   const playSong = async (id: number | string, url: string, title: string = '') => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !url) return;
 
-    if (!url) {
-        console.error("PlaySong: Empty URL");
-        return;
-    }
-
-    if (playingId !== id || error) {
-        setCurrentTitle(title);
-        loadAndPlay(id, url, audio);
-        return;
-    }
-
+    // If same song, toggle
     if (playingId === id) {
         if (isPlaying) {
             audio.pause();
         } else {
-            resume();
+            audio.play().catch(e => console.error("Resume failed", e));
         }
+        return;
     }
-  };
 
-  const loadAndPlay = (id: number | string, url: string, audio: HTMLAudioElement) => {
-    setIsLoading(true);
+    // New song
     setPlayingId(id);
+    setCurrentTitle(title);
     setCurrentSrc(url);
-    setIsPlaying(true);
+    setIsLoading(true);
     setError(false);
 
     try {
         audio.src = url;
         audio.load();
-
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(err => {
-                if (err.name === 'AbortError') return;
-                
-                // Gracefully handle not supported errors (e.g. invalid Drive links)
-                if (err.name === 'NotSupportedError' || err.message.includes('supported source')) {
-                    console.warn(`Audio playback failed for ${url}:`, err.message);
-                    setError(true);
-                    setIsPlaying(false);
-                    setIsLoading(false);
-                    return;
-                }
-                
-                console.error("Play failed:", err);
-                // Also treat as playback error
-                setError(true);
-                setIsPlaying(false);
-                setIsLoading(false);
-            });
-        }
+        await audio.play();
     } catch (e) {
-        console.error("Sync load error:", e);
-        setError(true);
+        console.error("Play failed", e);
         setIsLoading(false);
-        setIsPlaying(false);
+        setError(true);
     }
   };
 
   const pause = () => {
-    audioRef.current?.pause();
-    setIsPlaying(false);
+    if (audioRef.current) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+    }
   };
 
-  const resume = async () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const isValidSource = audio.src && audio.src !== window.location.href && audio.src !== '';
-    
-    if (!isValidSource && currentSrc && playingId) {
-        loadAndPlay(playingId, currentSrc, audio);
-        return;
-    }
-
-    if (isValidSource) {
-        try {
-            await audio.play();
-            setError(false);
-        } catch (e) {
-            console.error("Resume play failed:", e);
-            if (currentSrc && playingId) {
-                loadAndPlay(playingId, currentSrc, audio);
-            } else {
-                setError(true);
-            }
-        }
-    }
+  const resume = () => {
+      if (audioRef.current) audioRef.current.play();
   };
 
   const seek = (time: number) => {
-    if (audioRef.current && isFinite(time)) {
+    if (audioRef.current) {
         audioRef.current.currentTime = time;
         setCurrentTime(time);
     }
