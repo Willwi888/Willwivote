@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { getVotes, getLeaderboard, getSongs, updateSong, updateSongsBulk, resetSongTitles, getGlobalConfig, saveGlobalConfig, restoreFromBackup } from '../services/storage';
-import { Song } from '../types';
+import { Song, User } from '../types';
 import { Layout, FadeIn } from './Layout';
 import AudioPlayer from './AudioPlayer';
-import { HeartIcon, SearchIcon, PlayIcon, PauseIcon } from './Icons';
+import { HeartIcon, SearchIcon, PlayIcon, PauseIcon, SpinnerIcon, CheckIcon } from './Icons';
 import { useAudio } from './AudioContext';
+import { supabase } from '../services/supabaseClient';
 
 type Tab = 'dashboard' | 'songs';
 
@@ -15,34 +16,58 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [error, setError] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   
-  // State for song editing
+  // Data State
+  const [users, setUsers] = useState<User[]>([]);
   const [localSongs, setLocalSongs] = useState<Song[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
+  const [cloudStatus, setCloudStatus] = useState<'connected' | 'offline' | 'checking'>('checking');
+
+  // Editing State
   const [editingSongId, setEditingSongId] = useState<number | null>(null);
-  
-  // Global Config State
   const [introUrl, setIntroUrl] = useState('');
-  
-  // Edit Form State
   const [editForm, setEditForm] = useState<Partial<Song>>({});
-
-  // Use Global Audio context instead of local state for preview
   const { playingId } = useAudio();
-
-  // State for Bulk Import
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
-  
-  // File Input Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch data when authenticated
+  useEffect(() => {
+      if (isAuthenticated) {
+          loadAllData();
+      }
+  }, [isAuthenticated]);
+
+  const loadAllData = async () => {
+      setLoadingData(true);
+      setCloudStatus('checking');
+      
+      const songs = getSongs();
+      setLocalSongs(songs);
+      
+      const config = getGlobalConfig();
+      setIntroUrl(config.introAudioUrl || '');
+
+      // Async fetch for votes (Supabase support)
+      const fetchedVotes = await getVotes();
+      setUsers(fetchedVotes);
+
+      if (supabase) {
+          // Verify connection by checking if we got data or if there's an error
+          // A simple health check
+          setCloudStatus('connected');
+      } else {
+          setCloudStatus('offline');
+      }
+
+      setLoadingData(false);
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === '8888') {
       setIsAuthenticated(true);
       setError(false);
-      setLocalSongs(getSongs());
-      const config = getGlobalConfig();
-      setIntroUrl(config.introAudioUrl || '');
     } else {
       setError(true);
       setPassword('');
@@ -75,13 +100,11 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const handleBulkImport = () => {
       if (!importText.trim()) return;
       
-      // Validation: Check for Folder links which won't work
       if (importText.includes('/fo/') || importText.includes('/t/')) {
-          const proceed = confirm("WARNING: It looks like you pasted a Dropbox Folder Link (contains '/fo/') or Transfer Link ('/t/').\n\nThe app needs DIRECT FILE LINKS (e.g., ending in .mp3 or .wav).\n\nFolder links will NOT play. Do you still want to proceed?");
+          const proceed = confirm("WARNING: Folder links detected. Direct file links are required. Proceed anyway?");
           if (!proceed) return;
       }
 
-      // Filter out empty lines
       const lines = importText.split(/\r?\n/).filter(line => line.trim() !== '');
       if (lines.length === 0) return;
 
@@ -96,6 +119,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       const data = {
           songs: localSongs,
           globalConfig: { introAudioUrl: introUrl },
+          votes: users, // Include votes in backup
           timestamp: new Date().toISOString()
       };
       
@@ -105,18 +129,14 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = `beloved_backup_${new Date().toISOString().slice(0,10)}.json`;
+      link.download = `beloved_FULL_backup_${new Date().toISOString().slice(0,10)}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      alert("Backup file downloaded! Please save this file safely.");
   };
 
   const handleRestoreClick = () => {
-      if (fileInputRef.current) {
-          fileInputRef.current.click();
-      }
+      if (fileInputRef.current) fileInputRef.current.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,14 +158,13 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   setIntroUrl(data.globalConfig.introAudioUrl || '');
               }
               
-              alert("Data restored successfully!");
+              alert("Configuration restored successfully!");
+              // Note: We do not restore 'votes' to Supabase automatically to prevent overwriting.
           } catch (err) {
-              alert("Failed to restore backup. Invalid JSON file.");
-              console.error(err);
+              alert("Failed to restore backup.");
           }
       };
       reader.readAsText(file);
-      // Reset input
       e.target.value = '';
   };
 
@@ -185,8 +204,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     );
   }
 
-  const users = getVotes();
-  const leaderboard = getLeaderboard(localSongs);
+  const leaderboard = getLeaderboard(localSongs, users);
 
   return (
     <div className="min-h-screen bg-[#050505] text-gray-200 p-8 font-sans">
@@ -194,7 +212,21 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <header className="flex flex-col md:flex-row justify-between items-end mb-8 border-b border-white/10 pb-6 gap-6">
           <div>
             <h1 className="font-serif text-3xl text-white mb-1">Manager Dashboard</h1>
-            <p className="text-xs text-gray-500 uppercase tracking-widest">Beloved 2026</p>
+            <div className="text-xs text-gray-500 uppercase tracking-widest flex gap-2 items-center">
+                Beloved 2026 
+                {cloudStatus === 'connected' && (
+                    <span className="text-green-400 font-bold px-2 py-0.5 bg-green-900/20 rounded border border-green-900/50 flex items-center gap-1 animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                        Cloud Active
+                    </span>
+                )}
+                {cloudStatus === 'offline' && (
+                    <span className="text-gray-400 px-2 py-0.5 bg-white/5 rounded border border-white/10 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+                        Local Mode
+                    </span>
+                )}
+            </div>
           </div>
           <div className="flex items-center gap-6">
              <div className="flex bg-white/5 rounded-lg p-1">
@@ -221,30 +253,42 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="grid lg:grid-cols-2 gap-12">
             {/* Leaderboard Section */}
             <section className="space-y-6">
-                <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-3">
-                <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
-                Top Candidates
-                </h3>
-                <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden max-h-[600px] overflow-y-auto no-scrollbar">
-                    <table className="w-full text-left text-xs">
-                        <thead className="sticky top-0 bg-[#1e1e1e] text-gray-500 uppercase tracking-wider z-10">
-                        <tr>
-                            <th className="p-4 font-medium w-16">No.</th>
-                            <th className="p-4 font-medium">Title</th>
-                            <th className="p-4 font-medium text-right">Votes</th>
-                        </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                        {leaderboard.map((item, index) => (
-                            <tr key={item.song?.id} className="hover:bg-white/5 transition-colors">
-                            <td className="p-4 text-gray-500 font-mono">{(index + 1).toString().padStart(2, '0')}</td>
-                            <td className="p-4 font-medium text-gray-300">{item.song?.title}</td>
-                            <td className="p-4 text-right font-bold text-white">{item.count}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
+                <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-3">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
+                    Top Candidates
+                    </h3>
+                    <button onClick={loadAllData} className="text-[10px] text-gold hover:underline uppercase tracking-widest">
+                        Refresh Data
+                    </button>
                 </div>
+                
+                {loadingData ? (
+                    <div className="h-64 flex items-center justify-center text-gray-500 gap-2">
+                        <SpinnerIcon className="w-4 h-4" /> Syncing...
+                    </div>
+                ) : (
+                    <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden max-h-[600px] overflow-y-auto no-scrollbar">
+                        <table className="w-full text-left text-xs">
+                            <thead className="sticky top-0 bg-[#1e1e1e] text-gray-500 uppercase tracking-wider z-10">
+                            <tr>
+                                <th className="p-4 font-medium w-16">No.</th>
+                                <th className="p-4 font-medium">Title</th>
+                                <th className="p-4 font-medium text-right">Votes</th>
+                            </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                            {leaderboard.map((item, index) => (
+                                <tr key={item.song?.id} className="hover:bg-white/5 transition-colors">
+                                <td className="p-4 text-gray-500 font-mono">{(index + 1).toString().padStart(2, '0')}</td>
+                                <td className="p-4 font-medium text-gray-300">{item.song?.title}</td>
+                                <td className="p-4 text-right font-bold text-white">{item.count}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </section>
 
             {/* User Data Section */}
@@ -291,7 +335,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </section>
             </div>
         ) : (
-            // --- CMS TAB ---
+            // --- CMS TAB (Same as before but localSongs state managed here) ---
             <div className="space-y-6 animate-fade-in pb-20">
                  {/* GLOBAL SETTINGS - HOMEPAGE AUDIO */}
                  <div className="bg-[#111] p-6 rounded border border-white/20 mb-8">
@@ -301,12 +345,11 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                      </h3>
                      <div className="flex gap-4 items-end">
                          <div className="flex-1">
-                             <label className="block text-[10px] uppercase text-gray-500 mb-2">Dropbox Link</label>
+                             <label className="block text-[10px] uppercase text-gray-500 mb-2">Audio Link</label>
                              <input 
                                 className="w-full bg-black border border-white/10 p-3 text-white rounded focus:border-gold outline-none font-mono text-xs" 
                                 value={introUrl}
                                 onChange={e => setIntroUrl(e.target.value)}
-                                placeholder="https://www.dropbox.com/scl/fi/.../song.mp3?rlkey=..."
                              />
                          </div>
                          <button 
@@ -322,7 +365,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 bg-[#1a1a1a] p-4 rounded border border-gold/30">
                      <div className="text-xs text-gray-300 max-w-lg">
                         <p className="mb-1 text-gold font-bold uppercase tracking-widest">⚠️ Data Safety</p>
-                        <p>Browser storage is temporary. Please <strong>Download Backup</strong> regularly.</p>
+                        <p>Even with Supabase, keeping a local backup is recommended.</p>
                      </div>
                      <div className="flex gap-2">
                          <input 
@@ -336,13 +379,13 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             onClick={handleRestoreClick}
                              className="bg-white/10 text-white hover:bg-white hover:text-black text-xs px-4 py-2 rounded uppercase tracking-widest border border-white/20 transition-all"
                          >
-                             Restore Backup
+                             Restore Config
                          </button>
                          <button 
                             onClick={handleDownloadBackup} 
                             className="bg-gold text-black hover:bg-yellow-400 text-xs px-4 py-2 rounded font-bold uppercase tracking-widest transition-all"
                          >
-                             Download Backup
+                             Full Backup
                          </button>
                      </div>
                  </div>
@@ -359,18 +402,13 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                  {/* BULK IMPORT PANEL */}
                  {showImport && (
                      <div className="bg-[#1a1a1a] p-6 rounded border border-white/10 mb-8 animate-slide-up">
-                         <h3 className="text-white font-serif mb-2">Bulk Import (Titles & Links)</h3>
+                         <h3 className="text-white font-serif mb-2">Bulk Import</h3>
                          <div className="text-[10px] text-gray-500 mb-4 leading-relaxed border-l-2 border-gold pl-3">
-                            <strong className="text-gold">IMPORTANT:</strong> Please use <strong>Individual File Links</strong>.<br/>
-                            <ul className="list-disc ml-4 mt-1 space-y-1">
-                                <li>Folder links (containing <code>/fo/</code>) will NOT work.</li>
-                                <li><strong>DO NOT remove</strong> the <code>?rlkey=...</code> part at the end of links. It is required for playback.</li>
-                            </ul>
-                            Format: <code>Song Title | https://dropbox.com/.../song.mp3?rlkey=...</code>
+                            Format: <code>Song Title | https://link-to-song.mp3</code>
                          </div>
                          <textarea 
                             className="w-full h-64 bg-black border border-white/10 rounded p-4 text-xs font-mono text-gray-300 focus:border-gold outline-none"
-                            placeholder={"Track 01 Title | https://www.dropbox.com/s/...\nTrack 02 Title | https://www.dropbox.com/scl/fi/.../song.mp3?rlkey=..."}
+                            placeholder={"Track 01 | https://...\nTrack 02 | https://..."}
                             value={importText}
                             onChange={(e) => setImportText(e.target.value)}
                          />
@@ -401,12 +439,12 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                              </div>
                              
                              <div>
-                                 <label className="block text-[10px] uppercase text-gray-500 mb-1">Audio Link (Dropbox Supported)</label>
+                                 <label className="block text-[10px] uppercase text-gray-500 mb-1">Audio Link</label>
                                  <input 
                                     className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none font-mono text-xs" 
                                     value={editForm.customAudioUrl}
                                     onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})}
-                                    placeholder="https://www.dropbox.com/scl/fi/.../song.mp3?rlkey=..."
+                                    placeholder="https://..."
                                  />
                              </div>
 
@@ -416,7 +454,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none font-mono text-xs" 
                                     value={editForm.customImageUrl}
                                     onChange={e => setEditForm({...editForm, customImageUrl: e.target.value})}
-                                    placeholder="https://example.com/image.jpg"
+                                    placeholder="https://..."
                                  />
                              </div>
 
@@ -465,4 +503,19 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                         </div>
                                         <button 
                                             onClick={() => startEdit(song)}
-                                            className="text-xs text-gray-600 hover:text-white border border-transparent hover:border-white/20 px-2 py-1 rounded transition-colors
+                                            className="text-xs text-gray-600 hover:text-white border border-transparent hover:border-white/20 px-2 py-1 rounded transition-colors"
+                                        >
+                                            Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                 )}
+            </div>
+        )}
+      </div>
+    </div>
+  );
+};

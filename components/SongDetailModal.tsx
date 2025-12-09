@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Song, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 import AudioPlayer from './AudioPlayer';
+import { useAudio } from './AudioContext';
 import { CheckIcon, HeartIcon } from './Icons';
 
 interface SongDetailModalProps {
@@ -30,13 +31,17 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 }) => {
   const [voteStage, setVoteStage] = useState<'view' | 'reason'>('view');
   const [reason, setReason] = useState('');
+  const { pause } = useAudio(); // Access global audio control
 
   useEffect(() => {
       if (isOpen) {
           setVoteStage('view');
           setReason(savedReason || '');
+          // CRITICAL: Pause any background music (Intro or MP3s) when opening the modal
+          // This ensures the YouTube video audio doesn't clash with background music
+          pause();
       }
-  }, [isOpen, savedReason]);
+  }, [isOpen, savedReason, pause]);
 
   if (!isOpen || !song) return null;
 
@@ -57,6 +62,9 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
       setVoteStage('view');
   };
 
+  // Determine if we are in YouTube Mode
+  const isYouTube = !!song.youtubeId;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -70,44 +78,58 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
          {/* --- CONTENT AREA (SCROLLABLE) --- */}
          <div className="flex-1 overflow-y-auto relative no-scrollbar bg-[#0a0a0a]">
             
-            {/* Header Image Area */}
-            <div className="relative aspect-video w-full">
-                <img 
-                    src={song.customImageUrl || defaultCover} 
-                    alt={song.title} 
-                    className="w-full h-full object-cover opacity-60"
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0a]/50 to-[#0a0a0a]" />
-                
+            {/* Header Media Area (Video or Image) */}
+            <div className={`relative w-full ${isYouTube ? 'aspect-video' : 'aspect-video'}`}>
+                {isYouTube ? (
+                    <iframe 
+                        className="w-full h-full"
+                        src={`https://www.youtube-nocookie.com/embed/${song.youtubeId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`}
+                        title={song.title}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    ></iframe>
+                ) : (
+                    <>
+                        <img 
+                            src={song.customImageUrl || defaultCover} 
+                            alt={song.title} 
+                            className="w-full h-full object-cover opacity-60"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0a]/50 to-[#0a0a0a]" />
+                        
+                        {/* Main Player Overlay (Only for MP3s) */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 p-6">
+                            <div onClick={(e) => { e.stopPropagation(); }}>
+                                <AudioPlayer 
+                                    id={song.id}
+                                    driveId={song.driveId}
+                                    src={song.customAudioUrl}
+                                    title={song.title}
+                                    variant="featured"
+                                />
+                            </div>
+                        </div>
+                    </>
+                )}
+
                 {/* Close Button */}
                 <button 
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 hover:bg-white text-white hover:text-black transition-all"
+                    className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 hover:bg-white text-white hover:text-black transition-all backdrop-blur-sm"
                 >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
-
-                {/* Main Player Overlay */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center z-10 p-6">
-                     <div onClick={(e) => { e.stopPropagation(); }}>
-                        <AudioPlayer 
-                            id={song.id}
-                            driveId={song.driveId}
-                            src={song.customAudioUrl}
-                            title={song.title}
-                            variant="featured"
-                        />
-                     </div>
-                </div>
             </div>
 
-            <div className="px-8 pb-32">
+            <div className="px-8 pb-32 pt-6">
                  {/* Title Section */}
-                 <div className="mb-8 text-center relative -mt-6">
+                 <div className="mb-8 text-center">
                     <p className="text-[10px] text-gold font-mono uppercase tracking-widest mb-2">Track {String(song.id).padStart(2,'0')}</p>
                     <h2 className="font-serif text-3xl md:text-4xl text-white italic leading-tight">{song.title}</h2>
+                    {isYouTube && <p className="text-[10px] text-gray-500 mt-2 uppercase tracking-wider">Official Audio</p>}
                  </div>
 
                 {/* Lyrics Section */}
@@ -138,16 +160,18 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
              {/* MODE 1: Viewing / Voting Button */}
              {voteStage === 'view' && (
                 <div className="flex flex-col gap-4">
-                     {/* Playback Controls (Always visible in bar as well for better UX) */}
-                     <div className="w-full">
-                         <AudioPlayer 
-                             id={song.id}
-                             driveId={song.driveId}
-                             src={song.customAudioUrl}
-                             title={song.title}
-                             showControls={true} // Show the scrubbing bar
-                         />
-                     </div>
+                     {/* Playback Controls (Only show scrubbing bar for MP3s) */}
+                     {!isYouTube && (
+                        <div className="w-full">
+                            <AudioPlayer 
+                                id={song.id}
+                                driveId={song.driveId}
+                                src={song.customAudioUrl}
+                                title={song.title}
+                                showControls={true} 
+                            />
+                        </div>
+                     )}
 
                     <div className="flex items-center gap-4">
                         <button

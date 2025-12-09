@@ -241,6 +241,7 @@ const VotingView: React.FC<{
                {songs.map((song, index) => {
                    const isSelected = selectedIds.includes(song.id);
                    const isPlaying = playingId === song.id;
+                   const isYouTube = !!song.youtubeId;
                    
                    return (
                        <FadeIn key={song.id} delay={index * 50} className="w-full">
@@ -263,8 +264,8 @@ const VotingView: React.FC<{
                                        {isSelected && voteReasons[song.id] && (
                                            <p className="text-[10px] text-gray-500 italic mt-1 truncate">"{voteReasons[song.id]}"</p>
                                        )}
-                                       {/* Mini Equalizer if Playing */}
-                                       {isPlaying && (
+                                       {/* Mini Equalizer if Playing (Audio only) */}
+                                       {isPlaying && !isYouTube && (
                                            <div className="absolute bottom-4 right-16 flex gap-0.5 h-3 items-end opacity-50">
                                                <div className="w-0.5 bg-gold animate-[pulse_0.6s_ease-in-out_infinite] h-full"></div>
                                                <div className="w-0.5 bg-gold animate-[pulse_0.8s_ease-in-out_infinite] h-2/3"></div>
@@ -274,15 +275,25 @@ const VotingView: React.FC<{
                                    </div>
 
                                    <div className="flex items-center gap-3">
-                                       {/* Audio Player is now just a remote button */}
+                                       {/* 
+                                         LOGIC: If it's MP3, use AudioPlayer. 
+                                         If it's YouTube-only, show a static Play icon that opens the modal. 
+                                       */}
                                        <div onClick={(e) => { e.stopPropagation(); }} className="active:scale-90 transition-transform">
-                                          <AudioPlayer 
-                                              id={song.id}
-                                              driveId={song.driveId}
-                                              src={song.customAudioUrl}
-                                              title={song.title}
-                                          />
+                                          {isYouTube && !song.customAudioUrl ? (
+                                              <button onClick={() => setDetailSongId(song.id)} className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-white border border-transparent hover:border-white/30 transition-all">
+                                                  <PlayIcon className="w-4 h-4" />
+                                              </button>
+                                          ) : (
+                                              <AudioPlayer 
+                                                  id={song.id}
+                                                  driveId={song.driveId}
+                                                  src={song.customAudioUrl}
+                                                  title={song.title}
+                                              />
+                                          )}
                                        </div>
+                                       
                                        <button
                                            onClick={(e) => { e.stopPropagation(); toggleVote(song.id); }}
                                            disabled={!isSelected && selectedIds.length >= MAX_VOTES}

@@ -1,6 +1,7 @@
 
 import { User, Song } from '../types';
 import { SONGS as DEFAULT_SONGS } from '../constants';
+import { supabase } from './supabaseClient';
 
 const VOTE_STORAGE_KEY = 'beloved_2026_votes';
 const SONG_METADATA_KEY = 'beloved_2026_song_metadata';
@@ -26,29 +27,69 @@ export const saveGlobalConfig = (config: GlobalConfig) => {
 };
 
 
-// --- VOTING LOGIC ---
+// --- VOTING LOGIC (HYBRID: SUPABASE + LOCAL) ---
 
-export const saveVote = (user: User) => {
-  const currentData = getVotes();
-  // Simple deduplication check based on email could be added here
-  const newData = [...currentData, user];
-  localStorage.setItem(VOTE_STORAGE_KEY, JSON.stringify(newData));
+export const saveVote = async (user: User) => {
+  // 1. Always save to LocalStorage (for UI state)
+  const currentData = getLocalVotes();
+  if (!currentData.find(u => u.email === user.email)) {
+      const newData = [...currentData, user];
+      localStorage.setItem(VOTE_STORAGE_KEY, JSON.stringify(newData));
+  }
+
+  // 2. If Supabase is connected, save to Cloud Database
+  if (supabase) {
+      try {
+          const { error } = await supabase
+              .from('votes')
+              .insert([
+                  { 
+                      user_name: user.name, 
+                      user_email: user.email, 
+                      vote_ids: user.votes,
+                      vote_reasons: user.voteReasons, 
+                      created_at: new Date().toISOString()
+                  }
+              ]);
+          
+          if (error) {
+              console.error("Supabase Vote Error:", error.message);
+          }
+      } catch (e) {
+          console.error("Supabase Connection Error", e);
+      }
+  }
 };
 
-export const getVotes = (): User[] => {
+const getLocalVotes = (): User[] => {
   if (typeof window === 'undefined') return [];
   const data = localStorage.getItem(VOTE_STORAGE_KEY);
   return data ? JSON.parse(data) : [];
 };
 
-export const getLeaderboard = (songs: Song[]) => {
-  const votes = getVotes();
+export const getVotes = async (): Promise<User[]> => {
+    if (supabase) {
+        const { data, error } = await supabase
+            .from('votes')
+            .select('*')
+            .order('created_at', { ascending: false });
+            
+        if (!error && data) {
+            return data.map((row: any) => ({
+                name: row.user_name,
+                email: row.user_email,
+                timestamp: row.created_at,
+                votes: row.vote_ids || [],
+                voteReasons: row.vote_reasons || {}
+            }));
+        }
+    }
+    return getLocalVotes();
+};
+
+export const getLeaderboard = (songs: Song[], votes: User[]) => {
   const tally: Record<number, number> = {};
-
-  // Initialize
   songs.forEach(s => tally[s.id] = 0);
-
-  // Count
   votes.forEach(user => {
     user.votes.forEach(songId => {
       if (tally[songId] !== undefined) {
@@ -56,8 +97,6 @@ export const getLeaderboard = (songs: Song[]) => {
       }
     });
   });
-
-  // Sort
   return Object.entries(tally)
     .map(([id, count]) => ({
       song: songs.find(s => s.id === parseInt(id)),
@@ -66,19 +105,16 @@ export const getLeaderboard = (songs: Song[]) => {
     .sort((a, b) => b.count - a.count);
 };
 
-// --- SONG MANAGEMENT LOGIC (CMS Simulation) ---
+// --- SONG MANAGEMENT LOGIC ---
 
 export const getSongs = (): Song[] => {
   if (typeof window === 'undefined') return DEFAULT_SONGS;
   
-  // Try to get custom data from local storage
   const savedMetadata = localStorage.getItem(SONG_METADATA_KEY);
   if (savedMetadata) {
     try {
       const parsed = JSON.parse(savedMetadata);
-      // Safety check: ensure we actually got an array with items
       if (Array.isArray(parsed) && parsed.length > 0) {
-          // Merge default config with saved data
           const merged = DEFAULT_SONGS.map(defaultSong => {
             const saved = parsed.find((p: Song) => p.id === defaultSong.id);
             if (saved) {
@@ -86,6 +122,7 @@ export const getSongs = (): Song[] => {
                     ...defaultSong, 
                     title: saved.title || defaultSong.title,
                     customAudioUrl: saved.customAudioUrl,
+                    youtubeId: saved.youtubeId, // Retrieve YouTube ID
                     customImageUrl: saved.customImageUrl,
                     lyrics: saved.lyrics,
                     credits: saved.credits
@@ -97,7 +134,6 @@ export const getSongs = (): Song[] => {
       }
     } catch (e) {
       console.error("Failed to parse song metadata", e);
-      // Fallback to default
     }
   }
   return DEFAULT_SONGS;
@@ -112,28 +148,40 @@ export const updateSong = (id: number, updates: Partial<Song>) => {
   return updatedSongs;
 };
 
-/**
- * Bulk updates songs. Supports formats:
- * 1. "Song Title" (Updates title only)
- * 2. "http..." (Updates audio URL only)
- * 3. "Song Title | http..." (Updates both)
- */
+// Helper to extract YouTube ID from various link formats
+const extractYouTubeId = (url: string): string | null => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+};
+
 export const updateSongsBulk = (lines: string[]) => {
   const currentSongs = getSongs();
   const updatedSongs = currentSongs.map((s, index) => {
       if (index < lines.length && lines[index].trim() !== "") {
           const line = lines[index].trim();
           
-          // Case 3: Title | URL
+          // Format: Title | Link
           if (line.includes('|')) {
               const [title, url] = line.split('|').map(p => p.trim());
-              return { ...s, title: title || s.title, customAudioUrl: url || s.customAudioUrl };
+              const ytId = extractYouTubeId(url);
+              
+              if (ytId) {
+                  // Found YouTube Link -> Set ID, Clear Custom Audio (to prioritize YT)
+                  return { ...s, title: title || s.title, youtubeId: ytId, customAudioUrl: '' };
+              } else {
+                  // Regular Audio Link
+                  return { ...s, title: title || s.title, customAudioUrl: url || s.customAudioUrl };
+              }
           } 
-          // Case 2: URL Only
+          // Format: Just Link
           else if (line.startsWith('http')) {
+              const ytId = extractYouTubeId(line);
+              if (ytId) return { ...s, youtubeId: ytId, customAudioUrl: '' };
               return { ...s, customAudioUrl: line };
           }
-          // Case 1: Title Only
+          // Format: Just Title
           else {
               return { ...s, title: line };
           }

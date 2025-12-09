@@ -2,7 +2,8 @@
 export interface Song {
   id: number;
   title: string;
-  driveId: string; // Keep for fallback
+  driveId: string; // Keep for fallback or MP3s
+  youtubeId?: string; // NEW: YouTube Video ID
   customAudioUrl?: string; // Allow admin to override
   customImageUrl?: string; // Allow admin to override
   lyrics?: string;
