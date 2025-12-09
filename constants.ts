@@ -126,13 +126,18 @@ export const getAudioUrl = (input: string) => {
     // Check for Full URL
     if (url.startsWith('http')) {
         // --- DROPBOX HANDLING ---
-        // Match both 'www.dropbox.com' and 'dropbox.com'
+        // Robust regex to capture standard links (s) and private links (scl)
+        // Matches https://www.dropbox.com/s/... or https://www.dropbox.com/scl/...
         if (url.match(/dropbox\.com/)) {
-            // Replace the domain with the content streaming domain
-            const dlUrl = url.replace(/https?:\/\/(www\.)?dropbox\.com/, 'https://dl.dropboxusercontent.com');
+            // Replace the main domain with the user content domain
+            // This method works for both standard and 'scl' private links
+            // It preserves the rest of the path including rlkey
+            let dlUrl = url.replace(/https?:\/\/(www\.)?dropbox\.com/, 'https://dl.dropboxusercontent.com');
             
-            // Note: dl.dropboxusercontent.com works best without dl=0, but ignoring it is fine.
-            // We preserve all query parameters (like rlkey, st) which are required for private/scl links.
+            // Clean up: Remove `dl=0` if it exists, as dl.dropboxusercontent doesn't need it
+            // but we MUST keep `rlkey` if it exists.
+            dlUrl = dlUrl.replace(/[?&]dl=0/, '');
+            
             return dlUrl;
         }
         
@@ -140,6 +145,5 @@ export const getAudioUrl = (input: string) => {
     }
 
     // Default to Google Drive ID if it's not a URL
-    // Adding confirm=t sometimes helps bypass virus scan warnings on mobile which cause "No Data" errors
     return `https://drive.google.com/uc?export=download&confirm=t&id=${url}`;
 };
