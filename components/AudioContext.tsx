@@ -54,8 +54,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
        if (Math.abs(audio.currentTime - lastTime) < 0.1 && audio.readyState < 3) {
            stuckCount++;
-           if (stuckCount > 4) { // 2 seconds stuck
-               // Only log, don't auto-pause to avoid fighting with slow networks
+           if (stuckCount > 6) { // 3 seconds stuck
                console.debug("Audio buffering slow...");
                stuckCount = 0;
            }
@@ -86,7 +85,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const audio = new Audio();
     audio.removeAttribute('crossorigin'); // Improve compatibility
-    audio.preload = "none";
+    audio.preload = "auto";
     // @ts-ignore
     audio.playsInline = true; 
     
@@ -158,11 +157,12 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const initializeAudio = () => {
       const audio = audioRef.current;
       if (!audio) return;
-      // Only init if idle
-      if (!playingId && audio.paused) {
+      // Only init if we haven't already attempted to unlock, or if it's paused
+      if (audio.paused) {
+          // Play a very short silent buffer to unlock the audio context on iOS/Android
           const SILENT_AUDIO = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAgZGF0YQQAAAAAAA==';
           audio.src = SILENT_AUDIO;
-          audio.load();
+          audio.load(); // Required for mobile
           audio.play().catch(() => {});
       }
   };
@@ -202,8 +202,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
         audio.src = url;
-        audio.preload = "auto";
-        audio.load();
+        audio.load(); // Explicit load call is safer for mobile
 
         const playPromise = audio.play();
         if (playPromise !== undefined) {
@@ -213,6 +212,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 // Don't set error state immediately on Abort, 
                 // but for other errors (NotSupportedError), yes.
                 if (err.name === 'NotSupportedError' || err.name === 'NotAllowedError') {
+                    // Usually implies user didn't interact first
                     setError(true);
                     setIsPlaying(false);
                     setIsLoading(false);
@@ -236,12 +236,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Check if source is valid
     const isValidSource = audio.src && audio.src !== window.location.href && audio.src !== '';
     
-    // If invalid source but we have currentSrc stored, reload it
     if (!isValidSource && currentSrc && playingId) {
-        console.log("Resuming with reload...");
         loadAndPlay(playingId, currentSrc, audio);
         return;
     }
@@ -252,7 +249,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setError(false);
         } catch (e) {
             console.error("Resume play failed:", e);
-            // If play fails, try reloading as last resort
             if (currentSrc && playingId) {
                 loadAndPlay(playingId, currentSrc, audio);
             } else {

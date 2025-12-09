@@ -65,19 +65,13 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
       setVoteStage('view');
   };
 
-  // ROBUST YOUTUBE DETECTION:
-  // 1. Check explicit youtubeId
-  // 2. Check if customAudioUrl looks like a youtube link
+  // ROBUST YOUTUBE DETECTION
   let finalYoutubeId = song.youtubeId;
   if (!finalYoutubeId && song.customAudioUrl) {
       finalYoutubeId = extractYouTubeId(song.customAudioUrl);
   }
 
   const isYouTube = !!finalYoutubeId;
-  
-  // UNIFORM ALBUM COVER LOGIC:
-  // Use the uniform 'defaultCover' (Artist Image) unless a custom image is explicitly set.
-  // This removes the "YouTube Thumbnail" fallback to ensure the app looks like a cohesive album.
   const displayImage = song.customImageUrl ? song.customImageUrl : defaultCover;
 
   return (
@@ -101,33 +95,48 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
       {/* SCROLLABLE CONTENT AREA */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar scroll-smooth">
           
-          {/* 1. MEDIA PLAYER (Pinned Top Visual) */}
-          <div className="w-full aspect-video bg-black relative shadow-2xl shrink-0 sticky top-0 z-10">
+          {/* 1. MEDIA PLAYER AREA (Pinned Top Visual) */}
+          <div className="w-full aspect-square md:aspect-video bg-black relative shadow-2xl shrink-0 sticky top-0 z-10">
               {isYouTube ? (
+                  /* YouTube Iframe - PURE, No overlays, Native Controls */
                   <iframe 
                       className="w-full h-full"
-                      src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&controls=1&fs=1&color=white&iv_load_policy=3`}
+                      src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=0&playsinline=1&rel=0&modestbranding=1&controls=1&fs=1&color=white&iv_load_policy=3`}
                       title={song.title}
                       frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                   ></iframe>
               ) : (
+                  /* Audio Cover Image - PURE, No overlays */
                   <div className="relative w-full h-full">
-                      <img src={displayImage} className="w-full h-full object-cover opacity-60" />
-                      <div className="absolute inset-0 bg-black/40" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                          <AudioPlayer id={song.id} driveId={song.driveId} src={song.customAudioUrl} title={song.title} variant="featured" />
-                      </div>
+                      <img src={displayImage} className="w-full h-full object-cover opacity-90" />
+                      {/* Gradient to smooth transition */}
+                      <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-[#050505] to-transparent"></div>
                   </div>
               )}
           </div>
 
-          {/* 2. SONG INFO, LYRICS & CREDITS */}
-          <div className="px-6 py-10 pb-48 max-w-xl mx-auto text-center relative z-20 bg-[#050505] min-h-[60vh]">
-              {/* Decorative Fade from Player */}
-              <div className="absolute top-[-50px] left-0 w-full h-24 bg-gradient-to-b from-transparent to-[#050505] pointer-events-none"></div>
+          {/* 2. AUDIO CONTROLS (Only for non-YouTube tracks) - MOVED BELOW IMAGE */}
+          {!isYouTube && (
+             <div className="relative z-20 -mt-10 px-6 mb-6">
+                 <div className="glass-panel p-4 rounded-md shadow-lg border-gold/20 flex items-center justify-center">
+                    {/* Featured Audio Player without the giant overlay */}
+                    <AudioPlayer 
+                        id={song.id} 
+                        driveId={song.driveId} 
+                        src={song.customAudioUrl} 
+                        title={song.title} 
+                        variant="minimal" 
+                        showControls={true} 
+                    />
+                 </div>
+             </div>
+          )}
 
+          {/* 3. SONG INFO, LYRICS & CREDITS */}
+          <div className="px-6 py-6 pb-48 max-w-xl mx-auto text-center relative z-20 bg-[#050505] min-h-[50vh]">
+              
               {/* Title Section */}
               <div className="mb-12 animate-slide-up">
                   <p className="text-[10px] text-gold font-mono uppercase tracking-[0.2em] mb-3 opacity-80">
@@ -144,7 +153,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   )}
               </div>
 
-              {/* LYRICS SECTION */}
+              {/* LYRICS SECTION (COPY PROTECTION ADDED) */}
               <div className="mb-16 animate-slide-up space-y-8" style={{ animationDelay: '100ms' }}>
                   <div className="flex items-center justify-center gap-4 opacity-40">
                       <div className="h-px w-6 bg-white"></div>
@@ -152,26 +161,27 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       <div className="h-px w-6 bg-white"></div>
                   </div>
                   
-                  <div className="font-serif text-gray-300 text-sm md:text-base leading-[2.2] whitespace-pre-wrap tracking-wide select-text border-l-2 border-gold/20 pl-6 md:pl-0 md:border-l-0 md:text-center opacity-90">
+                  {/* select-none: Cannot select text. pointer-events-none: Cannot interact/touch to copy on mobile */}
+                  <div className="select-none font-serif text-gray-300 text-sm md:text-base leading-[2.2] whitespace-pre-wrap tracking-wide border-l-2 border-gold/20 pl-6 md:pl-0 md:border-l-0 md:text-center opacity-90 pb-8">
                       {song.lyrics || <p className="text-gray-600 italic font-light">~ 純音樂 / 歌詞整理中 ~</p>}
                   </div>
               </div>
 
-              {/* CREDITS SECTION */}
+              {/* CREDITS SECTION (COPY PROTECTION ADDED) */}
               <div className="mb-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
                    <div className="flex items-center justify-center gap-4 mb-6 opacity-40">
                       <div className="h-px w-6 bg-white"></div>
                       <span className="text-[9px] uppercase tracking-[0.3em] font-light">{t.credits}</span>
                       <div className="h-px w-6 bg-white"></div>
                   </div>
-                  <div className="font-sans text-gray-500 text-[10px] md:text-xs leading-relaxed whitespace-pre-wrap uppercase tracking-widest">
+                  <div className="select-none font-sans text-gray-500 text-[10px] md:text-xs leading-relaxed whitespace-pre-wrap uppercase tracking-widest">
                       {song.credits || "Production: Willwi Music\nConcept: Beloved 2026"}
                   </div>
               </div>
           </div>
       </div>
 
-      {/* 3. ACTION BAR (Fixed Bottom) */}
+      {/* 4. ACTION BAR (Fixed Bottom) */}
       <div className="absolute bottom-0 left-0 w-full z-40">
           {/* Gradient to fade out content behind the bar */}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-[#050505] to-transparent pointer-events-none h-32 -top-32"></div>
@@ -182,6 +192,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       <div className="flex flex-col gap-3">
                           <button
                               onClick={handleVoteClick}
+                              // Enable button if Voted OR (Not Voted AND Can Vote)
                               disabled={!isVoted && !canVote}
                               className={`
                                   w-full py-4 uppercase tracking-[0.2em] text-[10px] font-bold rounded-[2px] transition-all duration-300 flex items-center justify-center gap-3 shadow-lg

@@ -152,9 +152,8 @@ const IntroView: React.FC<{
     };
 
     const onEnterClick = () => {
-        if (!introYoutubeId) {
-             initializeAudio(); // Initialize audio context for mobile if needed
-        }
+        // Crucial for mobile: Initialize audio context on user interaction
+        initializeAudio(); 
         handleStart();
     };
 
@@ -361,7 +360,9 @@ const VotingView: React.FC<{
     handleBack: () => void;
     setDetailSongId: (id: number) => void;
 }> = ({ t, songs, selectedIds, MAX_VOTES, voteReasons, onRequestSubmit, handleBack, setDetailSongId }) => {
-    const progress = (selectedIds.length / MAX_VOTES) * 100;
+    // Progress is simply the count now, since there is no hard "target" to reach 100% of
+    const count = selectedIds.length;
+    const progress = Math.min((count / MAX_VOTES) * 100, 100);
     
     return (
       <div className="min-h-screen pb-32 relative w-full">
@@ -388,8 +389,6 @@ const VotingView: React.FC<{
                {songs.map((song, index) => {
                    const isSelected = selectedIds.includes(song.id);
                    const isYouTube = !!song.youtubeId;
-                   // MODIFIED: Use the uniform ARTIST_IMAGE_URL (Beloved Cover) unless a custom image is explicitly set.
-                   // This ignores YouTube thumbnails to maintain the "Album" aesthetic.
                    const thumbnail = song.customImageUrl || ARTIST_IMAGE_URL;
                    
                    return (
@@ -456,17 +455,17 @@ const VotingView: React.FC<{
            <div className="fixed bottom-0 left-0 w-full bg-[#050505]/90 border-t border-white/5 p-5 z-40 backdrop-blur-xl">
                <div className="max-w-2xl mx-auto flex items-center justify-between gap-6">
                    <div className="text-[10px] md:text-xs text-gray-500 font-serif italic">
-                       {selectedIds.length < MAX_VOTES 
+                       {selectedIds.length === 0
                            ? t.selectMore 
-                           : <span className="text-gold not-italic font-sans tracking-widest font-bold drop-shadow-md">{t.mySelection}</span>
+                           : <span className="text-gold not-italic font-sans tracking-widest font-bold drop-shadow-md">{t.mySelection} ({selectedIds.length})</span>
                        }
                    </div>
                    <button 
                        onClick={onRequestSubmit}
-                       disabled={selectedIds.length !== MAX_VOTES}
+                       disabled={selectedIds.length === 0}
                        className={`
                            px-8 py-3 uppercase tracking-[0.2em] text-[10px] md:text-xs font-bold rounded-[2px] transition-all duration-500 active:scale-95
-                           ${selectedIds.length === MAX_VOTES 
+                           ${selectedIds.length > 0
                                ? 'bg-white text-black hover:bg-gold shadow-[0_0_20px_rgba(255,255,255,0.2)]' 
                                : 'bg-white/5 text-gray-600 cursor-not-allowed border border-white/5'
                            }
@@ -608,6 +607,7 @@ const AppContent = () => {
       delete newReasons[id];
       setVoteReasons(newReasons);
     } else {
+      // Changed logic: Allow vote if less than MAX_VOTES
       if (selectedIds.length < MAX_VOTES) {
         setSelectedIds(prev => [...prev, id]);
         if (reason) setVoteReasons(prev => ({ ...prev, [id]: reason }));
@@ -616,7 +616,8 @@ const AppContent = () => {
   };
 
   const handleRequestSubmit = () => {
-      if (selectedIds.length === MAX_VOTES) {
+      // Allow submit if at least 1 song selected
+      if (selectedIds.length > 0 && selectedIds.length <= MAX_VOTES) {
           setShowFinalModal(true);
       }
   };

@@ -7,7 +7,7 @@ export const TRANSLATIONS = {
     // 1. Home (Manifesto)
     title: "摯愛",
     subtitle: "2026 大碟票選活動",
-    homeBody: "《摯愛》，是一場關於理解、陪伴與被看見的旅程。\n這一次，我不是從創作開始，而是從你們的耳朵與心開始。\n\n從泡麵聲學院一路到今天，我親自演唱過無數你們點給我的歌。\n在那些夜晚裡，我看見了許多情感的影子。\n於是，我從中 精心挑選了 40 首歌曲，作為《摯愛》專輯可能走向的起點。\n\n最終會收錄多少首，我不想急著定案。\n因為這張專輯想保留的，是「我們一起選擇的溫度」。\n\n今天，邀請你從 40 首裡選出 10 首屬於你的感動。",
+    homeBody: "《摯愛》，是一場關於理解、陪伴與被看見的旅程。\n這一次，我不是從創作開始，而是從你們的耳朵與心開始。\n\n從泡麵聲學院一路到今天，我親自演唱過無數你們點給我的歌。\n在那些夜晚裡，我看見了許多情感的影子。\n於是，我從中 精心挑選了 40 首歌曲，作為《摯愛》專輯可能走向的起點。\n\n最終會收錄多少首，我不想急著定案。\n因為這張專輯想保留的，是「我們一起選擇的溫度」。\n\n今天，邀請你從 40 首裡選出屬於你的感動。",
     enter: "開始投票",
 
     // 2. Guide (About This Project)
@@ -16,7 +16,7 @@ export const TRANSLATIONS = {
     
     // 3. How to Vote
     howToTitle: "如何參與",
-    howToBody: "這裡共有 我從泡麵聲學院精選出的 40 首歌曲。\n\n請選出 你最觸動的 10 首歌。\n\n送出後會跳出 留言框，你可以寫：\n為什麼選這些歌、它陪你度過的瞬間，或你想留下的一句話。\n你的留言可能會成為 MV 的文字素材之一。\n\n投票完成後，我會寄給你一張 有聲音樂卡片（Audio Postcard），作為我們一起完成《摯愛》的紀念。\n\n你不是聽眾，而是共同創作者。",
+    howToBody: "這裡共有 我從泡麵聲學院精選出的 40 首歌曲。\n\n請選出 你最觸動的歌曲（1 ~ 10 首皆可）。\n\n送出後會跳出 留言框，你可以寫：\n為什麼選這些歌、它陪你度過的瞬間，或你想留下的一句話。\n你的留言可能會成為 MV 的文字素材之一。\n\n投票完成後，我會寄給你一張 有聲音樂卡片（Audio Postcard），作為我們一起完成《摯愛》的紀念。\n\n你不是聽眾，而是共同創作者。",
     
     // Auth Form
     managerLogin: "Manager Login",
@@ -26,8 +26,8 @@ export const TRANSLATIONS = {
 
     // 4. Voting & Selection
     selection: "您的摯愛",
-    votingRule: "請選出 你最觸動的 10 首歌。",
-    selectMore: "請選擇 10 首曲目",
+    votingRule: "請選出您最觸動的歌曲 (最多 10 首)。",
+    selectMore: "可選擇 1 ~ 10 首",
     mySelection: "已選曲目",
     confirm: "確認並送出",
     back: "返回",
@@ -45,7 +45,7 @@ export const TRANSLATIONS = {
     cancel: "取消",
     
     // 5. Final Inquiry (Tell Me Why)
-    finalInquiryTitle: "謝謝你選下這 10 首歌",
+    finalInquiryTitle: "謝謝你選下這些歌",
     finalInquirySubtitle: "Tell Me Why",
     finalInquiryPrompt: "在這裡，我想聽你說一點故事。\n\n寫下：\n為什麼是它們\n哪一段旋律讓你停下\n或它陪你走過了什麼樣的夜晚\n\n你的留言不是評論，而是珍貴的情感痕跡。\n它可能成為 MV 的一部分，也會成為我創作裡的方向。\n\n《摯愛》真正想收進的，是你與音樂之間的連結。",
     finalInquiryPlaceholder: "寫下您的感受（您的文字可能會出現在未來的 MV 中）...",
@@ -62,7 +62,7 @@ export const TRANSLATIONS = {
     // 1. Home
     title: "BELOVED",
     subtitle: "The 2026 Collection",
-    homeBody: "“Beloved” is a journey of being understood, accompanied, and truly seen.\nThis time, the album doesn’t begin with my writing.\nIt begins with your ears, and your heart.\n\nFrom Noodle Acoustic Academy to now, I’ve sung countless songs requested by you.\nIn those late-night moments, I witnessed so many quiet emotions.\nFrom there, I carefully selected 40 songs as the starting point for what “Beloved” may become.\n\nHow many songs will be included in the final album?\nI’m not rushing to decide.\nBecause this album is meant to keep the warmth we create together.\n\nToday, I invite you to choose 10 songs that speak to you.",
+    homeBody: "“Beloved” is a journey of being understood, accompanied, and truly seen.\nThis time, the album doesn’t begin with my writing.\nIt begins with your ears, and your heart.\n\nFrom Noodle Acoustic Academy to now, I’ve sung countless songs requested by you.\nIn those late-night moments, I witnessed so many quiet emotions.\nFrom there, I carefully selected 40 songs as the starting point for what “Beloved” may become.\n\nHow many songs will be included in the final album?\nI’m not rushing to decide.\nBecause this album is meant to keep the warmth we create together.\n\nToday, I invite you to choose songs that speak to you.",
     enter: "Start Voting",
 
     // 2. Guide
@@ -71,7 +71,7 @@ export const TRANSLATIONS = {
     
     // 3. How to Vote
     howToTitle: "How to Vote",
-    howToBody: "Here are 40 songs selected from Noodle Acoustic Academy.\n\nChoose 10 songs that resonate with you the most.\n\nAfter you submit, a comment box will appear. Write anything you wish:\nWhy you chose these songs\nA moment they accompanied you\nA line you want to leave behind\n\nYour words may be used as part of the MV visuals.\n\nAfter voting, you’ll receive an Audio Postcard, recorded personally as a thank-you gift.\n\nYou are not just a listener.\nYou are a co-creator.",
+    howToBody: "Here are 40 songs selected from Noodle Acoustic Academy.\n\nChoose the ones that resonate with you (1 to 10 songs).\n\nAfter you submit, a comment box will appear. Write anything you wish:\nWhy you chose these songs\nA moment they accompanied you\nA line you want to leave behind\n\nYour words may be used as part of the MV visuals.\n\nAfter voting, you’ll receive an Audio Postcard, recorded personally as a thank-you gift.\n\nYou are not just a listener.\nYou are a co-creator.",
     
     managerLogin: "Manager Login",
     name: "Your Name",
@@ -79,8 +79,8 @@ export const TRANSLATIONS = {
     start: "Enter Studio",
 
     selection: "Your Beloved",
-    votingRule: "Choose 10 songs that resonate with you the most.",
-    selectMore: "Select 10 Tracks",
+    votingRule: "Choose up to 10 songs that resonate with you.",
+    selectMore: "Select 1 ~ 10 Tracks",
     mySelection: "My Selection",
     confirm: "Submit Selection",
     back: "Back",
@@ -96,7 +96,7 @@ export const TRANSLATIONS = {
     confirmSelection: "Confirm",
     cancel: "Cancel",
 
-    finalInquiryTitle: "Thank you for choosing these 10 songs",
+    finalInquiryTitle: "Thank you for choosing these songs",
     finalInquirySubtitle: "Tell Me Why",
     finalInquiryPrompt: "Here, I’d love to hear a little of your story.\n\nTell me:\nWhy these songs\nWhich moment or melody stayed with you\nOr what part of your life they quietly walked beside\n\nYour message isn’t a review.\nIt’s a trace of your truth.\nIt may become part of the MV, and part of the direction of this album.\n\n“Beloved” is built from your connection with the music.",
     finalInquiryPlaceholder: "Write your thoughts (Your words might appear in a future MV)...",
@@ -112,7 +112,7 @@ export const TRANSLATIONS = {
     // 1. Home
     title: "最愛",
     subtitle: "2026 コレクション",
-    homeBody: "「摯愛」は、理解されること、寄り添われること、そして見つめ返される旅です。\n今回は、創作からではなく、あなたの耳と心から始まります。\n\n泡麵声学院で、私は数えきれないほどのリクエスト曲を歌ってきました。\nその夜ごとに、さまざまな想いの影が見えました。\nその中から 40曲を丁寧に選び 「摯愛」が向かうかもしれない最初の景色にしました。\n\n最終的に何曲が収録されるかは、まだ決めていません。\nこのアルバムが大切にしたいのは「あなたと一緒に選ぶ温度」だからです。\n\n40曲の中から、あなたの10曲を選んでください。",
+    homeBody: "「摯愛」は、理解されること、寄り添われること、そして見つめ返される旅です。\n今回は、創作からではなく、あなたの耳と心から始まります。\n\n泡麵声学院で、私は数えきれないほどのリクエスト曲を歌ってきました。\nその夜ごとに、さまざまな想いの影が見えました。\nその中から 40曲を丁寧に選び 「摯愛」が向かうかもしれない最初の景色にしました。\n\n最終的に何曲が収録されるかは、まだ決めていません。\nこのアルバムが大切にしたいのは「あなたと一緒に選ぶ温度」だからです。\n\n40曲の中から、あなたの好きな曲を選んでください。",
     enter: "投票を始める",
 
     // 2. Guide
@@ -121,7 +121,7 @@ export const TRANSLATIONS = {
     
     // 3. How to Vote
     howToTitle: "参加方法",
-    howToBody: "ここには 泡麵声学院から選んだ40曲 が並んでいます。\n\n心に響いた 10曲を選んでください。\n\n送信後、コメント欄 が表示されます。\nなぜその曲を選んだのか\nその曲が寄り添ってくれた瞬間\n残したいひと言\n\nあなたの言葉は、MVの文字素材として使用される可能性があります。\n\n投票後、感謝の気持ちとして 音声付きミュージックカード をお送りします。\n\nあなたはただのリスナーではなく、共に創る仲間です。",
+    howToBody: "ここには 泡麵声学院から選んだ40曲 が並んでいます。\n\n心に響いた曲を選んでください（1〜10曲）。\n\n送信後、コメント欄 が表示されます。\nなぜその曲を選んだのか\nその曲が寄り添ってくれた瞬間\n残したいひと言\n\nあなたの言葉は、MVの文字素材として使用される可能性があります。\n\n投票後、感謝の気持ちとして 音声付きミュージックカード をお送りします。\n\nあなたはただのリスナーではなく、共に創る仲間です。",
     
     managerLogin: "管理者ログイン",
     name: "お名前",
@@ -129,8 +129,8 @@ export const TRANSLATIONS = {
     start: "スタジオへ",
 
     selection: "あなたの最愛",
-    votingRule: "心に響いた 10曲を選んでください。",
-    selectMore: "10曲を選んでください",
+    votingRule: "心に響いた曲を選んでください (最大10曲)。",
+    selectMore: "1 ~ 10曲を選んでください",
     mySelection: "選択した曲",
     confirm: "投票する",
     back: "戻る",
@@ -146,7 +146,7 @@ export const TRANSLATIONS = {
     confirmSelection: "確認",
     cancel: "キャンセル",
 
-    finalInquiryTitle: "10曲を選んでくれて、ありがとうございます",
+    finalInquiryTitle: "選んでくれて、ありがとうございます",
     finalInquirySubtitle: "Tell Me Why",
     finalInquiryPrompt: "ここでは、少しだけあなたの物語を聞かせてください。\n\n書いてほしいこと\nなぜその曲なのか\n心に残った旋律や瞬間\nその曲が寄り添ってくれた時間\n\nあなたの言葉は批評ではなく、かけがえのない感情の痕跡です。\nMVの一部となるかもしれませんし、この作品の方向性にもつながります。\n\n「摯愛」が収めたいのは、あなたと音楽の結びつきです。",
     finalInquiryPlaceholder: "想いをここに（あなたの言葉が将来のMVに登場するかもしれません）...",
