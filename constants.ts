@@ -196,11 +196,13 @@ export const getAudioUrl = (input: string) => {
         }
         return url;
     }
-    return `https://drive.google.com/uc?export=download&confirm=t&id=${url}`;
+    // FIX FOR MOBILE: Use docs.google.com without confirm=t
+    // OLD: return `https://drive.google.com/uc?export=download&confirm=t&id=${url}`;
+    return `https://docs.google.com/uc?export=download&id=${url}`;
 };
 
 // --- YOUTUBE HELPERS ---
 export const getYouTubeThumbnail = (id: string) => {
-  // Returns the high-quality thumbnail
-  return `https://img.youtube.com/vi/${id}/mqdefault.jpg`; 
+  // Returns the high-quality thumbnail (hqdefault is 480x360, better than mqdefault)
+  return `https://img.youtube.com/vi/${id}/hqdefault.jpg`; 
 };

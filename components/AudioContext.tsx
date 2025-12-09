@@ -84,8 +84,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     try {
         const audio = new Audio();
-        // Removed 'playsInline' as it is not a valid property for Audio elements and can cause crashes on strict JS engines
-        audio.preload = "auto";
+        // IMPORTANT: Set preload to NONE for mobile to avoid 403s on speculative loading
+        audio.preload = "none";
         audioRef.current = audio;
 
         // Event Listeners

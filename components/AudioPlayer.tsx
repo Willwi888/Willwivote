@@ -43,6 +43,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   // Determine final Source URL
   const getFinalSource = () => {
+    // Basic safety check: if SRC contains youtube, it's NOT an audio file.
+    // This prevents the player from trying to fetch a YouTube page as an MP3.
+    if (src && (src.includes('youtube.com') || src.includes('youtu.be'))) return '';
+
     if (src && src.trim() !== '') return getAudioUrl(src);
     if (driveId && driveId.trim() !== '') return getAudioUrl(driveId);
     return '';
@@ -54,7 +58,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
     const url = getFinalSource();
     if (!url) {
-        alert("No audio URL found for this track.");
+        // If it's a YouTube link mistakenly passed here, we shouldn't alert, just ignore or log.
+        // But for UX, if user clicks play and nothing happens, that's bad.
+        // However, SongDetailModal now hides this player if it looks like YouTube, so we are safe.
+        alert("Audio source unavailable.");
         return;
     }
 
@@ -200,7 +207,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                           step="0.01" 
                           value={volume}
                           onChange={(e) => setVolume(parseFloat(e.target.value))}
-                          className="w-24 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-white hover:accent-gold"
+                          className="w-28 md:w-32 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-gold hover:accent-white"
                       />
                   </div>
               </div>

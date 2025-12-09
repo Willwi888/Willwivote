@@ -7,9 +7,10 @@ const VOTE_STORAGE_KEY = 'beloved_2026_votes';
 const SONG_METADATA_KEY = 'beloved_2026_song_metadata';
 const GLOBAL_CONFIG_KEY = 'beloved_2026_global_config';
 
-// --- GLOBAL CONFIG (Intro Song) ---
+// --- GLOBAL CONFIG (Intro Song & Google Sheet) ---
 export interface GlobalConfig {
   introAudioUrl: string;
+  googleSheetUrl?: string; // New field for GAS URL
 }
 
 export const getGlobalConfig = (): GlobalConfig => {
@@ -31,8 +32,27 @@ export const saveGlobalConfig = (config: GlobalConfig) => {
   }
 };
 
+// --- GOOGLE SHEET INTEGRATION ---
+const submitToGoogleSheet = async (user: User, scriptUrl: string) => {
+    try {
+        // We use mode: 'no-cors' because Google Apps Script doesn't standardly return CORS headers 
+        // for simple Web Apps. The data WILL reach the sheet, but the browser sees an "opaque" response.
+        // To ensure data integrity, we send Content-Type text/plain so no preflight OPTION is needed.
+        await fetch(scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors', 
+            headers: {
+                'Content-Type': 'text/plain'
+            },
+            body: JSON.stringify(user)
+        });
+        console.log("Sent to Google Sheet");
+    } catch (e) {
+        console.error("Google Sheet Sync Error:", e);
+    }
+};
 
-// --- VOTING LOGIC (HYBRID: SUPABASE + LOCAL) ---
+// --- VOTING LOGIC (HYBRID: SUPABASE + LOCAL + GOOGLE SHEET) ---
 
 export const saveVote = async (user: User) => {
   // 1. Always save to LocalStorage (for UI state)
@@ -67,6 +87,12 @@ export const saveVote = async (user: User) => {
       } catch (e) {
           console.error("Supabase Connection Error", e);
       }
+  }
+
+  // 3. NEW: If Google Sheet URL is configured, send data there
+  const config = getGlobalConfig();
+  if (config.googleSheetUrl && config.googleSheetUrl.startsWith('https://script.google.com/')) {
+      submitToGoogleSheet(user, config.googleSheetUrl);
   }
 };
 

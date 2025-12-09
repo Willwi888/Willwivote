@@ -27,6 +27,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   // Editing State
   const [editingSongId, setEditingSongId] = useState<number | null>(null);
   const [introUrl, setIntroUrl] = useState('');
+  const [googleSheetUrl, setGoogleSheetUrl] = useState(''); // New State
   const [editForm, setEditForm] = useState<Partial<Song>>({});
   const { playingId } = useAudio();
   const [showImport, setShowImport] = useState(false);
@@ -50,6 +51,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       
       const config = getGlobalConfig();
       setIntroUrl(config.introAudioUrl || '');
+      setGoogleSheetUrl(config.googleSheetUrl || '');
 
       // Async fetch for votes (Supabase support)
       try {
@@ -98,8 +100,11 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const handleSaveGlobalConfig = () => {
-      saveGlobalConfig({ introAudioUrl: introUrl });
-      alert("Homepage Intro Audio Updated!");
+      saveGlobalConfig({ 
+          introAudioUrl: introUrl,
+          googleSheetUrl: googleSheetUrl
+      });
+      alert("Settings Updated! Google Sheet integration is active.");
   };
 
   const startEdit = (song: Song) => {
@@ -136,7 +141,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const handleDownloadBackup = () => {
       const data = {
           songs: localSongs,
-          globalConfig: { introAudioUrl: introUrl },
+          globalConfig: { introAudioUrl: introUrl, googleSheetUrl: googleSheetUrl },
           votes: users, // Include votes in backup
           timestamp: new Date().toISOString()
       };
@@ -174,6 +179,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               if (data.globalConfig) {
                   saveGlobalConfig(data.globalConfig);
                   setIntroUrl(data.globalConfig.introAudioUrl || '');
+                  setGoogleSheetUrl(data.globalConfig.googleSheetUrl || '');
               }
               
               alert("Configuration restored successfully!");
@@ -394,25 +400,43 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             // --- CMS TAB ---
             <div className="space-y-6 animate-fade-in pb-20">
                  {/* GLOBAL SETTINGS */}
-                 <div className="bg-[#111] p-6 rounded border border-white/20 mb-8">
-                     <h3 className="text-white font-serif mb-4 flex items-center gap-2">
-                         <PlayIcon className="w-4 h-4 text-gold" />
-                         Homepage / Intro Music
-                     </h3>
-                     <div className="flex gap-4 items-end">
-                         <div className="flex-1">
-                             <label className="block text-[10px] uppercase text-gray-500 mb-2">Audio Link</label>
-                             <input 
-                                className="w-full bg-black border border-white/10 p-3 text-white rounded focus:border-gold outline-none font-mono text-xs" 
-                                value={introUrl}
-                                onChange={e => setIntroUrl(e.target.value)}
-                             />
-                         </div>
+                 <div className="bg-[#111] p-6 rounded border border-white/20 mb-8 grid md:grid-cols-2 gap-6">
+                     {/* Intro Audio Column */}
+                     <div>
+                         <h3 className="text-white font-serif mb-4 flex items-center gap-2">
+                             <PlayIcon className="w-4 h-4 text-gold" />
+                             Homepage / Intro Music
+                         </h3>
+                         <label className="block text-[10px] uppercase text-gray-500 mb-2">YouTube or Audio Link</label>
+                         <input 
+                            className="w-full bg-black border border-white/10 p-3 text-white rounded focus:border-gold outline-none font-mono text-xs" 
+                            value={introUrl}
+                            onChange={e => setIntroUrl(e.target.value)}
+                            placeholder="https://youtu.be/..."
+                         />
+                     </div>
+
+                     {/* Google Sheet Column */}
+                     <div>
+                         <h3 className="text-white font-serif mb-4 flex items-center gap-2">
+                             <span className="text-green-500 font-bold text-xs">SHEET</span>
+                             Google Sheet Integration
+                         </h3>
+                         <label className="block text-[10px] uppercase text-gray-500 mb-2">Apps Script Deployment URL</label>
+                         <input 
+                            className="w-full bg-black border border-white/10 p-3 text-white rounded focus:border-gold outline-none font-mono text-xs" 
+                            value={googleSheetUrl}
+                            onChange={e => setGoogleSheetUrl(e.target.value)}
+                            placeholder="https://script.google.com/macros/s/..."
+                         />
+                     </div>
+                     
+                     <div className="md:col-span-2 flex justify-end">
                          <button 
                             onClick={handleSaveGlobalConfig}
-                            className="bg-white text-black px-6 py-3 rounded text-xs font-bold uppercase hover:bg-gold transition-colors h-[42px]"
+                            className="bg-white text-black px-8 py-3 rounded text-xs font-bold uppercase hover:bg-gold transition-colors shadow-lg"
                          >
-                            Update
+                            Update All Settings
                          </button>
                      </div>
                  </div>
@@ -499,17 +523,18 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                              </div>
                              
                              <div>
-                                 <label className="block text-[10px] uppercase text-gray-500 mb-1">Audio Link</label>
+                                 <label className="block text-[10px] uppercase text-gray-500 mb-1">Audio Link / YouTube URL</label>
                                  <input 
                                     className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none font-mono text-xs" 
                                     value={editForm.customAudioUrl}
                                     onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})}
-                                    placeholder="https://..."
+                                    placeholder="https://youtu.be/..."
                                  />
                              </div>
 
                              <div>
-                                 <label className="block text-[10px] uppercase text-gray-500 mb-1">Custom Cover Image URL</label>
+                                 <label className="block text-[10px] uppercase text-gray-500 mb-1">Custom Cover Image (Optional)</label>
+                                 <div className="text-[9px] text-gray-500 mb-1 italic">Leave blank to use YouTube thumbnail automatically.</div>
                                  <input 
                                     className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none font-mono text-xs" 
                                     value={editForm.customImageUrl}
