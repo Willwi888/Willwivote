@@ -66,6 +66,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   };
 
   // ROBUST YOUTUBE DETECTION
+  // Prioritize explicit youtubeId, then try to extract from customAudioUrl
   let finalYoutubeId = song.youtubeId;
   if (!finalYoutubeId && song.customAudioUrl) {
       finalYoutubeId = extractYouTubeId(song.customAudioUrl);
@@ -101,10 +102,10 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   /* YouTube Iframe - PURE, No overlays, Native Controls */
                   <iframe 
                       className="w-full h-full"
-                      src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=0&playsinline=1&rel=0&modestbranding=1&controls=1&fs=1&color=white&iv_load_policy=3`}
+                      src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&controls=1&fs=1&color=white&iv_load_policy=3`}
                       title={song.title}
                       frameBorder="0"
-                      allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                   ></iframe>
               ) : (

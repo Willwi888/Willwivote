@@ -138,23 +138,25 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
       {/* Expanded Controls (Waveform-style) - Only rendered if this is the active track or forced */}
       {showControls && (
-          <div className="flex items-center gap-3 w-full bg-[#1e1e1e] rounded-md p-3 animate-fade-in border border-white/10 shadow-lg">
-              {/* Play/Pause Mini Control */}
-               <button
-                  onClick={handleToggle}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0
-                      ${isError ? 'bg-red-900/50 text-red-500 hover:bg-red-900 hover:text-red-400' : 'bg-white/10 hover:bg-white text-white hover:text-black'}
-                  `}
-               >
-                   {isBuffering ? <SpinnerIcon className="w-3 h-3 text-gold" /> : isError ? <RetryIcon className="w-3 h-3" /> : isReallyPlaying ? <PauseIcon className="w-3 h-3" /> : <PlayIcon className="w-3 h-3 translate-x-0.5" />}
-               </button>
+          <div className="flex items-center gap-3 w-full bg-[#1e1e1e] rounded-md p-3 animate-fade-in border border-white/10 shadow-lg flex-wrap sm:flex-nowrap">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                 {/* Play/Pause Mini Control */}
+                 <button
+                    onClick={handleToggle}
+                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0
+                        ${isError ? 'bg-red-900/50 text-red-500 hover:bg-red-900 hover:text-red-400' : 'bg-white/10 hover:bg-white text-white hover:text-black'}
+                    `}
+                 >
+                     {isBuffering ? <SpinnerIcon className="w-3 h-3 text-gold" /> : isError ? <RetryIcon className="w-3 h-3" /> : isReallyPlaying ? <PauseIcon className="w-3 h-3" /> : <PlayIcon className="w-3 h-3 translate-x-0.5" />}
+                 </button>
 
-              {/* Progress Slider */}
-              <span className="text-[9px] font-mono text-gold w-8 text-right tabular-nums">
-                  {isCurrent ? formatTime(currentTime) : "0:00"}
-              </span>
+                {/* Progress Slider */}
+                <span className="text-[9px] font-mono text-gold w-8 text-right tabular-nums">
+                    {isCurrent ? formatTime(currentTime) : "0:00"}
+                </span>
+              </div>
               
-              <div className="flex-1 relative h-6 flex items-center group/seek">
+              <div className="flex-1 relative h-6 flex items-center group/seek w-full order-3 sm:order-2 mt-2 sm:mt-0">
                   {isBuffering && (
                       <div className="absolute top-[-15px] left-0 w-full text-center text-[8px] text-gold tracking-widest uppercase animate-pulse font-bold">
                           Buffering...
@@ -183,22 +185,24 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   />
               </div>
               
-              <span className="text-[9px] font-mono text-gray-500 w-8 tabular-nums">
-                  {isCurrent ? formatTime(duration) : "0:00"}
-              </span>
+              <div className="flex items-center gap-2 order-2 sm:order-3">
+                  <span className="text-[9px] font-mono text-gray-500 w-8 tabular-nums">
+                      {isCurrent ? formatTime(duration) : "0:00"}
+                  </span>
 
-              {/* Volume Slider */}
-              <div className="flex items-center gap-2 group/vol pl-2 border-l border-white/10" onClick={(e) => e.stopPropagation()}>
-                  <VolumeIcon className="w-3 h-3 text-gray-500 group-hover/vol:text-white transition-colors" />
-                  <input 
-                      type="range" 
-                      min="0" 
-                      max="1" 
-                      step="0.01" 
-                      value={volume}
-                      onChange={(e) => setVolume(parseFloat(e.target.value))}
-                      className="w-16 h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-white hover:accent-gold"
-                  />
+                  {/* Volume Slider - ENHANCED VISIBILITY */}
+                  <div className="flex items-center gap-2 group/vol pl-2 border-l border-white/10" onClick={(e) => e.stopPropagation()}>
+                      <VolumeIcon className="w-4 h-4 text-gray-400 group-hover/vol:text-white transition-colors" />
+                      <input 
+                          type="range" 
+                          min="0" 
+                          max="1" 
+                          step="0.01" 
+                          value={volume}
+                          onChange={(e) => setVolume(parseFloat(e.target.value))}
+                          className="w-24 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-white hover:accent-gold"
+                      />
+                  </div>
               </div>
           </div>
       )}

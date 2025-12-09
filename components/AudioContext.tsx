@@ -111,10 +111,11 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
         const handleError = (e: Event) => {
             const err = audio.error;
+            // Ignore if src is empty or matches current location (reset state)
             if (!audio.src || audio.src === window.location.href || audio.src === '') return;
             if (err && err.code === 20) return; // Abort error
 
-            console.warn(`Audio Playback Error: ${err ? err.message : 'Unknown'}`);
+            console.warn(`Audio Playback Warning: ${err ? err.message : 'Unknown error'}`);
             setIsLoading(false);
             setError(true);
             setIsPlaying(false);
@@ -205,12 +206,21 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (playPromise !== undefined) {
             playPromise.catch(err => {
                 if (err.name === 'AbortError') return;
-                console.error("Play failed:", err);
-                if (err.name === 'NotSupportedError' || err.name === 'NotAllowedError') {
+                
+                // Gracefully handle not supported errors (e.g. invalid Drive links)
+                if (err.name === 'NotSupportedError' || err.message.includes('supported source')) {
+                    console.warn(`Audio playback failed for ${url}:`, err.message);
                     setError(true);
                     setIsPlaying(false);
                     setIsLoading(false);
+                    return;
                 }
+                
+                console.error("Play failed:", err);
+                // Also treat as playback error
+                setError(true);
+                setIsPlaying(false);
+                setIsLoading(false);
             });
         }
     } catch (e) {
