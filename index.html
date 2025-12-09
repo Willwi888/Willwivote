@@ -56,9 +56,13 @@
       }
     </script>
     <style>
-      body {
-        background-color: #030303; /* Deepest black */
+      html, body {
+        background-color: #030303 !important; /* Force Black */
         color: #e5e5e5;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         overflow-x: hidden;
@@ -87,7 +91,7 @@
         pointer-events: none;
       }
 
-      /* Noise Texture - Subtle Grain */
+      /* Noise Texture - Moved to negative z-index to prevent blocking */
       .bg-noise {
         position: fixed;
         top: 0;
@@ -95,7 +99,7 @@
         width: 100vw;
         height: 100vh;
         pointer-events: none;
-        z-index: 50; /* Above regular content, below modals */
+        z-index: 1; /* Lowest level overlay */
         opacity: 0.04;
         background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
       }
@@ -108,15 +112,15 @@
         scrollbar-width: none;
       }
       
-      /* Cinematic Backdrop - The Blur Layer */
+      /* Cinematic Backdrop */
       .cinematic-backdrop {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        z-index: 0;
-        opacity: 0.2; /* Slightly increased for visibility */
+        z-index: 0; /* Background level */
+        opacity: 0.2;
         filter: blur(90px) grayscale(100%);
         transform: scale(1.1);
         transition: background-image 1.5s ease-in-out;
@@ -131,19 +135,6 @@
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.08);
-      }
-      
-      .glass-button {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        transition: all 0.4s ease;
-      }
-      .glass-button:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: rgba(212, 175, 55, 0.5); /* Gold border on hover */
-        box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
       }
     </style>
   <script type="importmap">

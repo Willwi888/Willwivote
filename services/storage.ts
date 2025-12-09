@@ -18,12 +18,17 @@ export const getGlobalConfig = (): GlobalConfig => {
     const data = localStorage.getItem(GLOBAL_CONFIG_KEY);
     return data ? JSON.parse(data) : { introAudioUrl: '' };
   } catch (e) {
+    console.warn("LocalStorage access failed (possibly incognito mode)", e);
     return { introAudioUrl: '' };
   }
 };
 
 export const saveGlobalConfig = (config: GlobalConfig) => {
-  localStorage.setItem(GLOBAL_CONFIG_KEY, JSON.stringify(config));
+  try {
+    localStorage.setItem(GLOBAL_CONFIG_KEY, JSON.stringify(config));
+  } catch (e) {
+    console.warn("LocalStorage save failed", e);
+  }
 };
 
 
@@ -34,7 +39,11 @@ export const saveVote = async (user: User) => {
   const currentData = getLocalVotes();
   if (!currentData.find(u => u.email === user.email)) {
       const newData = [...currentData, user];
-      localStorage.setItem(VOTE_STORAGE_KEY, JSON.stringify(newData));
+      try {
+        localStorage.setItem(VOTE_STORAGE_KEY, JSON.stringify(newData));
+      } catch (e) {
+        console.warn("LocalStorage save vote failed", e);
+      }
   }
 
   // 2. If Supabase is connected, save to Cloud Database
@@ -63,8 +72,12 @@ export const saveVote = async (user: User) => {
 
 const getLocalVotes = (): User[] => {
   if (typeof window === 'undefined') return [];
-  const data = localStorage.getItem(VOTE_STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
+  try {
+    const data = localStorage.getItem(VOTE_STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
 };
 
 export const getVotes = async (): Promise<User[]> => {
@@ -110,31 +123,31 @@ export const getLeaderboard = (songs: Song[], votes: User[]) => {
 export const getSongs = (): Song[] => {
   if (typeof window === 'undefined') return DEFAULT_SONGS;
   
-  const savedMetadata = localStorage.getItem(SONG_METADATA_KEY);
-  if (savedMetadata) {
-    try {
-      const parsed = JSON.parse(savedMetadata);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-          const merged = DEFAULT_SONGS.map(defaultSong => {
-            const saved = parsed.find((p: Song) => p.id === defaultSong.id);
-            if (saved) {
-                return { 
-                    ...defaultSong, 
-                    title: saved.title || defaultSong.title,
-                    customAudioUrl: saved.customAudioUrl,
-                    youtubeId: saved.youtubeId, // Retrieve YouTube ID
-                    customImageUrl: saved.customImageUrl,
-                    lyrics: saved.lyrics,
-                    credits: saved.credits
-                };
-            }
-            return defaultSong;
-          });
-          return merged;
+  try {
+      const savedMetadata = localStorage.getItem(SONG_METADATA_KEY);
+      if (savedMetadata) {
+        const parsed = JSON.parse(savedMetadata);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+            const merged = DEFAULT_SONGS.map(defaultSong => {
+                const saved = parsed.find((p: Song) => p.id === defaultSong.id);
+                if (saved) {
+                    return { 
+                        ...defaultSong, 
+                        title: saved.title || defaultSong.title,
+                        customAudioUrl: saved.customAudioUrl,
+                        youtubeId: saved.youtubeId, // Retrieve YouTube ID
+                        customImageUrl: saved.customImageUrl,
+                        lyrics: saved.lyrics,
+                        credits: saved.credits
+                    };
+                }
+                return defaultSong;
+            });
+            return merged;
+        }
       }
-    } catch (e) {
+  } catch (e) {
       console.error("Failed to parse song metadata", e);
-    }
   }
   return DEFAULT_SONGS;
 };
@@ -144,7 +157,11 @@ export const updateSong = (id: number, updates: Partial<Song>) => {
   const updatedSongs = currentSongs.map(s => 
     s.id === id ? { ...s, ...updates } : s
   );
-  localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(updatedSongs));
+  try {
+    localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(updatedSongs));
+  } catch (e) {
+    alert("Storage full or disabled.");
+  }
   return updatedSongs;
 };
 
@@ -229,12 +246,16 @@ export const updateSongsBulk = (lines: string[]) => {
       };
   });
 
-  localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(updatedSongs));
+  try {
+    localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(updatedSongs));
+  } catch(e) {}
   return updatedSongs;
 };
 
 export const restoreFromBackup = (songs: Song[]) => {
-    localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(songs));
+    try {
+        localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(songs));
+    } catch(e) {}
 };
 
 export const resetSongTitles = () => {
