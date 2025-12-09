@@ -40,6 +40,43 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [volume, setVolumeState] = useState(1);
   const [currentTitle, setCurrentTitle] = useState('');
 
+  // --- STALL RECOVERY MONITOR ---
+  // This effect watches the audio. If it's supposed to be playing but time isn't moving
+  // for too long (e.g. stalled on network), it tries to nudge it.
+  useEffect(() => {
+    if (!isPlaying || !audioRef.current) return;
+
+    let lastTime = audioRef.current.currentTime;
+    let stuckCount = 0;
+
+    const checkInterval = setInterval(() => {
+       const audio = audioRef.current;
+       if (!audio) return;
+
+       // If we are supposed to be playing, but we are buffering (readyState < 3)
+       // or simply not moving forward.
+       if (Math.abs(audio.currentTime - lastTime) < 0.1) {
+           stuckCount++;
+           // If stuck for 2 seconds (4 checks)
+           if (stuckCount > 4) {
+               console.debug("Audio appears stuck, attempting nudge...");
+               // Nudge strategy 1: Pause and Play
+               if (audio.paused === false) {
+                   audio.pause();
+                   setTimeout(() => audio.play().catch(e => console.warn("Nudge failed", e)), 100);
+               }
+               stuckCount = 0; // Reset
+           }
+       } else {
+           stuckCount = 0;
+           lastTime = audio.currentTime;
+           setIsLoading(false); // We are moving, so we aren't loading
+       }
+    }, 500);
+
+    return () => clearInterval(checkInterval);
+  }, [isPlaying]);
+
   // Safety Timeout for Loading State
   useEffect(() => {
     let loadTimeout: ReturnType<typeof setTimeout>;
@@ -48,8 +85,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (isLoading) {
                 console.warn("Audio loading timed out - forcing state reset");
                 setIsLoading(false);
-                // Do not set error true immediately, just stop spinner, 
-                // sometimes audio plays even if state is weird.
+                // Do not set error true immediately, let the user try again
             }
         }, 15000);
     }
@@ -107,9 +143,15 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setDuration(audio.duration);
         setError(false);
     };
+    
+    // "stalled" event happens when data stops coming
+    const handleStalled = () => {
+        if (isPlaying) setIsLoading(true);
+    };
 
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('stalled', handleStalled);
     audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
@@ -122,6 +164,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       audio.src = '';
       audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('stalled', handleStalled);
       audio.removeEventListener('playing', handlePlaying);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
@@ -155,19 +198,15 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCurrentTitle(title);
 
     // --- RESUME LOGIC ---
-    // If clicking the SAME song that is currently active
     if (playingId === id) {
       if (isPlaying) {
         audio.pause();
         return;
       } else {
-        // Resume
         setIsPlaying(true);
-        // Check if the src is still valid
         if (audio.src && audio.src !== window.location.href) {
             audio.play().catch(e => {
                 console.warn("Resume failed, reloading...", e);
-                // If resume fails, treat as new load
                 loadAndPlay(id, url, audio);
             });
         } else {
@@ -189,25 +228,22 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setError(false);
 
     try {
-        // 1. HARD STOP: Pause explicitly
+        // 1. HARD STOP & RESET
         audio.pause();
-        
-        // 2. HARD RESET: Reset time to 0. This flushes buffer on some mobile browsers.
         audio.currentTime = 0;
 
-        // 3. SET SOURCE
+        // 2. SET SOURCE
         audio.src = url;
         audio.preload = "auto";
         
-        // 4. LOAD
+        // 3. LOAD & PLAY
         audio.load();
 
-        // 5. PLAY
         const playPromise = audio.play();
         if (playPromise !== undefined) {
             playPromise.catch(error => {
                 if (error.name === 'AbortError') {
-                    // Ignore aborts (user clicked another song fast)
+                    // Ignore aborts
                 } else {
                     console.error("Play request failed:", error);
                     setIsPlaying(false);
