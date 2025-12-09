@@ -148,46 +148,87 @@ export const updateSong = (id: number, updates: Partial<Song>) => {
   return updatedSongs;
 };
 
-// Helper to extract YouTube ID from various link formats
-const extractYouTubeId = (url: string): string | null => {
-    if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+// Robust YouTube ID extractor that works anywhere in a string
+const extractYouTubeId = (text: string): string | null => {
+    if (!text) return null;
+    // Matches youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID
+    // ID is usually 11 chars (alphanumeric + - _)
+    const regExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = text.match(regExp);
+    return match ? match[1] : null;
+};
+
+// Helper to clean up titles from batch uploaders (TunesToTube, etc)
+const cleanTitleText = (rawTitle: string): string => {
+    let clean = rawTitle;
+    
+    // 1. Remove "TunesToTube" artifacts
+    clean = clean.replace(/\(Uploaded by TunesToTube\)/gi, '');
+    clean = clean.replace(/TunesToTube/gi, '');
+    
+    // 2. Remove File Extensions
+    clean = clean.replace(/\.mp3$/i, '').replace(/\.wav$/i, '').replace(/\.m4a$/i, '');
+    
+    // 3. Remove common suffixes
+    clean = clean.replace(/\(Official Audio\)/gi, '');
+    clean = clean.replace(/\[Official Audio\]/gi, '');
+    clean = clean.replace(/\(Demo\)/gi, '');
+    
+    // 4. Remove leading numbering (e.g. "01. Song" or "1 - Song")
+    clean = clean.replace(/^\d+\s*[-.]\s*/, '');
+    
+    return clean.trim();
 };
 
 export const updateSongsBulk = (lines: string[]) => {
   const currentSongs = getSongs();
+  
+  // Clean lines: remove empty lines
+  const cleanLines = lines.filter(l => l.trim().length > 0);
+
   const updatedSongs = currentSongs.map((s, index) => {
-      if (index < lines.length && lines[index].trim() !== "") {
-          const line = lines[index].trim();
+      // If we have no more lines, return original song
+      if (index >= cleanLines.length) return s;
+
+      const line = cleanLines[index].trim();
+      let newTitle = s.title;
+      let newYoutubeId = s.youtubeId;
+      let newCustomAudioUrl = s.customAudioUrl;
+
+      // 1. Try to extract YouTube ID from the line
+      const ytId = extractYouTubeId(line);
+      
+      if (ytId) {
+          newYoutubeId = ytId;
+          newCustomAudioUrl = ''; // Clear audio URL to prefer YouTube
           
-          // Format: Title | Link
-          if (line.includes('|')) {
-              const [title, url] = line.split('|').map(p => p.trim());
-              const ytId = extractYouTubeId(url);
-              
-              if (ytId) {
-                  // Found YouTube Link -> Set ID, Clear Custom Audio (to prioritize YT)
-                  return { ...s, title: title || s.title, youtubeId: ytId, customAudioUrl: '' };
-              } else {
-                  // Regular Audio Link
-                  return { ...s, title: title || s.title, customAudioUrl: url || s.customAudioUrl };
-              }
-          } 
-          // Format: Just Link
-          else if (line.startsWith('http')) {
-              const ytId = extractYouTubeId(line);
-              if (ytId) return { ...s, youtubeId: ytId, customAudioUrl: '' };
-              return { ...s, customAudioUrl: line };
+          // 2. Extract Title if mixed (e.g., "My Song https://youtu.be/...")
+          // Remove the URL part to see if there is a title left
+          const urlRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?/g;
+          const textWithoutUrl = line.replace(urlRegex, '').trim();
+          
+          // Remove common "separators" people might type
+          const cleanRawTitle = textWithoutUrl.replace(/^\|/, '').replace(/\|$/, '').trim();
+
+          if (cleanRawTitle.length > 1) {
+              newTitle = cleanTitleText(cleanRawTitle);
           }
-          // Format: Just Title
-          else {
-              return { ...s, title: line };
-          }
+      } else if (line.startsWith('http')) {
+          // It's a non-YouTube URL
+          newCustomAudioUrl = line;
+      } else {
+          // It's just a title
+          newTitle = cleanTitleText(line);
       }
-      return s;
+
+      return {
+          ...s,
+          title: newTitle,
+          youtubeId: newYoutubeId,
+          customAudioUrl: newCustomAudioUrl
+      };
   });
+
   localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(updatedSongs));
   return updatedSongs;
 };

@@ -147,3 +147,9 @@ export const getAudioUrl = (input: string) => {
     // Default to Google Drive ID if it's not a URL
     return `https://drive.google.com/uc?export=download&confirm=t&id=${url}`;
 };
+
+// --- YOUTUBE HELPERS ---
+export const getYouTubeThumbnail = (id: string) => {
+  // Returns the high-quality thumbnail
+  return `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+};

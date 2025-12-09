@@ -402,13 +402,17 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                  {/* BULK IMPORT PANEL */}
                  {showImport && (
                      <div className="bg-[#1a1a1a] p-6 rounded border border-white/10 mb-8 animate-slide-up">
-                         <h3 className="text-white font-serif mb-2">Bulk Import</h3>
+                         <h3 className="text-white font-serif mb-2">Bulk Import / Playlist Parser</h3>
                          <div className="text-[10px] text-gray-500 mb-4 leading-relaxed border-l-2 border-gold pl-3">
-                            Format: <code>Song Title | https://link-to-song.mp3</code>
+                            <strong>Quick OAC Mode:</strong> Just paste your 40 YouTube links here. 
+                            <br/>
+                            Auto-Clean Enabled: Removes "TunesToTube", "(Official)", ".mp3", etc.
+                            <br/>
+                            Format: <code>Song Name https://youtu.be/...</code> or just <code>https://youtu.be/...</code>
                          </div>
                          <textarea 
                             className="w-full h-64 bg-black border border-white/10 rounded p-4 text-xs font-mono text-gray-300 focus:border-gold outline-none"
-                            placeholder={"Track 01 | https://...\nTrack 02 | https://..."}
+                            placeholder={"Paste your list here...\nhttps://youtu.be/link1\nhttps://youtu.be/link2\n\nOR\n\nSong A https://youtu.be/...\nSong B https://youtu.be/..."}
                             value={importText}
                             onChange={(e) => setImportText(e.target.value)}
                          />
@@ -487,6 +491,8 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {localSongs.map(song => {
                             const isPlaying = playingId === song.id;
+                            const hasYouTube = !!song.youtubeId;
+                            
                             return (
                                 <div 
                                     key={song.id} 
@@ -498,7 +504,8 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                             <div className="text-sm font-medium text-gray-300 truncate group-hover:text-white">{song.title}</div>
                                             <div className="flex gap-2 mt-1">
                                                 {song.lyrics && <span className="text-[8px] bg-white/10 px-1 rounded text-gray-400">LYRICS</span>}
-                                                {song.customAudioUrl && <span className="text-[8px] bg-green-900/50 px-1 rounded text-green-400">LINK</span>}
+                                                {hasYouTube && <span className="text-[8px] bg-red-900/50 px-1 rounded text-red-400">YOUTUBE</span>}
+                                                {!hasYouTube && song.customAudioUrl && <span className="text-[8px] bg-green-900/50 px-1 rounded text-green-400">LINK</span>}
                                             </div>
                                         </div>
                                         <button 

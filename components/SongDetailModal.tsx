@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Song, Language } from '../types';
-import { TRANSLATIONS } from '../constants';
+import { TRANSLATIONS, getYouTubeThumbnail } from '../constants';
 import AudioPlayer from './AudioPlayer';
 import { useAudio } from './AudioContext';
 import { CheckIcon, HeartIcon } from './Icons';
@@ -64,6 +64,11 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 
   // Determine if we are in YouTube Mode
   const isYouTube = !!song.youtubeId;
+  
+  // Smart Image Logic: Use Custom -> YouTube Thumbnail -> Default Cover
+  const displayImage = song.customImageUrl 
+      ? song.customImageUrl 
+      : (isYouTube ? getYouTubeThumbnail(song.youtubeId!) : defaultCover);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -79,20 +84,36 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
          <div className="flex-1 overflow-y-auto relative no-scrollbar bg-[#0a0a0a]">
             
             {/* Header Media Area (Video or Image) */}
-            <div className={`relative w-full ${isYouTube ? 'aspect-video' : 'aspect-video'}`}>
+            {/* We allow aspect-video (16:9) but handle if user uploads 1:1 by centering */}
+            <div className={`relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden group`}>
                 {isYouTube ? (
-                    <iframe 
-                        className="w-full h-full"
-                        src={`https://www.youtube-nocookie.com/embed/${song.youtubeId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`}
-                        title={song.title}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                    ></iframe>
+                    <div className="w-full h-full relative">
+                        {/* Background blur for loading state or if video has black bars */}
+                        <div 
+                           className="absolute inset-0 bg-cover bg-center opacity-30 blur-xl scale-110 pointer-events-none"
+                           style={{ backgroundImage: `url(${displayImage})` }}
+                        ></div>
+
+                        <iframe 
+                            className="w-full h-full relative z-10"
+                            // Parameters explained:
+                            // autoplay=1: START PLAYING IMMEDIATELY
+                            // rel=0: No related videos
+                            // modestbranding=1: Clean look
+                            // controls=1: Allow scrubbing
+                            src={`https://www.youtube-nocookie.com/embed/${song.youtubeId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&controls=1&iv_load_policy=3&fs=0`}
+                            title={song.title}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen={false} 
+                        ></iframe>
+                        {/* Decorative border overlay */}
+                        <div className="absolute inset-0 border border-white/5 pointer-events-none z-20"></div>
+                    </div>
                 ) : (
                     <>
                         <img 
-                            src={song.customImageUrl || defaultCover} 
+                            src={displayImage} 
                             alt={song.title} 
                             className="w-full h-full object-cover opacity-60"
                         />
@@ -116,7 +137,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                 {/* Close Button */}
                 <button 
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 hover:bg-white text-white hover:text-black transition-all backdrop-blur-sm"
+                    className="absolute top-4 right-4 z-30 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 hover:bg-white text-white hover:text-black transition-all backdrop-blur-sm border border-white/10"
                 >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -129,7 +150,12 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                  <div className="mb-8 text-center">
                     <p className="text-[10px] text-gold font-mono uppercase tracking-widest mb-2">Track {String(song.id).padStart(2,'0')}</p>
                     <h2 className="font-serif text-3xl md:text-4xl text-white italic leading-tight">{song.title}</h2>
-                    {isYouTube && <p className="text-[10px] text-gray-500 mt-2 uppercase tracking-wider">Official Audio</p>}
+                    {isYouTube && (
+                        <div className="flex items-center justify-center gap-2 mt-3">
+                            <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
+                            <p className="text-[9px] text-gray-500 uppercase tracking-wider">Official Audio</p>
+                        </div>
+                    )}
                  </div>
 
                 {/* Lyrics Section */}
