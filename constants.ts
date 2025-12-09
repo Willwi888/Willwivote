@@ -6,92 +6,95 @@ export const TRANSLATIONS = {
   zh: {
     title: "摯愛",
     subtitle: "2026 大碟票選活動",
-    enter: "進入體驗",
-    copyright: "© 2025 Willwi Music. All Rights Reserved.",
+    enter: "進入鑑賞",
+    copyright: "© 2025 Willwi Music. Powered by Google YouTube.",
     managerLogin: "Manager Login",
-    name: "您的名字",
+    name: "您的尊稱",
     email: "電子郵件",
-    giftMessage: "請留下您的信箱，我為您準備了一份專屬的「音樂有聲卡片」作為謝禮。",
-    start: "開始",
-    selection: "已選曲目",
-    confirm: "確認投票",
-    selectMore: "請選擇 10 首",
+    giftMessage: "這是一場私密的音樂聽證會。請留下您的聯繫方式，我也許會寄送一份來自錄音室的禮物給您。",
+    start: "開始鑑賞",
+    selection: "您的摯愛",
+    confirm: "確認並送出",
+    selectMore: "請選擇 10 首曲目",
     lyrics: "歌詞",
-    credits: "致謝",
+    credits: "製作名單",
     close: "關閉",
-    votingRule: "請從下方試聽並選出您心中的 10 首摯愛。",
-    thankYou: "感謝您的參與",
-    thankYouDesc: "您的聲音已記錄，這張專輯因您而生。",
-    mySelection: "我的選擇",
+    votingRule: "這些歌曲皆來自 YouTube 現場錄音室版本。請點擊曲目進入「影音鑑賞」，並選出您希望能被正式收錄的 10 首摯愛。",
+    thankYou: "您的品味已記錄",
+    thankYouDesc: "這張專輯的靈魂，因您的選擇而完整。",
+    mySelection: "已選曲目",
     back: "返回",
-    voteForThis: "投給這首歌",
-    voted: "已選擇",
-    tellUsWhy: "為什麼選擇這首？",
-    reasonPlaceholder: "這首歌讓我想起...",
+    voteForThis: "加入摯愛",
+    voted: "已收藏",
+    tellUsWhy: "這首歌觸動了什麼？",
+    reasonPlaceholder: "這段旋律讓我想起...",
     confirmSelection: "確認選擇",
     cancel: "取消",
-    listenFirst: "試聽中...",
+    listenFirst: "鑑賞中...",
     voteAction: "投票",
+    watchOnYoutube: "前往 YouTube 觀看",
   },
   en: {
     title: "BELOVED",
     subtitle: "The 2026 Collection",
-    enter: "Enter Experience",
-    copyright: "© 2025 Willwi Music. All Rights Reserved.",
+    enter: "Enter Studio",
+    copyright: "© 2025 Willwi Music. Powered by Google YouTube.",
     managerLogin: "Manager Login",
     name: "Your Name",
     email: "Email Address",
-    giftMessage: "Please leave your email. I have prepared an exclusive 'Musical Audio Card' as a gift for you.",
-    start: "Proceed",
-    selection: "Selection",
-    confirm: "Submit Votes",
+    giftMessage: "This is a private listening session. Please identify yourself, and I might send a gift from the studio.",
+    start: "Begin Session",
+    selection: "Your Beloved",
+    confirm: "Submit Selection",
     selectMore: "Select 10 Tracks",
     lyrics: "Lyrics",
     credits: "Credits",
     close: "Close",
-    votingRule: "Listen and select your top 10 beloved tracks.",
-    thankYou: "Thank You",
-    thankYouDesc: "Your voice has been recorded. The album awaits.",
+    votingRule: "These are high-fidelity Studio Live sessions from YouTube. Tap a track to enter the 'Cinema Mode' and select your top 10.",
+    thankYou: "Taste Recorded",
+    thankYouDesc: "The soul of this album is complete because of your choice.",
     mySelection: "My Selection",
     back: "Back",
-    voteForThis: "Vote for this track",
-    voted: "Selected",
+    voteForThis: "Add to Beloved",
+    voted: "Collected",
     tellUsWhy: "Why this track?",
     reasonPlaceholder: "It reminds me of...",
-    confirmSelection: "Confirm Selection",
+    confirmSelection: "Confirm",
     cancel: "Cancel",
-    listenFirst: "Now Playing...",
+    listenFirst: "Playing...",
     voteAction: "VOTE",
+    watchOnYoutube: "Watch on YouTube",
   },
   jp: {
     title: "最愛",
     subtitle: "2026 コレクション",
-    enter: "体験する",
-    copyright: "© 2025 Willwi Music. All Rights Reserved.",
+    enter: "スタジオへ",
+    copyright: "© 2025 Willwi Music. Powered by Google YouTube.",
     managerLogin: "管理者ログイン",
     name: "お名前",
     email: "メールアドレス",
-    giftMessage: "メールアドレスを残してください。お礼として「音楽ボイスカード」をご用意しました。",
-    start: "次へ",
-    selection: "選択中",
+    giftMessage: "これはプライベートな試聴会です。メールアドレスを残していただければ、スタジオから贈り物をお届けするかもしれません。",
+    start: "開始",
+    selection: "あなたの最愛",
     confirm: "投票する",
     selectMore: "10曲を選んでください",
     lyrics: "歌詞",
     credits: "クレジット",
     close: "閉じる",
-    votingRule: "試聴して、あなたの最愛の10曲を選んでください。",
-    thankYou: "ありがとうございます",
-    thankYouDesc: "あなたの声は記録されました。",
+    votingRule: "これらはYouTubeからのスタジオライブ音源です。トラックをタップして「シネマモード」に入り、あなたの最愛の10曲を選んでください。",
+    thankYou: "記録されました",
+    thankYouDesc: "あなたの選択が、このアルバムに命を吹き込みます。",
     mySelection: "選択した曲",
     back: "戻る",
-    voteForThis: "この曲に投票",
+    voteForThis: "最愛に追加",
     voted: "選択済み",
     tellUsWhy: "選んだ理由は？",
-    reasonPlaceholder: "この曲は...",
+    reasonPlaceholder: "このメロディは...",
     confirmSelection: "確認",
     cancel: "キャンセル",
     listenFirst: "再生中...",
     voteAction: "投票",
+    watchOnYoutube: "YouTubeで見る",
   }
 };
 
@@ -109,9 +112,11 @@ const rawLinks = [
   "1-TsGKaZr5FJ2VyHHgxmjDXYDITUEmdel", "1J43Or0vcwM48bL1l_IXvEw_206qrVNr2", "1hXsC8ZYDHloWVt0Xwgdy321WSKvXhR_1", "14XhIlgyQsv2yPjcPsFjFpCau4N-55KWr"
 ];
 
+// In a real scenario, the Admin should use the "Bulk Import" feature 
+// to replace these with the actual YouTube links/IDs.
 export const SONGS: Song[] = rawLinks.map((driveId, index) => ({
   id: index + 1,
-  title: `Demo Track ${String(index + 1).padStart(2, '0')}`,
+  title: `Studio Session ${String(index + 1).padStart(2, '0')}`,
   driveId: driveId,
   lyrics: "",
   credits: ""
@@ -120,36 +125,20 @@ export const SONGS: Song[] = rawLinks.map((driveId, index) => ({
 // SMART AUDIO URL HELPER
 export const getAudioUrl = (input: string) => {
     if (!input) return '';
-    
     const url = input.trim();
-    
-    // Check for Full URL
     if (url.startsWith('http')) {
-        // --- DROPBOX HANDLING ---
-        // Robust regex to capture standard links (s) and private links (scl)
-        // Matches https://www.dropbox.com/s/... or https://www.dropbox.com/scl/...
         if (url.match(/dropbox\.com/)) {
-            // Replace the main domain with the user content domain
-            // This method works for both standard and 'scl' private links
-            // It preserves the rest of the path including rlkey
             let dlUrl = url.replace(/https?:\/\/(www\.)?dropbox\.com/, 'https://dl.dropboxusercontent.com');
-            
-            // Clean up: Remove `dl=0` if it exists, as dl.dropboxusercontent doesn't need it
-            // but we MUST keep `rlkey` if it exists.
             dlUrl = dlUrl.replace(/[?&]dl=0/, '');
-            
             return dlUrl;
         }
-        
         return url;
     }
-
-    // Default to Google Drive ID if it's not a URL
     return `https://drive.google.com/uc?export=download&confirm=t&id=${url}`;
 };
 
 // --- YOUTUBE HELPERS ---
 export const getYouTubeThumbnail = (id: string) => {
   // Returns the high-quality thumbnail
-  return `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+  return `https://img.youtube.com/vi/${id}/mqdefault.jpg`; // Using mqdefault for a slightly grittier/faster load in list, or maxresdefault for hero
 };

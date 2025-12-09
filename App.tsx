@@ -4,7 +4,6 @@ import { Layout, FadeIn, BackgroundContext } from './components/Layout';
 import { getSongs, getGlobalConfig, extractYouTubeId } from './services/storage';
 import { Song, User, AppStep, MAX_VOTES, Language } from './types';
 import { TRANSLATIONS, getYouTubeThumbnail } from './constants';
-import AudioPlayer from './components/AudioPlayer';
 import { AudioProvider, useAudio } from './components/AudioContext';
 import { HeartIcon, ArrowLeftIcon, CheckIcon, PlayIcon, PauseIcon } from './components/Icons';
 import { saveVote } from './services/storage';
@@ -49,6 +48,53 @@ const Footer: React.FC<{ t: any; onAdmin: () => void }> = ({ t, onAdmin }) => (
     </footer>
 );
 
+const VoteReasonModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: (reason: string) => void;
+    songTitle: string;
+    t: any;
+}> = ({ isOpen, onClose, onConfirm, songTitle, t }) => {
+    const [reason, setReason] = useState('');
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative w-full max-w-sm bg-[#111] border border-white/10 rounded-sm p-6 shadow-2xl animate-slide-up">
+                <h3 className="text-white font-serif text-xl italic mb-2 text-center">{t.tellUsWhy}</h3>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest text-center mb-6">
+                    {songTitle}
+                </p>
+                
+                <textarea 
+                    autoFocus
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder={t.reasonPlaceholder}
+                    className="w-full bg-[#050505] border border-white/20 rounded-sm p-3 text-sm text-white placeholder-gray-600 focus:border-gold focus:outline-none h-32 mb-6 resize-none"
+                />
+                
+                <div className="flex gap-3">
+                    <button 
+                        onClick={onClose}
+                        className="flex-1 py-3 text-[10px] uppercase tracking-widest text-gray-400 hover:text-white border border-transparent hover:border-white/20 rounded-sm"
+                    >
+                        {t.cancel}
+                    </button>
+                    <button 
+                        onClick={() => onConfirm(reason)}
+                        className="flex-[2] py-3 bg-white text-black text-[10px] font-bold uppercase tracking-widest hover:bg-gold rounded-sm"
+                    >
+                        {t.confirmSelection}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- VIEWS ---
 
 const IntroView: React.FC<{ 
@@ -61,7 +107,6 @@ const IntroView: React.FC<{
 }> = ({ t, introAudioId, handleStart, lang, setLang, onAdmin }) => {
     const { setBgImage } = useContext(BackgroundContext);
     const { playingId, isPlaying, playSong, pause, initializeAudio, error } = useAudio();
-    const [ytPlayer, setYtPlayer] = useState<any>(null);
     const [isYtPlaying, setIsYtPlaying] = useState(false);
     
     // Check if Intro is a YouTube Link
@@ -73,21 +118,16 @@ const IntroView: React.FC<{
 
     const handleToggleIntro = async () => {
         if (introYoutubeId) {
-            // Handle YouTube Playback
             if (isYtPlaying) {
-                // Pause
                 const iframe = document.getElementById('intro-yt-iframe') as HTMLIFrameElement;
                 iframe?.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
                 setIsYtPlaying(false);
             } else {
-                // Play
                 const iframe = document.getElementById('intro-yt-iframe') as HTMLIFrameElement;
                 iframe?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
                 setIsYtPlaying(true);
             }
         } else {
-            // Handle MP3 Playback using playSong
-            // This leverages the robust resume/retry logic in AudioContext
             const m = await import('./constants');
             const url = m.getAudioUrl(introAudioId);
             playSong('intro', url, "Intro");
@@ -95,13 +135,11 @@ const IntroView: React.FC<{
     };
 
     const onEnterClick = () => {
-        // Stop YouTube if playing
         if (isYtPlaying && introYoutubeId) {
             const iframe = document.getElementById('intro-yt-iframe') as HTMLIFrameElement;
             iframe?.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
             setIsYtPlaying(false);
         }
-
         initializeAudio();
         handleStart();
     };
@@ -116,9 +154,7 @@ const IntroView: React.FC<{
         {/* FULL SCREEN BACKGROUND */}
         <div className="absolute inset-0 z-0 pointer-events-none">
             {introYoutubeId ? (
-                 // YouTube Background Mode
                  <div className={`absolute inset-0 transition-opacity duration-1000 ${isYtPlaying ? 'opacity-40' : 'opacity-20'} z-10 bg-black`}>
-                    {/* Render invisible but functional YT iframe for audio */}
                      <iframe 
                         id="intro-yt-iframe"
                         className="w-full h-full object-cover pointer-events-none scale-150"
@@ -128,7 +164,6 @@ const IntroView: React.FC<{
                     />
                  </div>
             ) : (
-                // Standard Image Background
                 <div className={`absolute inset-0 bg-black transition-opacity duration-1000 ${isAudioPlaying ? 'opacity-20' : 'opacity-40'} z-10`}>
                      <img 
                         src={ARTIST_IMAGE_URL} 
@@ -150,7 +185,6 @@ const IntroView: React.FC<{
                 <h2 className="font-serif text-2xl text-gray-100 tracking-[0.2em] font-light drop-shadow-md">{t.title}</h2>
             </div>
 
-            {/* Central Play Button */}
             <button 
                 onClick={handleToggleIntro}
                 className={`
@@ -247,125 +281,117 @@ const VotingView: React.FC<{
     selectedIds: number[];
     MAX_VOTES: number;
     voteReasons: { [id: number]: string };
-    toggleVote: (id: number) => void;
+    onVoteRequest: (id: number) => void;
     handleSubmitVotes: () => void;
     handleBack: () => void;
     setDetailSongId: (id: number) => void;
-}> = ({ t, songs, selectedIds, MAX_VOTES, voteReasons, toggleVote, handleSubmitVotes, handleBack, setDetailSongId }) => {
+}> = ({ t, songs, selectedIds, MAX_VOTES, voteReasons, onVoteRequest, handleSubmitVotes, handleBack, setDetailSongId }) => {
     const progress = (selectedIds.length / MAX_VOTES) * 100;
-    const { playingId } = useAudio();
     
     return (
       <div className="min-h-screen pb-32 relative max-w-[500px] mx-auto">
-           <div className="fixed top-0 left-0 w-full z-40 bg-[#050505]/90 backdrop-blur-md border-b border-white/5 transition-all duration-300">
-               <div className="max-w-[500px] mx-auto px-6 py-4 flex items-center justify-between">
-                   <button onClick={handleBack} className="text-gray-500 hover:text-white p-2 active:scale-90">
+           <div className="fixed top-0 left-0 w-full z-40 bg-[#050505]/95 backdrop-blur-xl border-b border-white/5 transition-all duration-300 shadow-2xl">
+               <div className="max-w-[500px] mx-auto px-6 py-5 flex items-center justify-between">
+                   <button onClick={handleBack} className="text-gray-500 hover:text-white p-2 active:scale-90 transition-colors">
                        <ArrowLeftIcon className="w-5 h-5" />
                    </button>
                    <div className="text-center">
-                       <h2 className="text-xs font-bold text-white uppercase tracking-widest">{t.selection}</h2>
-                       <p className="text-[9px] text-gold">{selectedIds.length} / {MAX_VOTES}</p>
+                       <h2 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-1">{t.selection}</h2>
+                       <p className="text-[9px] text-gold font-mono">{selectedIds.length} <span className="text-gray-600">/</span> {MAX_VOTES}</p>
                    </div>
-                   <div className="w-5" />
+                   <div className="w-9" /> {/* Spacer */}
                </div>
-               <div className="absolute bottom-0 left-0 h-[1px] bg-gold transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>
+               <div className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent transition-all duration-700 ease-out opacity-70" style={{ width: `${progress}%`, left: `${(100-progress)/2}%` }}></div>
            </div>
 
-           <div className="pt-24 px-4 space-y-3">
-               <div className="text-center mb-8 px-4">
-                   <p className="text-gray-400 text-xs leading-relaxed font-serif italic">{t.votingRule}</p>
+           <div className="pt-28 px-0 space-y-1">
+               <div className="text-center mb-10 px-8">
+                   <p className="text-gray-500 text-[10px] leading-loose font-serif italic tracking-wide">{t.votingRule}</p>
                </div>
 
                {songs.map((song, index) => {
                    const isSelected = selectedIds.includes(song.id);
-                   const isPlaying = playingId === song.id;
                    const isYouTube = !!song.youtubeId;
-                   const thumbnail = isYouTube ? getYouTubeThumbnail(song.youtubeId!) : (song.customImageUrl || ARTIST_IMAGE_URL);
+                   // Logic: Prefer Custom -> YouTube -> Default. 
+                   // NOTE: If using YouTube, we show the thumbnail.
+                   const thumbnail = song.customImageUrl || (isYouTube ? getYouTubeThumbnail(song.youtubeId!) : ARTIST_IMAGE_URL);
                    
                    return (
-                       <FadeIn key={song.id} delay={index * 50} className="w-full">
+                       <FadeIn key={song.id} delay={index * 30} className="w-full">
                            <div 
                               onClick={() => setDetailSongId(song.id)}
                               className={`
-                                  relative group p-3 rounded-md border transition-all duration-300 cursor-pointer active:scale-[0.98] overflow-hidden flex gap-4 items-center
-                                  ${isSelected ? 'bg-white/5 border-gold/50' : 'bg-[#111] border-white/5 hover:border-white/20'}
+                                  relative group px-6 py-4 cursor-pointer transition-all duration-500 flex items-center gap-5
+                                  ${isSelected ? 'bg-white/5' : 'hover:bg-white/5'}
                               `}
                            >
-                               {/* THUMBNAIL AREA */}
-                               <div className="relative w-20 h-20 shrink-0 bg-black rounded-sm overflow-hidden border border-white/10 group-hover:border-white/30 transition-colors">
-                                   <img src={thumbnail} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt={song.title} />
-                                   
-                                   {/* Center Play Overlay */}
-                                   <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-transparent transition-colors">
-                                       {isYouTube ? (
-                                           <div className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20 text-white">
-                                               <PlayIcon className="w-4 h-4 translate-x-0.5" />
-                                           </div>
-                                       ) : (
-                                            <div onClick={(e) => e.stopPropagation()}>
-                                                <AudioPlayer 
-                                                    id={song.id}
-                                                    driveId={song.driveId}
-                                                    src={song.customAudioUrl}
-                                                    title={song.title}
-                                                />
-                                            </div>
-                                       )}
+                               {/* Track Number */}
+                               <span className={`font-mono text-[10px] w-6 text-right transition-colors ${isSelected ? 'text-gold' : 'text-gray-700 group-hover:text-gray-500'}`}>
+                                   {String(index + 1).padStart(2, '0')}
+                               </span>
+
+                               {/* Thumbnail (Cinema Style) */}
+                               <div className="relative w-16 h-10 shrink-0 bg-black overflow-hidden border border-white/10 group-hover:border-white/30 transition-all rounded-[2px] shadow-lg">
+                                   <img src={thumbnail} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-500" alt={song.title} />
+                                   {/* Play Icon Overlay */}
+                                   <div className="absolute inset-0 flex items-center justify-center">
+                                       <div className="w-6 h-6 rounded-full bg-black/40 backdrop-blur-[1px] flex items-center justify-center border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 scale-75 group-hover:scale-100">
+                                            <PlayIcon className="w-3 h-3 translate-x-0.5" />
+                                       </div>
                                    </div>
                                </div>
 
-                               <div className="flex-1 min-w-0 flex flex-col justify-center h-full">
-                                    <div className="flex justify-between items-start mb-1">
-                                        <span className={`font-mono text-xs ${isSelected ? 'text-gold' : 'text-gray-500'}`}>
-                                            #{String(index + 1).padStart(2, '0')}
-                                        </span>
-                                    </div>
-                                    <h3 className={`font-serif text-base leading-tight truncate mb-1 ${isSelected ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
+                               {/* Text Info */}
+                               <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                    <h3 className={`font-serif text-sm tracking-wide truncate transition-colors duration-300 ${isSelected ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>
                                         {song.title}
                                     </h3>
-                                    {isSelected && voteReasons[song.id] && (
-                                        <p className="text-[10px] text-gray-500 italic mt-1 truncate">"{voteReasons[song.id]}"</p>
+                                    {isSelected && voteReasons[song.id] ? (
+                                        <p className="text-[9px] text-gold italic mt-1 truncate opacity-80">"{voteReasons[song.id]}"</p>
+                                    ) : (
+                                        <p className="text-[8px] text-gray-700 uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-60 transition-opacity duration-500">
+                                            {isYouTube ? 'Studio Live' : 'Audio Only'}
+                                        </p>
                                     )}
                                </div>
 
-                               <div className="flex items-center pr-2">
-                                   <button
-                                       onClick={(e) => { e.stopPropagation(); toggleVote(song.id); }}
-                                       disabled={!isSelected && selectedIds.length >= MAX_VOTES}
-                                       className={`
-                                           w-10 h-10 flex items-center justify-center rounded-full border transition-all active:scale-90
-                                           ${isSelected 
-                                               ? 'bg-gold border-gold text-black shadow-[0_0_15px_rgba(212,175,55,0.3)]' 
-                                               : 'border-gray-800 text-gray-700 hover:border-white hover:text-white'
-                                           }
-                                           ${(!isSelected && selectedIds.length >= MAX_VOTES) ? 'opacity-30 cursor-not-allowed' : ''}
-                                       `}
-                                   >
-                                       {isSelected ? <CheckIcon className="w-5 h-5" /> : <HeartIcon className="w-5 h-5" />}
-                                   </button>
+                               {/* Status Icon */}
+                               <div className="flex items-center pl-2">
+                                   {isSelected ? (
+                                       <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gold/10 text-gold animate-[pulse-slow_3s_infinite]">
+                                           <CheckIcon className="w-4 h-4" />
+                                       </div>
+                                   ) : (
+                                       <div className="w-8 h-8 flex items-center justify-center rounded-full text-gray-800 group-hover:text-gray-600 transition-colors">
+                                            <HeartIcon className="w-4 h-4" />
+                                       </div>
+                                   )}
                                </div>
+                               
+                               {/* Bottom separator line */}
+                               <div className="absolute bottom-0 left-6 right-6 h-[1px] bg-white/5 group-hover:bg-white/10 transition-colors"></div>
                            </div>
                        </FadeIn>
                    );
                })}
            </div>
 
-           <div className="fixed bottom-0 left-0 w-full bg-[#050505] border-t border-white/10 p-4 z-40 backdrop-blur-xl">
-               <div className="max-w-[500px] mx-auto flex items-center justify-between gap-4">
-                   <div className="text-xs text-gray-500">
+           <div className="fixed bottom-0 left-0 w-full bg-[#050505] border-t border-white/10 p-5 z-40 backdrop-blur-xl">
+               <div className="max-w-[500px] mx-auto flex items-center justify-between gap-6">
+                   <div className="text-[10px] text-gray-500 font-serif italic">
                        {selectedIds.length < MAX_VOTES 
                            ? t.selectMore 
-                           : <span className="text-gold font-bold">{t.mySelection}</span>
+                           : <span className="text-gold not-italic font-sans tracking-widest font-bold">{t.mySelection}</span>
                        }
                    </div>
                    <button 
                        onClick={handleSubmitVotes}
                        disabled={selectedIds.length !== MAX_VOTES}
                        className={`
-                           px-8 py-3 uppercase tracking-widest text-xs font-bold rounded-sm transition-all active:scale-95
+                           px-8 py-3 uppercase tracking-[0.2em] text-[10px] font-bold rounded-[2px] transition-all duration-500 active:scale-95
                            ${selectedIds.length === MAX_VOTES 
-                               ? 'bg-white text-black hover:bg-gold' 
-                               : 'bg-white/10 text-gray-500 cursor-not-allowed'
+                               ? 'bg-white text-black hover:bg-gold shadow-[0_0_20px_rgba(255,255,255,0.1)]' 
+                               : 'bg-white/5 text-gray-600 cursor-not-allowed border border-white/5'
                            }
                        `}
                    >
@@ -390,61 +416,60 @@ const SuccessView: React.FC<{
         <div className="flex flex-col min-h-screen items-center justify-center p-8 text-center max-w-[500px] mx-auto">
             <FadeIn>
                 {/* --- MUSIC CARD VISUAL --- */}
-                <div className="bg-[#111] border border-white/10 p-6 rounded-sm shadow-2xl mb-8 max-w-xs mx-auto relative overflow-hidden group">
+                <div className="bg-[#0a0a0a] border border-white/10 p-8 rounded-sm shadow-2xl mb-10 max-w-xs mx-auto relative overflow-hidden group">
                     {/* Decorative Elements */}
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gold"></div>
-                    <div className="absolute -right-6 -top-6 w-12 h-12 bg-white/5 rounded-full blur-xl"></div>
+                    <div className="absolute top-0 left-0 w-full h-[2px] bg-gold"></div>
+                    <div className="absolute -right-10 -top-10 w-20 h-20 bg-white/5 rounded-full blur-2xl"></div>
 
-                    <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-4">
-                        <span className="text-[10px] uppercase tracking-widest text-gold font-bold">Beloved 2026</span>
-                        <span className="text-[9px] text-gray-500 font-mono">VOTER CARD</span>
+                    <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
+                        <span className="text-[10px] uppercase tracking-[0.3em] text-gold font-bold">Beloved</span>
+                        <span className="text-[8px] text-gray-600 font-mono tracking-widest">2026</span>
                     </div>
 
-                    <div className="text-left space-y-3 mb-6">
+                    <div className="text-left space-y-4 mb-8">
                         <div className="flex justify-between items-end">
-                            <span className="text-[10px] text-gray-500 uppercase">Holder</span>
+                            <span className="text-[9px] text-gray-600 uppercase tracking-wider">Voter</span>
                             <span className="font-serif text-white italic text-lg">{user.name}</span>
                         </div>
                         <div className="flex justify-between items-end">
-                             <span className="text-[10px] text-gray-500 uppercase">ID</span>
-                             <span className="font-mono text-gray-400 text-xs">NO.{String(Math.floor(Math.random() * 9000) + 1000)}</span>
+                             <span className="text-[9px] text-gray-600 uppercase tracking-wider">Ref</span>
+                             <span className="font-mono text-gray-500 text-[10px]">#{String(Math.floor(Math.random() * 90000) + 10000)}</span>
                         </div>
                     </div>
 
-                    <div className="bg-[#050505] p-3 rounded-sm border border-white/5">
-                        <p className="text-[8px] text-gray-500 uppercase tracking-widest mb-2 text-center">Top Selections</p>
-                        <ul className="space-y-2">
+                    <div className="bg-[#050505] p-4 rounded-[2px] border border-white/5 relative">
+                        <div className="absolute -left-[1px] top-4 bottom-4 w-[2px] bg-gold/50"></div>
+                        <p className="text-[8px] text-gray-600 uppercase tracking-widest mb-3 text-center">Top Selections</p>
+                        <ul className="space-y-3">
                             {topPicks.map((song, i) => (
                                 <li key={song.id} className="flex justify-between items-center text-xs">
-                                    <span className="text-gold font-mono w-4">0{i+1}</span>
-                                    <span className="text-gray-300 truncate">{song.title}</span>
+                                    <span className="text-gold font-mono w-4 opacity-70">0{i+1}</span>
+                                    <span className="text-gray-300 truncate font-serif italic tracking-wide">{song.title}</span>
                                 </li>
                             ))}
                         </ul>
                     </div>
                     
-                    <div className="mt-4 pt-4 border-t border-white/5 flex justify-center">
-                        <div className="w-8 h-8 border border-white/20 rounded-full flex items-center justify-center text-white/50">
-                             <CheckIcon className="w-4 h-4" />
-                        </div>
+                    <div className="mt-6 pt-6 border-t border-white/5 flex justify-center">
+                         <span className="text-[8px] text-gray-700 uppercase tracking-[0.4em]">Official Selection</span>
                     </div>
                 </div>
 
-                <h2 className="font-serif text-3xl text-white mb-2 italic">{t.thankYou}</h2>
-                <p className="text-gray-400 text-xs tracking-widest uppercase max-w-xs mx-auto leading-relaxed mb-8">
+                <h2 className="font-serif text-3xl text-white mb-3 italic">{t.thankYou}</h2>
+                <p className="text-gray-500 text-[10px] tracking-widest uppercase max-w-xs mx-auto leading-relaxed mb-10 opacity-70">
                     {t.thankYouDesc}
                 </p>
 
-                <div className="flex gap-6 justify-center mb-12">
+                <div className="flex gap-8 justify-center mb-16">
                     {SOCIAL_LINKS.map(link => (
-                        <a key={link.name} href={link.url} target="_blank" rel="noreferrer" className="text-[10px] text-gray-500 hover:text-white uppercase tracking-widest border-b border-transparent hover:border-white transition-all pb-1 active:scale-95">
+                        <a key={link.name} href={link.url} target="_blank" rel="noreferrer" className="text-[9px] text-gray-600 hover:text-white uppercase tracking-widest border-b border-transparent hover:border-white transition-all pb-1 active:scale-95">
                             {link.name}
                         </a>
                     ))}
                 </div>
             </FadeIn>
             <div className="absolute bottom-12">
-                <button onClick={() => setStep(AppStep.INTRO)} className="text-[10px] text-gray-700 hover:text-gray-500 uppercase tracking-widest active:scale-90 p-4">
+                <button onClick={() => setStep(AppStep.INTRO)} className="text-[9px] text-gray-800 hover:text-gray-500 uppercase tracking-[0.2em] active:scale-90 p-4 transition-colors">
                     {t.close}
                 </button>
             </div>
@@ -465,6 +490,9 @@ const AppContent = () => {
   const [lang, setLang] = useState<Language>('zh');
   const [introAudioId, setIntroAudioId] = useState(DEFAULT_FEATURED_AUDIO_ID);
   const [detailSongId, setDetailSongId] = useState<number | null>(null);
+  
+  // Modal state for voting reason prompt
+  const [pendingVoteId, setPendingVoteId] = useState<number | null>(null);
 
   const { pause, playingId } = useAudio();
 
@@ -513,6 +541,24 @@ const AppContent = () => {
     }
   };
 
+  // Handler for voting from the list view
+  const handleVoteRequest = (id: number) => {
+      if (selectedIds.includes(id)) {
+          toggleVote(id);
+      } else {
+          if (selectedIds.length < MAX_VOTES) {
+             setPendingVoteId(id);
+          }
+      }
+  };
+
+  const confirmPendingVote = (reason: string) => {
+      if (pendingVoteId !== null) {
+          toggleVote(pendingVoteId, reason);
+          setPendingVoteId(null);
+      }
+  };
+
   const handleSubmitVotes = () => {
     if (selectedIds.length === MAX_VOTES) {
       const completeUser: User = {
@@ -528,6 +574,7 @@ const AppContent = () => {
 
   const t = TRANSLATIONS[lang];
   const currentSong = detailSongId ? songs.find(s => s.id === detailSongId) : null;
+  const pendingSong = pendingVoteId ? songs.find(s => s.id === pendingVoteId) : null;
 
   if (step === AppStep.ADMIN) return <AdminView onBack={handleBack} />;
 
@@ -563,7 +610,7 @@ const AppContent = () => {
                 selectedIds={selectedIds}
                 MAX_VOTES={MAX_VOTES}
                 voteReasons={voteReasons}
-                toggleVote={toggleVote}
+                onVoteRequest={handleVoteRequest}
                 handleSubmitVotes={handleSubmitVotes}
                 handleBack={handleBack}
                 setDetailSongId={setDetailSongId}
@@ -573,6 +620,15 @@ const AppContent = () => {
         {step === AppStep.SUCCESS && (
             <SuccessView t={t} setStep={setStep} user={user} songs={songs} />
         )}
+
+        {/* Global Reason Modal for List View Voting */}
+        <VoteReasonModal 
+            isOpen={!!pendingVoteId}
+            onClose={() => setPendingVoteId(null)}
+            onConfirm={confirmPendingVote}
+            songTitle={pendingSong?.title || ''}
+            t={t}
+        />
 
         <SongDetailModal 
             isOpen={!!detailSongId}
