@@ -35,9 +35,6 @@ export const saveGlobalConfig = (config: GlobalConfig) => {
 // --- GOOGLE SHEET INTEGRATION ---
 const submitToGoogleSheet = async (user: User, scriptUrl: string) => {
     try {
-        // We use mode: 'no-cors' because Google Apps Script doesn't standardly return CORS headers 
-        // for simple Web Apps. The data WILL reach the sheet, but the browser sees an "opaque" response.
-        // To ensure data integrity, we send Content-Type text/plain so no preflight OPTION is needed.
         await fetch(scriptUrl, {
             method: 'POST',
             mode: 'no-cors', 
@@ -52,44 +49,31 @@ const submitToGoogleSheet = async (user: User, scriptUrl: string) => {
     }
 };
 
-// --- VOTING LOGIC (HYBRID: SUPABASE + LOCAL + GOOGLE SHEET) ---
+// --- VOTING LOGIC ---
 
 export const saveVote = async (user: User) => {
-  // 1. Always save to LocalStorage (for UI state)
   const currentData = getLocalVotes();
   if (!currentData.find(u => u.email === user.email)) {
       const newData = [...currentData, user];
       try {
         localStorage.setItem(VOTE_STORAGE_KEY, JSON.stringify(newData));
-      } catch (e) {
-        console.warn("LocalStorage save vote failed", e);
-      }
+      } catch (e) {}
   }
 
-  // 2. If Supabase is connected, save to Cloud Database
   if (supabase) {
       try {
-          const { error } = await supabase
-              .from('votes')
-              .insert([
-                  { 
-                      user_name: user.name, 
-                      user_email: user.email, 
-                      vote_ids: user.votes,
-                      vote_reasons: user.voteReasons, 
-                      created_at: new Date().toISOString()
-                  }
-              ]);
-          
-          if (error) {
-              console.error("Supabase Vote Error:", error.message);
-          }
+          await supabase.from('votes').insert([{ 
+              user_name: user.name, 
+              user_email: user.email, 
+              vote_ids: user.votes,
+              vote_reasons: user.voteReasons, 
+              created_at: new Date().toISOString()
+          }]);
       } catch (e) {
-          console.error("Supabase Connection Error", e);
+          console.error("Supabase Error", e);
       }
   }
 
-  // 3. NEW: If Google Sheet URL is configured, send data there
   const config = getGlobalConfig();
   if (config.googleSheetUrl && config.googleSheetUrl.startsWith('https://script.google.com/')) {
       submitToGoogleSheet(user, config.googleSheetUrl);
@@ -108,11 +92,7 @@ const getLocalVotes = (): User[] => {
 
 export const getVotes = async (): Promise<User[]> => {
     if (supabase) {
-        const { data, error } = await supabase
-            .from('votes')
-            .select('*')
-            .order('created_at', { ascending: false });
-            
+        const { data, error } = await supabase.from('votes').select('*').order('created_at', { ascending: false });
         if (!error && data) {
             return data.map((row: any) => ({
                 name: row.user_name,
@@ -131,16 +111,11 @@ export const getLeaderboard = (songs: Song[], votes: User[]) => {
   songs.forEach(s => tally[s.id] = 0);
   votes.forEach(user => {
     user.votes.forEach(songId => {
-      if (tally[songId] !== undefined) {
-        tally[songId]++;
-      }
+      if (tally[songId] !== undefined) tally[songId]++;
     });
   });
   return Object.entries(tally)
-    .map(([id, count]) => ({
-      song: songs.find(s => s.id === parseInt(id)),
-      count
-    }))
+    .map(([id, count]) => ({ song: songs.find(s => s.id === parseInt(id)), count }))
     .sort((a, b) => b.count - a.count);
 };
 
@@ -148,146 +123,82 @@ export const getLeaderboard = (songs: Song[], votes: User[]) => {
 
 export const getSongs = (): Song[] => {
   if (typeof window === 'undefined') return DEFAULT_SONGS;
-  
   try {
       const savedMetadata = localStorage.getItem(SONG_METADATA_KEY);
       if (savedMetadata) {
         const parsed = JSON.parse(savedMetadata);
         if (Array.isArray(parsed) && parsed.length > 0) {
-            const merged = DEFAULT_SONGS.map(defaultSong => {
+            return DEFAULT_SONGS.map(defaultSong => {
                 const saved = parsed.find((p: Song) => p.id === defaultSong.id);
-                if (saved) {
-                    return { 
-                        ...defaultSong, 
-                        title: saved.title || defaultSong.title,
-                        customAudioUrl: saved.customAudioUrl,
-                        youtubeId: saved.youtubeId, // Retrieve YouTube ID
-                        customImageUrl: saved.customImageUrl,
-                        lyrics: saved.lyrics,
-                        credits: saved.credits
-                    };
-                }
-                return defaultSong;
+                return saved ? { ...defaultSong, ...saved } : defaultSong;
             });
-            return merged;
         }
       }
-  } catch (e) {
-      console.error("Failed to parse song metadata", e);
-  }
+  } catch (e) {}
   return DEFAULT_SONGS;
+};
+
+// ROBUST YOUTUBE EXTRACTION
+// Supports standard, short, embed, and mobile URLs
+export const extractYouTubeId = (text: string): string | null => {
+    if (!text) return null;
+    const match = text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    return match ? match[1] : null;
 };
 
 export const updateSong = (id: number, updates: Partial<Song>) => {
   const currentSongs = getSongs();
-  
-  // Enhance update logic: If customAudioUrl is being updated, try to extract youtubeId
   let finalUpdates = { ...updates };
-  if (updates.customAudioUrl) {
+  
+  // Auto-extract ID if URL provided
+  if (updates.customAudioUrl && !updates.youtubeId) {
       const extractedId = extractYouTubeId(updates.customAudioUrl);
-      if (extractedId) {
-          finalUpdates.youtubeId = extractedId;
-          // Note: We keep customAudioUrl as the display link, but the presence of youtubeId triggers the video player
-      }
+      if (extractedId) finalUpdates.youtubeId = extractedId;
   }
 
-  const updatedSongs = currentSongs.map(s => 
-    s.id === id ? { ...s, ...finalUpdates } : s
-  );
+  const updatedSongs = currentSongs.map(s => s.id === id ? { ...s, ...finalUpdates } : s);
   try {
     localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(updatedSongs));
-  } catch (e) {
-    alert("Storage full or disabled.");
-  }
+  } catch (e) {}
   return updatedSongs;
 };
 
-// Robust YouTube ID extractor that works anywhere in a string
-// UPDATED: Now supports m.youtube.com, music.youtube.com and other subdomains
-export const extractYouTubeId = (text: string): string | null => {
-    if (!text) return null;
-    // Matches:
-    // https://www.youtube.com/...
-    // https://m.youtube.com/...
-    // https://music.youtube.com/...
-    // https://youtu.be/...
-    const regExp = /(?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-    const match = text.match(regExp);
-    return match ? match[1] : null;
-};
-
-// Helper to clean up titles from batch uploaders (TunesToTube, etc)
 const cleanTitleText = (rawTitle: string): string => {
-    let clean = rawTitle;
-    
-    // 1. Remove "TunesToTube" artifacts
-    clean = clean.replace(/\(Uploaded by TunesToTube\)/gi, '');
-    clean = clean.replace(/TunesToTube/gi, '');
-    
-    // 2. Remove File Extensions
-    clean = clean.replace(/\.mp3$/i, '').replace(/\.wav$/i, '').replace(/\.m4a$/i, '');
-    
-    // 3. Remove common suffixes
-    clean = clean.replace(/\(Official Audio\)/gi, '');
-    clean = clean.replace(/\[Official Audio\]/gi, '');
-    clean = clean.replace(/\(Demo\)/gi, '');
-    
-    // 4. Remove leading numbering (e.g. "01. Song" or "1 - Song" or "1| Song")
-    clean = clean.replace(/^\d+\s*[-.|]\s*/, '');
-    
-    return clean.trim();
+    return rawTitle
+        .replace(/\(Uploaded by TunesToTube\)/gi, '')
+        .replace(/TunesToTube/gi, '')
+        .replace(/\.(mp3|wav|m4a)$/i, '')
+        .replace(/[\(\[]Official Audio[\)\]]/gi, '')
+        .replace(/[\(\[]Demo[\)\]]/gi, '')
+        .replace(/^\d+\s*[-.|]\s*/, '')
+        .trim();
 };
 
 export const updateSongsBulk = (lines: string[]) => {
   const currentSongs = getSongs();
-  
-  // Clean lines: remove empty lines
   const cleanLines = lines.filter(l => l.trim().length > 0);
 
   const updatedSongs = currentSongs.map((s, index) => {
-      // If we have no more lines, return original song
       if (index >= cleanLines.length) return s;
-
       const line = cleanLines[index].trim();
       let newTitle = s.title;
       let newYoutubeId = s.youtubeId;
       let newCustomAudioUrl = s.customAudioUrl;
 
-      // 1. Try to extract YouTube ID from the line
       const ytId = extractYouTubeId(line);
-      
       if (ytId) {
           newYoutubeId = ytId;
-          newCustomAudioUrl = ''; // Clear audio URL to prefer YouTube
-          
-          // 2. Extract Title if mixed (e.g., "My Song https://youtu.be/...")
-          // Remove the URL part to see if there is a title left
-          const urlRegex = /(?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?/g;
-          let textWithoutUrl = line.replace(urlRegex, '').trim();
-
-          // Cleanup leftovers like () or [] if the URL was inside them
-          textWithoutUrl = textWithoutUrl.replace(/\(\s*\)/g, '').replace(/\[\s*\]/g, '').trim();
-          
-          // Remove common "separators" people might type (e.g. "Song - ", "Song | ")
+          newCustomAudioUrl = ''; 
+          // Extract title logic
+          const textWithoutUrl = line.replace(/https?:\/\/\S+/g, '').trim();
           const cleanRawTitle = textWithoutUrl.replace(/^[-|]\s+/, '').replace(/\s+[-|]$/, '').trim();
-
-          if (cleanRawTitle.length > 1) {
-              newTitle = cleanTitleText(cleanRawTitle);
-          }
+          if (cleanRawTitle.length > 1) newTitle = cleanTitleText(cleanRawTitle);
       } else if (line.startsWith('http')) {
-          // It's a non-YouTube URL
           newCustomAudioUrl = line;
       } else {
-          // It's just a title
           newTitle = cleanTitleText(line);
       }
-
-      return {
-          ...s,
-          title: newTitle,
-          youtubeId: newYoutubeId,
-          customAudioUrl: newCustomAudioUrl
-      };
+      return { ...s, title: newTitle, youtubeId: newYoutubeId, customAudioUrl: newCustomAudioUrl };
   });
 
   try {
