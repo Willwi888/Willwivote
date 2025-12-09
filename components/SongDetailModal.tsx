@@ -48,6 +48,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
       }
   }, [isOpen, savedReason, pause, song]);
 
+  // If not open, do not render ANYTHING to the DOM (Performance & Audio Safety)
   if (!isOpen || !song) return null;
 
   const t = TRANSLATIONS[lang];
@@ -65,19 +66,23 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
       setVoteStage('view');
   };
 
-  // --- FORCE ALBUM MODE ---
-  // Even if there is a YouTube ID, we prefer the "Album Cover" aesthetic unless specifically playing video.
-  // But for this simplified version, let's just use the default cover (Artist Image) for everything visual.
-  // The AudioPlayer handles the actual audio/video playback logic invisibly or minimally.
-  
-  const displayImage = defaultCover; // Force fixed album cover
-
   // Check if we have a YouTube source for the player
   let finalYoutubeId = song.youtubeId;
+  // If no explicit ID, try to extract from Custom URL (backward compatibility)
   if (!finalYoutubeId && song.customAudioUrl) {
       finalYoutubeId = extractYouTubeId(song.customAudioUrl);
   }
+  
+  // Prioritize YouTube if ID exists
   const isYouTubeSource = !!finalYoutubeId;
+
+  // VISIBILITY LOGIC:
+  // If it's YouTube, we MUST show the iframe, otherwise iOS pauses it.
+  // We cannot hide it behind an image.
+  // If it's NOT YouTube (Drive/MP3), we show the Album Cover (Artist Image).
+  
+  // Ensure origin is valid (client-side only)
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#050505] animate-fade-in overflow-hidden">
@@ -91,9 +96,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
               onClick={onClose}
               className="pointer-events-auto w-10 h-10 flex items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md active:scale-90 transition-all hover:bg-white hover:text-black border border-white/10"
           >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <ArrowLeftIcon className="w-5 h-5" />
           </button>
       </div>
 
@@ -101,39 +104,32 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar scroll-smooth">
           
           {/* 1. MEDIA PLAYER AREA (Pinned Top Visual) */}
-          <div className="w-full aspect-square md:aspect-video bg-black relative shadow-2xl shrink-0 sticky top-0 z-10">
-              {/* FIXED ALBUM COVER DISPLAY */}
-              <div className="relative w-full h-full">
-                  <img src={displayImage} className="w-full h-full object-cover object-top opacity-90" />
-                  {/* Gradient to smooth transition */}
-                  <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-[#050505] to-transparent"></div>
-              </div>
+          <div className="w-full aspect-square md:aspect-video bg-black relative shadow-2xl shrink-0 sticky top-0 z-10 overflow-hidden">
+              {isYouTubeSource ? (
+                  // YOUTUBE MODE: Must be Iframe
+                  <iframe 
+                      key={song.id} 
+                      className="w-full h-full absolute inset-0 z-20"
+                      src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&controls=1&fs=1&color=white&iv_load_policy=3&origin=${origin}`}
+                      title={song.title}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                      allowFullScreen
+                      loading="eager"
+                  ></iframe>
+              ) : (
+                  // AUDIO MODE: Static Cover Image
+                  <div className="relative w-full h-full">
+                      <img src={defaultCover} className="w-full h-full object-cover object-top opacity-90" alt="Album Cover" />
+                      <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-[#050505] to-transparent"></div>
+                  </div>
+              )}
           </div>
 
-          {/* 2. AUDIO CONTROLS - FLOATING OVERLAP */}
-          <div className="relative z-20 -mt-10 px-6 mb-6">
-                 <div className="glass-panel p-4 rounded-md shadow-lg border-gold/20 flex items-center justify-center bg-[#111]/80 backdrop-blur-xl">
-                    {/* If it's YouTube, the AudioPlayer will handle the hidden iframe logic if needed, 
-                        but for a cleaner look we might want to just show the controls if possible. 
-                        However, YouTube policy requires the video to be visible. 
-                        For "Audio" feel with YouTube, we can make the video small or put it in the player.
-                    */}
-                    {isYouTubeSource ? (
-                        <div className="w-full">
-                            {/* We embed the player here but keep it compact or styled as a player */}
-                             <div className="aspect-video w-full rounded overflow-hidden mb-2 border border-white/10">
-                                <iframe 
-                                    className="w-full h-full"
-                                    src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=0&playsinline=1&rel=0&modestbranding=1&controls=1&fs=1&color=white&iv_load_policy=3`}
-                                    title={song.title}
-                                    frameBorder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                ></iframe>
-                             </div>
-                             <p className="text-[9px] text-gray-500 text-center uppercase tracking-widest mt-2">Video Audio Source</p>
-                        </div>
-                    ) : (
+          {/* 2. AUDIO CONTROLS - FLOATING OVERLAP (Only for Non-YouTube) */}
+          {!isYouTubeSource && (
+              <div className="relative z-20 -mt-10 px-6 mb-6">
+                     <div className="glass-panel p-4 rounded-md shadow-lg border-gold/20 flex items-center justify-center bg-[#111]/80 backdrop-blur-xl">
                         <AudioPlayer 
                             id={song.id} 
                             driveId={song.driveId} 
@@ -142,12 +138,12 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                             variant="minimal" 
                             showControls={true} 
                         />
-                    )}
-                 </div>
-          </div>
+                     </div>
+              </div>
+          )}
 
           {/* 3. SONG INFO, LYRICS & CREDITS */}
-          <div className="px-6 py-6 pb-48 max-w-xl mx-auto text-center relative z-20 bg-[#050505] min-h-[50vh]">
+          <div className={`px-6 py-6 pb-48 max-w-xl mx-auto text-center relative z-20 bg-[#050505] min-h-[50vh] ${isYouTubeSource ? 'mt-4' : ''}`}>
               
               {/* Title Section */}
               <div className="mb-12 animate-slide-up">
@@ -159,7 +155,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   </h2>
               </div>
 
-              {/* LYRICS SECTION (COPY PROTECTION ADDED) */}
+              {/* LYRICS SECTION */}
               <div className="mb-16 animate-slide-up space-y-8" style={{ animationDelay: '100ms' }}>
                   <div className="flex items-center justify-center gap-4 opacity-40">
                       <div className="h-px w-6 bg-white"></div>
@@ -167,13 +163,12 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       <div className="h-px w-6 bg-white"></div>
                   </div>
                   
-                  {/* select-none: Cannot select text. pointer-events-none: Cannot interact/touch to copy on mobile */}
                   <div className="select-none font-serif text-gray-300 text-sm md:text-base leading-[2.2] whitespace-pre-wrap tracking-wide border-l-2 border-gold/20 pl-6 md:pl-0 md:border-l-0 md:text-center opacity-90 pb-8">
                       {song.lyrics || <p className="text-gray-600 italic font-light">~ 純音樂 / 歌詞整理中 ~</p>}
                   </div>
               </div>
 
-              {/* CREDITS SECTION (COPY PROTECTION ADDED) */}
+              {/* CREDITS SECTION */}
               <div className="mb-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
                    <div className="flex items-center justify-center gap-4 mb-6 opacity-40">
                       <div className="h-px w-6 bg-white"></div>

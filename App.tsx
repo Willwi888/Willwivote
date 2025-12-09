@@ -12,7 +12,7 @@ import { SongDetailModal } from './components/SongDetailModal';
 
 // --- CONFIGURATION ---
 const DEFAULT_FEATURED_AUDIO_ID = "jfKfPfyJRdk"; 
-// Please update this URL to your high-quality hosted "cover.jpg" link
+// High-quality Album Cover Image (Artist Image)
 const ARTIST_IMAGE_URL = "https://drive.google.com/thumbnail?id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9&sz=w1000";
 
 const SOCIAL_LINKS = [
@@ -162,9 +162,9 @@ const IntroView: React.FC<{
              <img 
                  src={ARTIST_IMAGE_URL} 
                  alt="Background Atmosphere" 
-                 className="w-full h-full object-cover blur-[80px] brightness-75 scale-110"
+                 className="w-full h-full object-cover blur-[100px] brightness-50 scale-110"
              />
-             <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black"></div>
+             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black"></div>
         </div>
 
         {/* 2. HEADER (Fixed Top) */}
@@ -184,19 +184,16 @@ const IntroView: React.FC<{
         <main className="relative z-20 flex-1 flex flex-col items-center justify-center p-6 pb-20">
             
             {/* Main Visual - The "Fixed" Cover Image */}
-            <div className="relative w-full max-w-[85vw] md:max-w-md aspect-[3/4] md:aspect-square shadow-[0_20px_50px_rgba(0,0,0,0.8)] animate-fade-in group">
+            <div className="relative w-full max-w-[85vw] md:max-w-[400px] aspect-[4/5] md:aspect-square shadow-[0_30px_60px_rgba(0,0,0,0.8)] animate-fade-in group">
                 {/* The Image */}
                 <img 
                     src={ARTIST_IMAGE_URL} 
                     alt="Beloved Album Cover" 
-                    className="w-full h-full object-cover object-top rounded-sm opacity-100 transition-transform duration-[1.5s] ease-out group-hover:scale-[1.02]"
+                    className="w-full h-full object-cover object-top rounded-[2px] opacity-100 transition-transform duration-[1.5s] ease-out group-hover:scale-[1.01]"
                 />
                 
-                {/* Subtle Inner Border */}
-                <div className="absolute inset-4 border border-white/20 opacity-50 pointer-events-none"></div>
-                
                 {/* Play Button Overlay (Minimal) */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-black/20 backdrop-blur-[2px]">
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-black/10 backdrop-blur-[1px]">
                      <button 
                         onClick={togglePlayback}
                         className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all transform hover:scale-110"
@@ -214,7 +211,7 @@ const IntroView: React.FC<{
                 
                 <button 
                     onClick={onEnterClick}
-                    className="group relative px-10 py-3 overflow-hidden transition-all duration-500"
+                    className="group relative px-12 py-4 overflow-hidden transition-all duration-500"
                 >
                     <span className="relative z-10 font-serif text-xs md:text-sm tracking-[0.4em] uppercase text-gray-300 group-hover:text-gold transition-colors duration-300 flex items-center gap-3">
                         {t.enter}
