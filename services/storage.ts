@@ -180,8 +180,19 @@ export const getSongs = (): Song[] => {
 
 export const updateSong = (id: number, updates: Partial<Song>) => {
   const currentSongs = getSongs();
+  
+  // Enhance update logic: If customAudioUrl is being updated, try to extract youtubeId
+  let finalUpdates = { ...updates };
+  if (updates.customAudioUrl) {
+      const extractedId = extractYouTubeId(updates.customAudioUrl);
+      if (extractedId) {
+          finalUpdates.youtubeId = extractedId;
+          // Note: We keep customAudioUrl as the display link, but the presence of youtubeId triggers the video player
+      }
+  }
+
   const updatedSongs = currentSongs.map(s => 
-    s.id === id ? { ...s, ...updates } : s
+    s.id === id ? { ...s, ...finalUpdates } : s
   );
   try {
     localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(updatedSongs));
@@ -192,11 +203,15 @@ export const updateSong = (id: number, updates: Partial<Song>) => {
 };
 
 // Robust YouTube ID extractor that works anywhere in a string
+// UPDATED: Now supports m.youtube.com, music.youtube.com and other subdomains
 export const extractYouTubeId = (text: string): string | null => {
     if (!text) return null;
-    // Matches youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID
-    // ID is usually 11 chars (alphanumeric + - _)
-    const regExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    // Matches:
+    // https://www.youtube.com/...
+    // https://m.youtube.com/...
+    // https://music.youtube.com/...
+    // https://youtu.be/...
+    const regExp = /(?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
     const match = text.match(regExp);
     return match ? match[1] : null;
 };
@@ -247,7 +262,7 @@ export const updateSongsBulk = (lines: string[]) => {
           
           // 2. Extract Title if mixed (e.g., "My Song https://youtu.be/...")
           // Remove the URL part to see if there is a title left
-          const urlRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?/g;
+          const urlRegex = /(?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?/g;
           let textWithoutUrl = line.replace(urlRegex, '').trim();
 
           // Cleanup leftovers like () or [] if the URL was inside them

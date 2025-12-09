@@ -111,7 +111,8 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setEditingSongId(song.id);
       setEditForm({
           title: song.title,
-          customAudioUrl: song.customAudioUrl || '',
+          customAudioUrl: song.customAudioUrl || '', // This might contain the YouTube link
+          youtubeId: song.youtubeId || '', // Also load existing ID
           customImageUrl: song.customImageUrl || '',
           lyrics: song.lyrics || '',
           credits: song.credits || ''
@@ -120,6 +121,8 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const saveEdit = () => {
       if (editingSongId === null) return;
+      // The updated updateSong function in storage.ts now automatically handles
+      // extracting the YouTube ID from customAudioUrl if present.
       const updated = updateSong(editingSongId, editForm);
       setLocalSongs(updated);
       setEditingSongId(null);
