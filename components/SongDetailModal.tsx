@@ -38,7 +38,6 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
           setVoteStage('view');
           setReason(savedReason || '');
           // CRITICAL: Pause any background music (Intro or MP3s) when opening the modal
-          // This ensures the YouTube video audio doesn't clash with background music
           pause();
       }
   }, [isOpen, savedReason, pause]);
@@ -84,11 +83,10 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
          <div className="flex-1 overflow-y-auto relative no-scrollbar bg-[#0a0a0a]">
             
             {/* Header Media Area (Video or Image) */}
-            {/* We allow aspect-video (16:9) but handle if user uploads 1:1 by centering */}
             <div className={`relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden group`}>
                 {isYouTube ? (
                     <div className="w-full h-full relative">
-                        {/* Background blur for loading state or if video has black bars */}
+                        {/* Background blur for loading state */}
                         <div 
                            className="absolute inset-0 bg-cover bg-center opacity-30 blur-xl scale-110 pointer-events-none"
                            style={{ backgroundImage: `url(${displayImage})` }}
@@ -96,19 +94,16 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 
                         <iframe 
                             className="w-full h-full relative z-10"
-                            // Parameters explained:
-                            // autoplay=1: START PLAYING IMMEDIATELY
-                            // rel=0: No related videos
-                            // modestbranding=1: Clean look
-                            // controls=1: Allow scrubbing
-                            src={`https://www.youtube-nocookie.com/embed/${song.youtubeId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&controls=1&iv_load_policy=3&fs=0`}
+                            // UPDATED PARAMETERS FOR SOUND
+                            // mute=0: Try to unmute
+                            // autoplay=1: Try to autoplay
+                            src={`https://www.youtube.com/embed/${song.youtubeId}?autoplay=1&mute=0&rel=0&modestbranding=1&playsinline=1&controls=1&fs=1&enablejsapi=1&origin=${window.location.origin}`}
                             title={song.title}
                             frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen={false} 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerPolicy="strict-origin-when-cross-origin"
+                            allowFullScreen
                         ></iframe>
-                        {/* Decorative border overlay */}
-                        <div className="absolute inset-0 border border-white/5 pointer-events-none z-20"></div>
                     </div>
                 ) : (
                     <>

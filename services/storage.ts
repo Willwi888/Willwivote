@@ -149,7 +149,7 @@ export const updateSong = (id: number, updates: Partial<Song>) => {
 };
 
 // Robust YouTube ID extractor that works anywhere in a string
-const extractYouTubeId = (text: string): string | null => {
+export const extractYouTubeId = (text: string): string | null => {
     if (!text) return null;
     // Matches youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID
     // ID is usually 11 chars (alphanumeric + - _)

@@ -217,13 +217,13 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 {cloudStatus === 'connected' && (
                     <span className="text-green-400 font-bold px-2 py-0.5 bg-green-900/20 rounded border border-green-900/50 flex items-center gap-1 animate-pulse">
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                        Cloud Active
+                        ONLINE (Cloud Active)
                     </span>
                 )}
                 {cloudStatus === 'offline' && (
                     <span className="text-gray-400 px-2 py-0.5 bg-white/5 rounded border border-white/10 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
-                        Local Mode
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                        Browser Mode (Active & Safe)
                     </span>
                 )}
             </div>
@@ -365,7 +365,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 bg-[#1a1a1a] p-4 rounded border border-gold/30">
                      <div className="text-xs text-gray-300 max-w-lg">
                         <p className="mb-1 text-gold font-bold uppercase tracking-widest">⚠️ Data Safety</p>
-                        <p>Even with Supabase, keeping a local backup is recommended.</p>
+                        <p>Currently in <strong>{cloudStatus === 'connected' ? 'Cloud Mode' : 'Local Mode'}</strong>. {cloudStatus === 'offline' ? 'Data is saved in your browser. Connect Supabase for multi-device voting.' : 'Data is syncing to cloud.'}</p>
                      </div>
                      <div className="flex gap-2">
                          <input 
