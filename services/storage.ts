@@ -76,24 +76,28 @@ export const getSongs = (): Song[] => {
   if (savedMetadata) {
     try {
       const parsed = JSON.parse(savedMetadata);
-      // Merge default config with saved data
-      return DEFAULT_SONGS.map(defaultSong => {
-        const saved = parsed.find((p: Song) => p.id === defaultSong.id);
-        if (saved) {
-             return { 
-                 ...defaultSong, 
-                 title: saved.title || defaultSong.title,
-                 customAudioUrl: saved.customAudioUrl,
-                 customImageUrl: saved.customImageUrl,
-                 lyrics: saved.lyrics,
-                 credits: saved.credits
-             };
-        }
-        return defaultSong;
-      });
+      // Safety check: ensure we actually got an array with items
+      if (Array.isArray(parsed) && parsed.length > 0) {
+          // Merge default config with saved data
+          const merged = DEFAULT_SONGS.map(defaultSong => {
+            const saved = parsed.find((p: Song) => p.id === defaultSong.id);
+            if (saved) {
+                return { 
+                    ...defaultSong, 
+                    title: saved.title || defaultSong.title,
+                    customAudioUrl: saved.customAudioUrl,
+                    customImageUrl: saved.customImageUrl,
+                    lyrics: saved.lyrics,
+                    credits: saved.credits
+                };
+            }
+            return defaultSong;
+          });
+          return merged;
+      }
     } catch (e) {
       console.error("Failed to parse song metadata", e);
-      return DEFAULT_SONGS;
+      // Fallback to default
     }
   }
   return DEFAULT_SONGS;

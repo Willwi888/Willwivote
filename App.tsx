@@ -80,7 +80,8 @@ const IntroView: React.FC<{
 
     const onEnterClick = () => {
         // UNLOCK AUDIO FOR MOBILE: 
-        // Plays a silent buffer to ensure the audioContext is running within a user gesture
+        // We call initializeAudio() which plays a silent track.
+        // It is critical that we DO NOT pause it immediately in handleStart.
         initializeAudio();
         
         handleStart();
@@ -371,7 +372,7 @@ const AppContent = () => {
   const [introAudioId, setIntroAudioId] = useState(DEFAULT_FEATURED_AUDIO_ID);
   const [detailSongId, setDetailSongId] = useState<number | null>(null);
 
-  const { pause } = useAudio();
+  const { pause, playingId } = useAudio();
 
   useEffect(() => {
     setSongs(getSongs());
@@ -384,7 +385,12 @@ const AppContent = () => {
   }, [step]);
 
   const handleStart = () => {
-      pause(); // Stop intro music
+      // ONLY pause if we were explicitly playing the intro song.
+      // If we pause blindly, we might kill the 'silent unlock' audio 
+      // which needs to play to completion to enable audio on mobile.
+      if (playingId === 'intro') {
+        pause(); 
+      }
       setStep(AppStep.AUTH);
   };
   

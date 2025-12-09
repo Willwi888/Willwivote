@@ -40,20 +40,43 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [volume, setVolumeState] = useState(1);
   const [currentTitle, setCurrentTitle] = useState('');
 
+  // Safety Timeout for Loading State
+  // If loading takes too long (e.g. 15s), we stop the spinner so the UI doesn't look broken.
+  useEffect(() => {
+    let loadTimeout: ReturnType<typeof setTimeout>;
+    if (isLoading) {
+        loadTimeout = setTimeout(() => {
+            if (isLoading) {
+                console.warn("Audio loading timed out - forcing state reset");
+                setIsLoading(false);
+                setError(true); 
+            }
+        }, 15000);
+    }
+    return () => clearTimeout(loadTimeout);
+  }, [isLoading]);
+
   useEffect(() => {
     // Create the single global audio instance
     const audio = new Audio();
+    
+    // IMPORTANT: Do NOT set crossOrigin="anonymous" for Google Drive links.
+    audio.removeAttribute('crossorigin');
+    
     audio.preload = "none"; 
     // Important for iOS:
     // @ts-ignore
     audio.playsInline = true; 
-    audio.crossOrigin = "anonymous";
     
     audioRef.current = audio;
 
     // Event Listeners
     const handleCanPlay = () => {
         setIsLoading(false);
+        // Sometimes duration isn't available until now
+        if (audio.duration && !isNaN(audio.duration)) {
+            setDuration(audio.duration);
+        }
     };
 
     const handleWaiting = () => setIsLoading(true);
@@ -69,8 +92,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     const handleError = (e: Event) => {
         const err = audio.error;
-        // Don't log error if it was just an empty src clear
-        if (!audio.src || audio.src === window.location.href) return;
+        // Don't log error if it was just an empty src clear or intentional stop
+        if (!audio.src || audio.src === window.location.href || audio.src === '') return;
+        // Ignore AbortError (code 20) which happens on rapid song switching
+        if (err && err.code === 20) return; 
 
         const details = err ? `Code: ${err.code}, Message: ${err.message}` : "Unknown Error";
         console.warn(`Audio Playback Error [${audio.src}]: ${details}`);
@@ -80,7 +105,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsPlaying(false);
     };
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handleLoadedMetadata = () => {
+        setDuration(audio.duration);
+        setError(false);
+    };
 
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('waiting', handleWaiting);
@@ -106,32 +134,23 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   // New function to "unlock" audio on mobile
+  // We play a silent buffer completely to ensure the audio context is active
   const initializeAudio = () => {
       const audio = audioRef.current;
       if (!audio) return;
 
-      // If audio is already playing, we don't need to do anything
-      if (!audio.paused && audio.currentTime > 0) return;
+      // If audio is already playing something real, don't interrupt
+      if (!audio.paused && audio.currentTime > 0 && playingId) return;
 
-      // Play a silent buffer to unlock the audio engine on iOS/Android
-      // This is a 0.1s silent WAV file base64 encoded
-      const originalSrc = audio.src;
       const SILENT_AUDIO = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAgZGF0YQQAAAAAAA==';
       
-      // We only switch to silent if we aren't currently playing something real
+      // We only play silent if we aren't currently playing a song
       if (!playingId) {
           audio.src = SILENT_AUDIO;
           audio.load();
-          const playPromise = audio.play();
-          if (playPromise) {
-              playPromise.then(() => {
-                  // Immediately pause after unlocking
-                  audio.pause();
-                  // Don't reset src immediately, let it sit there until playSong is called
-              }).catch(e => {
-                  console.debug("Silent unlock prevented", e);
-              });
-          }
+          audio.play().catch(e => {
+              console.debug("Silent unlock prevented (likely no user gesture yet)", e);
+          });
       }
   };
 
@@ -148,35 +167,35 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (playingId === id) {
       if (isPlaying) {
         audio.pause();
-        setIsPlaying(false);
+        // setIsPlaying(false) handled by event listener
         return;
       } 
       
       // User wants to RESUME
-      setIsPlaying(true); // Optimistic UI update
+      setIsPlaying(true); 
       try {
-          // Check if the element is actually ready. If src was cleared or errored, throw to trigger fallback.
           if (!audio.src || audio.error || audio.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
              throw new Error("Audio element needs reload");
           }
           await audio.play();
       } catch (e) {
           console.warn("Resume failed, attempting to reload source...", e);
-          // Fallback: Reload the source completely
+          // Fallback: Reload the source
           try {
               setIsLoading(true);
               audio.src = url;
+              audio.preload = "auto";
               audio.load();
-              await audio.play();
-              setError(false);
-          } catch (retryErr: any) {
-              if (retryErr.name !== 'AbortError') {
-                 console.error("Retry playback failed", retryErr);
-                 setIsPlaying(false);
-                 setError(true);
+              const p = audio.play();
+              if (p !== undefined) {
+                  p.catch(err => {
+                      console.error("Retry playback failed", err);
+                      setIsPlaying(false);
+                      setError(true);
+                  });
               }
-          } finally {
-              setIsLoading(false);
+          } catch (retryErr) {
+               console.error("Retry fatal error", retryErr);
           }
       }
       return;
@@ -188,19 +207,32 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsPlaying(true);
     setError(false);
     
+    // We do NOT use await here for audio.play().
+    // Using await can cause the UI to "hang" if the promise never resolves (e.g. network stall).
+    // We let the event listeners (playing, error) handle the UI state updates.
     try {
         audio.src = url;
+        audio.preload = "auto"; 
         audio.load();
-        await audio.play();
-    } catch (e: any) {
-        // AbortError is expected if user switches songs quickly
-        if (e.name === 'AbortError') {
-            console.log("Playback aborted by user action");
-        } else {
-            console.error("Playback failed", e);
-            setIsPlaying(false);
-            setError(true);
+        
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                // AbortError is normal when skipping songs quickly
+                if (error.name === 'AbortError') {
+                    console.debug("Playback aborted");
+                } else {
+                    console.error("Play request failed:", error);
+                    setIsPlaying(false);
+                    setError(true);
+                    setIsLoading(false);
+                }
+            });
         }
+    } catch (e) {
+        console.error("Synchronous playback error", e);
+        setIsPlaying(false);
+        setError(true);
         setIsLoading(false);
     }
   };
@@ -214,10 +246,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!audioRef.current) return;
     try {
         await audioRef.current.play();
-        setIsPlaying(true);
     } catch (e) {
         console.error("Resume failed", e);
-        setIsPlaying(false);
     }
   };
 
