@@ -191,8 +191,8 @@ const cleanTitleText = (rawTitle: string): string => {
     clean = clean.replace(/\[Official Audio\]/gi, '');
     clean = clean.replace(/\(Demo\)/gi, '');
     
-    // 4. Remove leading numbering (e.g. "01. Song" or "1 - Song")
-    clean = clean.replace(/^\d+\s*[-.]\s*/, '');
+    // 4. Remove leading numbering (e.g. "01. Song" or "1 - Song" or "1| Song")
+    clean = clean.replace(/^\d+\s*[-.|]\s*/, '');
     
     return clean.trim();
 };
@@ -222,10 +222,13 @@ export const updateSongsBulk = (lines: string[]) => {
           // 2. Extract Title if mixed (e.g., "My Song https://youtu.be/...")
           // Remove the URL part to see if there is a title left
           const urlRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?/g;
-          const textWithoutUrl = line.replace(urlRegex, '').trim();
+          let textWithoutUrl = line.replace(urlRegex, '').trim();
+
+          // Cleanup leftovers like () or [] if the URL was inside them
+          textWithoutUrl = textWithoutUrl.replace(/\(\s*\)/g, '').replace(/\[\s*\]/g, '').trim();
           
-          // Remove common "separators" people might type
-          const cleanRawTitle = textWithoutUrl.replace(/^\|/, '').replace(/\|$/, '').trim();
+          // Remove common "separators" people might type (e.g. "Song - ", "Song | ")
+          const cleanRawTitle = textWithoutUrl.replace(/^[-|]\s+/, '').replace(/\s+[-|]$/, '').trim();
 
           if (cleanRawTitle.length > 1) {
               newTitle = cleanTitleText(cleanRawTitle);
