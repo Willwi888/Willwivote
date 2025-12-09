@@ -33,14 +33,16 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   const [voteStage, setVoteStage] = useState<'view' | 'reason'>('view');
   const [reason, setReason] = useState('');
   const { pause } = useAudio(); 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // Ref to scroll the lyrics container back to top on open
+  const lyricsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
       if (isOpen) {
           setVoteStage('view');
           setReason(savedReason || '');
-          pause(); // Stop background music
-          if (scrollRef.current) scrollRef.current.scrollTop = 0;
+          pause(); // Stop background music to focus on track
+          if (lyricsContainerRef.current) lyricsContainerRef.current.scrollTop = 0;
           document.body.style.overflow = 'hidden';
       } else {
           document.body.style.overflow = '';
@@ -75,140 +77,157 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   const isYouTubeSource = !!finalYoutubeId;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black flex flex-col w-full h-full safe-area-bottom animate-fade-in">
+    <div className="fixed inset-0 z-[100] bg-[#050505] w-full h-full flex flex-col md:flex-row animate-fade-in font-sans">
       
-      {/* HEADER: Minimalist */}
-      <div className="absolute top-0 left-0 w-full p-6 z-[120] flex justify-between items-start pointer-events-none">
-          <div className="text-[10px] text-white/40 font-serif tracking-widest uppercase pointer-events-auto">
-              Selection No.{String(song.id).padStart(2,'0')}
+      {/* ==========================================
+          LEFT PANEL: VISUAL (FIXED, NON-SCROLLING) 
+          ========================================== */}
+      <div className="w-full md:w-1/2 h-[40vh] md:h-full relative bg-black border-b md:border-b-0 md:border-r border-white/5 flex-shrink-0 overflow-hidden">
+          
+          {/* Back Button (Absolute Top Left) */}
+          <div className="absolute top-8 left-8 z-50 mix-blend-difference">
+             <button 
+                  onClick={onClose}
+                  className="group flex items-center gap-4 text-white/50 hover:text-white transition-all duration-500"
+              >
+                  <ArrowLeftIcon className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+                  <span className="text-[10px] uppercase tracking-[0.3em] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                      {t.back}
+                  </span>
+              </button>
           </div>
-          <button 
-              onClick={onClose}
-              className="w-12 h-12 flex items-center justify-center rounded-full bg-transparent border border-white/10 text-white hover:border-white hover:bg-white hover:text-black transition-all duration-500 pointer-events-auto backdrop-blur-md"
-          >
-              <ArrowLeftIcon className="w-5 h-5" />
-          </button>
+
+          {/* Visual Content */}
+          <div className="w-full h-full relative">
+              {isYouTubeSource ? (
+                  <>
+                    <iframe 
+                        key={song.id} 
+                        className="w-full h-full object-cover scale-[1.01]" // Slight scale to prevent borders
+                        src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=1&playsinline=1&rel=0&controls=0&disablekb=1&iv_load_policy=3&modestbranding=1&loop=1`}
+                        title={song.title}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    ></iframe>
+                    {/* Cinematic Vignette Overlay - Important for atmosphere */}
+                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black via-transparent to-black/20"></div>
+                  </>
+              ) : (
+                  <>
+                      <img src={defaultCover} className="w-full h-full object-cover opacity-80" alt="Cover" />
+                      <div className="absolute inset-0 bg-black/40"></div>
+                      
+                      {/* Centered Player for Audio-Only Tracks */}
+                      <div className="absolute inset-0 flex items-center justify-center p-12">
+                            <AudioPlayer 
+                                id={song.id} 
+                                driveId={song.driveId} 
+                                src={song.customAudioUrl} 
+                                title={song.title} 
+                                variant="featured" 
+                                showControls={true} 
+                            />
+                      </div>
+                  </>
+              )}
+          </div>
       </div>
 
-      {/* MAIN SCROLL AREA */}
-      <div 
-        ref={scrollRef} 
-        className="flex-1 overflow-y-auto w-full bg-black no-scrollbar"
-        style={{ WebkitOverflowScrolling: 'touch' }}
-      >
-          {/* VISUAL AREA (Full Height on Mobile, Split on Desktop) */}
-          <div className="min-h-screen flex flex-col md:flex-row">
-              
-              {/* LEFT / TOP: MEDIA PLAYER */}
-              <div className="w-full md:w-1/2 h-[50vh] md:h-screen sticky top-0 bg-[#050505] flex items-center justify-center border-b md:border-b-0 md:border-r border-white/5 relative group">
-                  {isYouTubeSource ? (
-                      <div className="w-full h-full relative">
-                           {/* ERROR 153 FIX: Simplified URL params, removed 'origin' */}
-                           <iframe 
-                              key={song.id} 
-                              className="w-full h-full object-cover"
-                              src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=1&playsinline=1&rel=0&controls=0&disablekb=1&iv_load_policy=3&modestbranding=1`}
-                              title={song.title}
-                              frameBorder="0"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                          ></iframe>
-                          {/* Aesthetic overlay to prevent harsh YouTube interface, fades out on hover */}
-                          <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.8)]"></div>
-                      </div>
-                  ) : (
-                      <div className="relative w-full h-full">
-                          <img src={defaultCover} className="w-full h-full object-cover opacity-40 grayscale" alt="Cover" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-full max-w-sm px-8">
-                                    <AudioPlayer 
-                                        id={song.id} 
-                                        driveId={song.driveId} 
-                                        src={song.customAudioUrl} 
-                                        title={song.title} 
-                                        variant="featured" 
-                                        showControls={true} 
-                                    />
-                                </div>
+      {/* ==========================================
+          RIGHT PANEL: TYPOGRAPHY (INDEPENDENT SCROLL) 
+          ========================================== */}
+      <div className="w-full md:w-1/2 h-[60vh] md:h-full relative bg-[#0a0a0a] flex flex-col">
+          
+          {/* Scrollable Text Area */}
+          <div 
+            ref={lyricsContainerRef}
+            className="flex-1 overflow-y-auto no-scrollbar relative"
+          >
+              <div className="min-h-full flex flex-col p-8 md:p-24">
+                  
+                  {/* Song Header */}
+                  <div className="mb-20 space-y-6 animate-slide-up">
+                      <div className="flex items-center gap-4">
+                          <div className="h-[1px] w-8 bg-gold/50"></div>
+                          <div className="text-[10px] text-gold uppercase tracking-[0.4em] font-medium">
+                              No.{String(song.id).padStart(2,'0')}
                           </div>
                       </div>
-                  )}
-              </div>
-
-              {/* RIGHT / BOTTOM: INFO & ACTIONS */}
-              <div className="w-full md:w-1/2 min-h-[50vh] md:h-screen flex flex-col justify-center bg-black p-8 md:p-20 space-y-12">
-                  
-                  <div className="space-y-4 animate-slide-up">
-                      <h2 className="font-serif text-4xl md:text-6xl text-white leading-tight italic">
+                      
+                      <h2 className="font-serif text-4xl md:text-6xl text-white italic leading-none tracking-tight opacity-90">
                           {song.title}
                       </h2>
-                      <div className="h-[1px] w-12 bg-gold"></div>
                   </div>
 
-                  {/* LYRICS & CREDITS */}
-                  <div className="space-y-12 animate-slide-up" style={{ animationDelay: '100ms' }}>
-                       <div className="space-y-4">
-                           <span className="text-[9px] text-gold uppercase tracking-[0.3em] block">{t.lyrics}</span>
-                           <p className="font-serif text-gray-400 text-sm leading-relaxed whitespace-pre-wrap">
-                               {song.lyrics || "Instrumental / Lyrics Unavailable"}
+                  {/* Lyrics - Editorial Layout */}
+                  <div className="space-y-12 animate-slide-up flex-grow" style={{ animationDelay: '150ms' }}>
+                       <div className="relative">
+                           {/* Decorative vertical line */}
+                           <div className="absolute left-0 top-2 bottom-2 w-[1px] bg-gradient-to-b from-white/10 via-white/5 to-transparent hidden md:block"></div>
+                           
+                           <p className="font-serif text-gray-400 text-sm md:text-[15px] leading-[2.8] tracking-[0.05em] whitespace-pre-wrap md:pl-10 mix-blend-plus-lighter">
+                               {song.lyrics || "..."}
                            </p>
                        </div>
                        
-                       <div className="space-y-4">
-                           <span className="text-[9px] text-gold uppercase tracking-[0.3em] block">{t.credits}</span>
-                           <p className="font-sans text-gray-600 text-[10px] uppercase tracking-widest leading-relaxed whitespace-pre-wrap">
-                               {song.credits || "WILLWI MUSIC PRODUCTION"}
+                       {/* Credits - Subtle */}
+                       <div className="pt-20 md:pl-10 space-y-4 opacity-60 hover:opacity-100 transition-opacity duration-700">
+                           <div className="w-8 h-[1px] bg-white/20 mb-4"></div>
+                           <p className="font-mono text-gray-500 text-[9px] uppercase tracking-[0.2em] leading-relaxed whitespace-pre-wrap">
+                               {song.credits || "MUSIC PRODUCTION BY WILLWI"}
                            </p>
                        </div>
                   </div>
 
-                  {/* VOTE INTERACTION */}
-                  <div className="pt-8 border-t border-white/5 animate-slide-up" style={{ animationDelay: '200ms' }}>
-                      {voteStage === 'view' ? (
-                          <button
-                              onClick={handleVoteClick}
-                              disabled={!isVoted && !canVote}
-                              className={`
-                                  w-full py-6 uppercase tracking-[0.3em] text-[10px] font-medium transition-all duration-500 border
-                                  ${isVoted 
-                                      ? 'border-gold text-gold bg-gold/5' 
-                                      : canVote 
-                                          ? 'border-white/20 text-white hover:bg-white hover:text-black hover:border-white'
-                                          : 'border-white/5 text-gray-700 cursor-not-allowed'
-                                  }
-                              `}
-                          >
-                              <div className="flex items-center justify-center gap-4">
-                                  {isVoted ? (
-                                      <><span>{t.voted}</span> <CheckIcon className="w-4 h-4" /></>
-                                  ) : (
-                                      <><span>{t.voteForThis}</span> <HeartIcon className={`w-4 h-4 ${canVote?'':'opacity-20'}`} /></>
-                                  )}
-                              </div>
-                          </button>
-                      ) : (
-                          <div className="space-y-6">
-                              <p className="font-serif text-lg italic text-white text-center">{t.tellUsWhy}</p>
-                              <textarea 
-                                  autoFocus
-                                  value={reason}
-                                  onChange={(e) => setReason(e.target.value)}
-                                  placeholder={t.reasonPlaceholder}
-                                  className="w-full bg-transparent border-b border-white/20 p-4 text-center text-sm text-white focus:border-gold outline-none h-24 resize-none font-serif placeholder-gray-700"
-                              />
-                              <div className="flex gap-4">
-                                  <button onClick={() => setVoteStage('view')} className="flex-1 py-4 text-[9px] uppercase tracking-widest text-gray-500 hover:text-white transition-colors">{t.cancel}</button>
-                                  <button onClick={handleConfirmVote} className="flex-1 py-4 bg-white text-black text-[9px] uppercase tracking-widest hover:bg-gold transition-colors">{t.confirmSelection}</button>
-                              </div>
+                  {/* Bottom Spacer to ensure text clears the vote button */}
+                  <div className="h-40"></div>
+              </div>
+          </div>
+
+          {/* Sticky Bottom Vote Action - Minimalist */}
+          <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#050505] via-[#050505] to-transparent pt-20 pb-0 z-20">
+              <div className="border-t border-white/10 bg-[#050505]">
+                  {voteStage === 'view' ? (
+                      <button
+                          onClick={handleVoteClick}
+                          disabled={!isVoted && !canVote}
+                          className={`
+                              group w-full py-8 flex items-center justify-center gap-4 transition-all duration-500
+                              ${isVoted ? 'text-gold' : canVote ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-700 cursor-not-allowed'}
+                          `}
+                      >
+                          {isVoted ? (
+                              <>
+                                  <span className="text-[10px] uppercase tracking-[0.4em] font-medium">{t.voted}</span>
+                                  <CheckIcon className="w-4 h-4" />
+                              </>
+                          ) : (
+                              <>
+                                  <span className="text-[10px] uppercase tracking-[0.4em] font-medium group-hover:tracking-[0.5em] transition-all duration-500">
+                                      {canVote ? t.voteForThis : "Selection Full"}
+                                  </span>
+                                  <HeartIcon className={`w-4 h-4 ${canVote ? '' : 'opacity-20'}`} />
+                              </>
+                          )}
+                      </button>
+                  ) : (
+                      // Reason Input Mode
+                      <div className="p-8 animate-slide-up bg-[#0a0a0a]">
+                          <p className="font-serif text-xs italic text-gray-400 text-center mb-6">{t.tellUsWhy}</p>
+                          <textarea 
+                              autoFocus
+                              value={reason}
+                              onChange={(e) => setReason(e.target.value)}
+                              placeholder={t.reasonPlaceholder}
+                              className="w-full bg-transparent border-b border-white/20 py-2 text-center text-sm text-white focus:border-gold outline-none h-12 resize-none font-serif placeholder-gray-700 mb-6 transition-colors"
+                          />
+                          <div className="flex justify-center gap-12">
+                              <button onClick={() => setVoteStage('view')} className="text-[9px] uppercase tracking-widest text-gray-600 hover:text-white transition-colors">{t.cancel}</button>
+                              <button onClick={handleConfirmVote} className="text-[9px] font-bold uppercase tracking-widest text-white hover:text-gold transition-colors">{t.confirmSelection}</button>
                           </div>
-                      )}
-                      
-                      {isVoted && savedReason && voteStage === 'view' && (
-                          <p className="mt-6 text-center text-[11px] text-gray-500 font-serif italic">
-                              "{savedReason}"
-                          </p>
-                      )}
-                  </div>
+                      </div>
+                  )}
               </div>
           </div>
       </div>

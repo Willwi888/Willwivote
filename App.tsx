@@ -23,7 +23,7 @@ const SOCIAL_LINKS = [
 ];
 
 const LangSwitcher: React.FC<{ lang: Language; setLang: (l: Language) => void }> = ({ lang, setLang }) => (
-    <div className="flex gap-6 z-50 mix-blend-difference">
+    <div className="flex gap-6 z-50 mix-blend-difference pt-2">
         {(['zh', 'jp', 'en'] as Language[]).map(l => (
             <button 
                 key={l}
@@ -77,8 +77,9 @@ const IntroView: React.FC<{
         {/* TOP NAVIGATION */}
         <div className="w-full px-8 py-8 flex justify-between items-start z-50">
             <div>
-                <h1 className="text-white font-serif tracking-[0.3em] text-[10px] md:text-xs font-bold mb-1">WILLWI MUSIC</h1>
-                <p className="text-[9px] text-gold uppercase tracking-[0.2em] opacity-80">The 2026 Collection</p>
+                {/* INCREASED FONT SIZE HERE */}
+                <h1 className="text-white font-serif tracking-[0.3em] text-2xl md:text-4xl font-bold mb-2">WILLWI MUSIC</h1>
+                <p className="text-xs md:text-sm text-gold uppercase tracking-[0.25em] opacity-80 pl-1">The 2026 Collection</p>
             </div>
             <LangSwitcher lang={lang} setLang={setLang} />
         </div>
@@ -129,7 +130,7 @@ const IntroView: React.FC<{
             {/* RIGHT: TYPOGRAPHY */}
             <div className="text-center md:text-left space-y-8 animate-slide-up max-w-lg relative z-20" style={{ animationDelay: '200ms' }}>
                 <div>
-                    <h2 className="font-serif text-6xl md:text-8xl text-white italic tracking-tight leading-none mb-4 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] whitespace-pre-line">
+                    <h2 className="font-serif text-6xl md:text-8xl text-white italic tracking-tight leading-none mb-4 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] whitespace-pre-line text-balance">
                         {t.title}
                     </h2>
                     <p className="font-sans text-xs md:text-sm text-gray-300 tracking-[0.3em] uppercase leading-relaxed border-t border-white/20 pt-4 inline-block text-shadow-sm">
@@ -176,65 +177,82 @@ const AuthView: React.FC<{
     lang: Language;
     setLang: (l: Language) => void;
 }> = ({ t, user, setUser, handleLogin, handleBack, lang, setLang }) => (
-    <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-start relative p-8 overflow-y-auto no-scrollbar">
-       {/* Background Grain & Gradient */}
-       <div className="fixed inset-0 bg-gradient-to-br from-[#0a0a0a] to-black z-0 pointer-events-none"></div>
-       <div className="fixed top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none z-0"></div>
+    <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#050505]">
        
-       <button onClick={handleBack} className="fixed top-8 left-8 text-white/30 hover:text-white transition-colors z-50">
-           <ArrowLeftIcon className="w-6 h-6" />
-       </button>
-       
-       <div className="max-w-xl w-full space-y-24 animate-fade-in relative z-10 py-20">
+       {/* LEFT PANEL: FIXED VISUAL (Matches Intro Layout) */}
+       <div className="w-full md:w-1/2 h-[40vh] md:h-screen relative md:sticky md:top-0 bg-[#000] overflow-hidden border-b md:border-b-0 md:border-r border-white/5 z-0">
+           <img 
+               src={ARTIST_IMAGE_URL} 
+               className="w-full h-full object-cover object-center opacity-80" 
+               alt="Artist" 
+           />
+           {/* Cinematic Overlay */}
+           <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-black/40 md:bg-gradient-to-r md:from-transparent md:to-[#050505]/80"></div>
            
-           {/* Section 1: About - THE CONCEPT */}
-           <div className="space-y-8 text-center">
-               <span className="text-[9px] text-gold uppercase tracking-[0.4em] drop-shadow-[0_0_10px_rgba(197,160,89,0.5)]">The Concept</span>
-               <h2 className="font-serif text-3xl md:text-5xl text-white italic leading-tight">{t.aboutTitle}</h2>
-               <div className="w-12 h-[1px] bg-white/20 mx-auto"></div>
-               <p className="font-serif text-base text-gray-400 leading-9 tracking-wide mix-blend-screen whitespace-pre-wrap">{t.aboutBody}</p>
-           </div>
+           <button onClick={handleBack} className="absolute top-8 left-8 text-white/50 hover:text-white transition-colors z-50 mix-blend-difference flex items-center gap-2">
+               <ArrowLeftIcon className="w-6 h-6" />
+               <span className="text-[9px] uppercase tracking-widest hidden md:inline">Back</span>
+           </button>
+       </div>
 
-            {/* Section 2: How To Vote - GUIDE */}
-           <div className="space-y-8 text-center">
-               <span className="text-[9px] text-gold uppercase tracking-[0.4em] drop-shadow-[0_0_10px_rgba(197,160,89,0.5)]">Guide</span>
-               <h2 className="font-serif text-3xl md:text-4xl text-white italic leading-tight">{t.howToTitle}</h2>
-               <div className="w-12 h-[1px] bg-white/20 mx-auto"></div>
-               <p className="font-serif text-base text-gray-400 leading-9 tracking-wide mix-blend-screen whitespace-pre-wrap">{t.howToBody}</p>
-           </div>
-
-           {/* LOGIN FORM */}
-           <form onSubmit={handleLogin} className="w-full max-w-sm mx-auto space-y-12 bg-white/5 p-10 border border-white/5 rounded-sm backdrop-blur-sm shadow-[0_0_40px_rgba(0,0,0,0.5)]">
-               <div className="space-y-8">
-                   <div className="group">
-                        <label className="block text-[8px] uppercase text-gray-500 tracking-[0.3em] mb-2 group-focus-within:text-gold transition-colors">{t.name}</label>
-                        <input 
-                            required
-                            type="text" 
-                            value={user.name}
-                            onChange={e => setUser({...user, name: e.target.value})}
-                            className="w-full bg-transparent border-b border-white/10 py-2 text-xl text-white font-serif placeholder-white/10 focus:border-gold outline-none transition-all"
-                        />
+       {/* RIGHT PANEL: SCROLLABLE CONTENT */}
+       <div className="w-full md:w-1/2 min-h-screen bg-[#050505] relative z-10 flex flex-col justify-center py-20 px-8 md:px-24 overflow-y-auto">
+           {/* Background Texture */}
+           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none z-0"></div>
+           
+           <div className="space-y-20 animate-fade-in relative z-10 max-w-xl mx-auto md:mx-0">
+               
+               {/* Section 1: About - THE CONCEPT */}
+               <div className="space-y-8 text-center md:text-left">
+                   <div className="flex flex-col items-center md:items-start">
+                       <span className="text-[9px] text-gold uppercase tracking-[0.4em] drop-shadow-[0_0_10px_rgba(197,160,89,0.5)] mb-2">The Concept</span>
+                       <div className="w-8 h-[1px] bg-gold/50 mb-6"></div>
                    </div>
-                   <div className="group">
-                        <label className="block text-[8px] uppercase text-gray-500 tracking-[0.3em] mb-2 group-focus-within:text-gold transition-colors">{t.email}</label>
-                        <input 
-                            required
-                            type="email" 
-                            value={user.email}
-                            onChange={e => setUser({...user, email: e.target.value})}
-                            className="w-full bg-transparent border-b border-white/10 py-2 text-xl text-white font-serif placeholder-white/10 focus:border-gold outline-none transition-all"
-                        />
-                   </div>
+                   
+                   <h2 className="font-serif text-3xl md:text-5xl text-white italic leading-tight text-balance" style={{ wordBreak: 'keep-all' }}>{t.aboutTitle}</h2>
+                   
+                   <p className="font-serif text-base text-gray-400 leading-9 tracking-wide whitespace-pre-wrap">{t.aboutBody}</p>
                </div>
-               <button 
-                   type="submit" 
-                   disabled={!user.name || !user.email}
-                   className="w-full py-4 bg-white text-black text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-gold transition-all duration-300 disabled:opacity-30 disabled:hover:bg-white shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(197,160,89,0.4)]"
-               >
-                   {t.start}
-               </button>
-           </form>
+
+                {/* Section 2: Guide */}
+               <div className="space-y-8 text-center md:text-left pt-8 border-t border-white/5">
+                   <span className="text-[9px] text-gray-500 uppercase tracking-[0.4em]">Guide</span>
+                   <p className="font-serif text-sm text-gray-500 leading-8 tracking-wide whitespace-pre-wrap">{t.howToBody}</p>
+               </div>
+
+               {/* LOGIN FORM */}
+               <form onSubmit={handleLogin} className="w-full space-y-10 pt-8">
+                   <div className="space-y-8">
+                       <div className="group">
+                            <label className="block text-[8px] uppercase text-gray-500 tracking-[0.3em] mb-2 group-focus-within:text-gold transition-colors">{t.name}</label>
+                            <input 
+                                required
+                                type="text" 
+                                value={user.name}
+                                onChange={e => setUser({...user, name: e.target.value})}
+                                className="w-full bg-transparent border-b border-white/10 py-3 text-xl text-white font-serif placeholder-white/10 focus:border-gold outline-none transition-all"
+                            />
+                       </div>
+                       <div className="group">
+                            <label className="block text-[8px] uppercase text-gray-500 tracking-[0.3em] mb-2 group-focus-within:text-gold transition-colors">{t.email}</label>
+                            <input 
+                                required
+                                type="email" 
+                                value={user.email}
+                                onChange={e => setUser({...user, email: e.target.value})}
+                                className="w-full bg-transparent border-b border-white/10 py-3 text-xl text-white font-serif placeholder-white/10 focus:border-gold outline-none transition-all"
+                            />
+                       </div>
+                   </div>
+                   <button 
+                       type="submit" 
+                       disabled={!user.name || !user.email}
+                       className="w-full py-5 bg-white text-black text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-gold transition-all duration-300 disabled:opacity-30 disabled:hover:bg-white shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(197,160,89,0.4)]"
+                   >
+                       {t.start}
+                   </button>
+               </form>
+           </div>
        </div>
     </div>
 );
