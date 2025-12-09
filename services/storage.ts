@@ -114,6 +114,7 @@ export const getSongs = (): Song[] => {
   if (savedMetadata) {
     try {
       const parsed = JSON.parse(savedMetadata);
+      // Ensure it is a valid non-empty array before returning
       if (Array.isArray(parsed) && parsed.length > 0) {
           const merged = DEFAULT_SONGS.map(defaultSong => {
             const saved = parsed.find((p: Song) => p.id === defaultSong.id);
@@ -134,8 +135,10 @@ export const getSongs = (): Song[] => {
       }
     } catch (e) {
       console.error("Failed to parse song metadata", e);
+      // Fallthrough to return default songs
     }
   }
+  // Fallback: If no storage or empty array, return default songs
   return DEFAULT_SONGS;
 };
 
