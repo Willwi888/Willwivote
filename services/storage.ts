@@ -31,13 +31,11 @@ export const saveGlobalConfig = (config: GlobalConfig) => {
 // --- GOOGLE SHEET INTEGRATION (No-CORS Mode) ---
 const submitToGoogleSheet = async (user: User, scriptUrl: string) => {
     try {
-        // NOTE: 'no-cors' means we CANNOT read the response status. 
-        // It will appear as "opaque" in dev tools, but the POST request DOES go through.
         await fetch(scriptUrl, {
             method: 'POST',
             mode: 'no-cors', 
             headers: {
-                'Content-Type': 'text/plain' // Avoid preflight OPTIONS
+                'Content-Type': 'text/plain' 
             },
             body: JSON.stringify(user)
         });
@@ -50,7 +48,6 @@ const submitToGoogleSheet = async (user: User, scriptUrl: string) => {
 // --- VOTING LOGIC ---
 
 export const saveVote = async (user: User) => {
-  // 1. Local Storage
   const currentData = getLocalVotes();
   if (!currentData.find(u => u.email === user.email)) {
       const newData = [...currentData, user];
@@ -59,7 +56,6 @@ export const saveVote = async (user: User) => {
       } catch (e) {}
   }
 
-  // 2. Supabase
   if (supabase) {
       try {
           await supabase.from('votes').insert([{ 
@@ -74,13 +70,9 @@ export const saveVote = async (user: User) => {
       }
   }
 
-  // 3. Google Sheet (CRITICAL FIX: Ensure this runs)
   const config = getGlobalConfig();
   if (config.googleSheetUrl && config.googleSheetUrl.startsWith('https://script.google.com/')) {
-      // Don't await this to block UI, just fire it
       submitToGoogleSheet(user, config.googleSheetUrl);
-  } else {
-      console.warn("No Google Sheet URL configured in Admin Panel");
   }
 };
 
@@ -123,20 +115,20 @@ export const getLeaderboard = (songs: Song[], votes: User[]) => {
     .sort((a, b) => b.count - a.count);
 };
 
-// --- SONG MANAGEMENT LOGIC (MERGED WITH MASTER DATA) ---
+// --- SONG MANAGEMENT ---
 
 export const getSongs = (): Song[] => {
   if (typeof window === 'undefined') return DEFAULT_SONGS;
   
   let mergedSongs = [...DEFAULT_SONGS];
 
-  // 1. Hydrate with Master Data (Constants) - Priority 1 (Base)
+  // 1. Hydrate with Master Data
   mergedSongs = mergedSongs.map(s => {
       const master = MASTER_SONG_DATA[s.id];
       return master ? { ...s, ...master } : s;
   });
 
-  // 2. Hydrate with Local Storage (Admin Edits) - Priority 2 (Overrides)
+  // 2. Hydrate with Local Storage
   try {
       const savedMetadata = localStorage.getItem(SONG_METADATA_KEY);
       if (savedMetadata) {
@@ -144,9 +136,6 @@ export const getSongs = (): Song[] => {
         if (Array.isArray(parsed) && parsed.length > 0) {
             mergedSongs = mergedSongs.map(currentSong => {
                 const saved = parsed.find((p: Song) => p.id === currentSong.id);
-                // We keep lyrics/credits from Master if Local is empty, 
-                // BUT if Admin specifically edited them, Local takes precedence.
-                // For now, let's treat Local as 'updates'.
                 if (saved) {
                     return {
                         ...currentSong,
@@ -154,7 +143,6 @@ export const getSongs = (): Song[] => {
                         youtubeId: saved.youtubeId || currentSong.youtubeId,
                         customAudioUrl: saved.customAudioUrl || currentSong.customAudioUrl,
                         customImageUrl: saved.customImageUrl || currentSong.customImageUrl,
-                        // Only override lyrics if saved version has them
                         lyrics: saved.lyrics || currentSong.lyrics,
                         credits: saved.credits || currentSong.credits,
                     };
@@ -168,11 +156,21 @@ export const getSongs = (): Song[] => {
   return mergedSongs;
 };
 
-// Robust YouTube ID extractor
+// --- UPDATED: ROBUST YOUTUBE EXTRACTION ---
 export const extractYouTubeId = (text: string): string | null => {
     if (!text) return null;
-    const match = text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-    return match ? match[1] : null;
+    
+    // 1. Check for standard URLs (Full, Short, Embed, Mobile)
+    const urlMatch = text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    if (urlMatch) return urlMatch[1];
+
+    // 2. Check for RAW ID (Strict 11 chars)
+    // If the user pastes JUST "jfKfPfyJRdk", we accept it.
+    // We trim and ensure it's exactly 11 valid characters to avoid false positives (like Drive IDs which are longer).
+    const rawMatch = text.trim().match(/^([a-zA-Z0-9_-]{11})$/);
+    if (rawMatch) return rawMatch[1];
+
+    return null;
 };
 
 export const updateSong = (id: number, updates: Partial<Song>) => {

@@ -54,9 +54,16 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (!isNaN(audio.currentTime)) setCurrentTime(audio.currentTime);
     };
 
-    const handleError = () => {
-        if (!audio.src || audio.src === window.location.href) return;
-        console.error("Audio Error:", audio.error);
+    const handleError = (e: Event) => {
+        const target = e.target as HTMLAudioElement;
+        // Don't report error if it's just the initial state
+        if (!target.src || target.src === window.location.href) return;
+        
+        console.error("Audio Playback Error Occurred:");
+        console.error("- Error Code:", target.error?.code);
+        console.error("- Error Message:", target.error?.message);
+        console.error("- Attempted URL:", target.src);
+        
         setIsLoading(false);
         setIsPlaying(false);
         setError(true);
@@ -96,7 +103,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           audio.play().then(() => {
               audio.pause();
           }).catch(e => {
-              console.log("Audio unlock attempted (silent fail expected if no interaction)", e);
+              // This is expected if user interaction policy blocks it, 
+              // but we try anyway so subsequent clicks work.
+              console.log("Audio unlock attempt (silent):", e);
           });
       }
   };
@@ -127,7 +136,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         audio.load();
         await audio.play();
     } catch (e) {
-        console.error("Play failed", e);
+        console.error("Play failed for URL:", url, e);
         setIsLoading(false);
         setError(true);
     }
