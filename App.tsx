@@ -6,15 +6,14 @@ import { Song, User, AppStep, MAX_VOTES, Language } from './types';
 import { TRANSLATIONS, getYouTubeThumbnail } from './constants';
 import AudioPlayer from './components/AudioPlayer';
 import { AudioProvider, useAudio } from './components/AudioContext';
-import { HeartIcon, ArrowLeftIcon, CheckIcon, PlayIcon, PauseIcon, SearchIcon } from './components/Icons';
+import { HeartIcon, ArrowLeftIcon, CheckIcon, PlayIcon, PauseIcon } from './components/Icons';
 import { saveVote } from './services/storage';
 import { AdminView } from './components/AdminView';
 import { SongDetailModal } from './components/SongDetailModal';
 
 // --- CONFIGURATION ---
 const DEFAULT_FEATURED_AUDIO_ID = "1Li45a4NhWYbrsuNDEPUOLos_q_dXbFYb"; 
-// Changed to a reliable Unsplash Music Image to prevent "Empty" look if Drive fails
-const ARTIST_IMAGE_URL = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=1000&auto=format&fit=crop";
+const ARTIST_IMAGE_URL = "https://drive.google.com/thumbnail?id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9&sz=w1000";
 
 const SOCIAL_LINKS = [
     { name: 'Spotify', url: 'https://open.spotify.com/artist/3ascZ8Rb2KDw4QyCy29Om4' },
@@ -61,7 +60,7 @@ const IntroView: React.FC<{
     onAdmin: () => void;
 }> = ({ t, introAudioId, handleStart, lang, setLang, onAdmin }) => {
     const { setBgImage } = useContext(BackgroundContext);
-    const { playingId, isPlaying, playSong, pause, resume, initializeAudio } = useAudio();
+    const { playingId, isPlaying, playSong, pause, initializeAudio, error } = useAudio();
     const [ytPlayer, setYtPlayer] = useState<any>(null);
     const [isYtPlaying, setIsYtPlaying] = useState(false);
     
@@ -70,8 +69,9 @@ const IntroView: React.FC<{
     
     // Audio Context State (for MP3s)
     const isAudioPlaying = playingId === 'intro' && isPlaying;
+    const isAudioError = playingId === 'intro' && error;
 
-    const handleToggleIntro = () => {
+    const handleToggleIntro = async () => {
         if (introYoutubeId) {
             // Handle YouTube Playback
             if (isYtPlaying) {
@@ -86,17 +86,11 @@ const IntroView: React.FC<{
                 setIsYtPlaying(true);
             }
         } else {
-            // Handle MP3 Playback
-            if (isAudioPlaying) {
-                pause();
-            } else if (playingId === 'intro' && !isPlaying) {
-                resume();
-            } else {
-                import('./constants').then(m => {
-                     const url = m.getAudioUrl(introAudioId);
-                     playSong('intro', url, "Intro");
-                });
-            }
+            // Handle MP3 Playback using playSong
+            // This leverages the robust resume/retry logic in AudioContext
+            const m = await import('./constants');
+            const url = m.getAudioUrl(introAudioId);
+            playSong('intro', url, "Intro");
         }
     };
 
@@ -162,6 +156,7 @@ const IntroView: React.FC<{
                 className={`
                     group w-20 h-20 rounded-full flex items-center justify-center border border-white/30 backdrop-blur-sm mb-12 transition-all duration-500 active:scale-90
                     ${(isAudioPlaying || isYtPlaying) ? 'bg-white text-black scale-110 border-white' : 'bg-black/20 text-white hover:bg-white/10 hover:scale-105'}
+                    ${isAudioError ? 'border-red-500 bg-red-900/20' : ''}
                 `}
             >
                 {(isAudioPlaying || isYtPlaying) ? (
@@ -170,6 +165,8 @@ const IntroView: React.FC<{
                          <span className="w-1 h-2/3 bg-black animate-[pulse_1.2s_ease-in-out_infinite]"></span>
                          <span className="w-1 h-full bg-black animate-[pulse_0.8s_ease-in-out_infinite]"></span>
                     </div>
+                ) : isAudioError ? (
+                    <span className="text-[8px] uppercase font-bold text-red-500">Retry</span>
                 ) : (
                     <PlayIcon className="w-8 h-8 ml-1 opacity-90 group-hover:opacity-100" />
                 )}
@@ -258,22 +255,10 @@ const VotingView: React.FC<{
     const progress = (selectedIds.length / MAX_VOTES) * 100;
     const { playingId } = useAudio();
     
-    // Safety check: Ensure songs exist. If empty, show a loading/error state.
-    if (!songs || songs.length === 0) {
-        return (
-             <div className="min-h-screen flex items-center justify-center text-gray-500">
-                <div className="text-center">
-                    <p>Loading Library...</p>
-                    <p className="text-[10px] mt-2">If this persists, please contact admin.</p>
-                </div>
-             </div>
-        );
-    }
-
     return (
-      <div className="min-h-screen pb-32 relative w-full bg-[#050505]">
+      <div className="min-h-screen pb-32 relative max-w-[500px] mx-auto">
            <div className="fixed top-0 left-0 w-full z-40 bg-[#050505]/90 backdrop-blur-md border-b border-white/5 transition-all duration-300">
-               <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+               <div className="max-w-[500px] mx-auto px-6 py-4 flex items-center justify-between">
                    <button onClick={handleBack} className="text-gray-500 hover:text-white p-2 active:scale-90">
                        <ArrowLeftIcon className="w-5 h-5" />
                    </button>
@@ -286,109 +271,83 @@ const VotingView: React.FC<{
                <div className="absolute bottom-0 left-0 h-[1px] bg-gold transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>
            </div>
 
-           <div className="pt-24 px-4 max-w-6xl mx-auto">
-               <div className="text-center mb-10 px-4">
-                   <h3 className="font-serif text-2xl text-white italic mb-2">The Collection</h3>
-                   <p className="text-gray-400 text-xs leading-relaxed font-sans">{t.votingRule}</p>
+           <div className="pt-24 px-4 space-y-3">
+               <div className="text-center mb-8 px-4">
+                   <p className="text-gray-400 text-xs leading-relaxed font-serif italic">{t.votingRule}</p>
                </div>
 
-               {/* GRID LAYOUT: 2 cols on mobile, 3 on tablet, 4 on desktop */}
-               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                   {songs.map((song, index) => {
-                       const isSelected = selectedIds.includes(song.id);
-                       const isPlaying = playingId === song.id;
-                       const isYouTube = !!song.youtubeId;
-                       
-                       // Determine thumbnail. Use high-res Unsplash if no YouTube ID, to prevent "Empty" look.
-                       const thumbnail = isYouTube 
-                          ? getYouTubeThumbnail(song.youtubeId!) 
-                          : (song.customImageUrl || ARTIST_IMAGE_URL);
-                       
-                       return (
-                           <FadeIn key={song.id} delay={index * 30} className="w-full">
-                               <div 
-                                  onClick={() => setDetailSongId(song.id)}
-                                  className={`
-                                      relative group aspect-[3/4] md:aspect-square rounded-sm overflow-hidden cursor-pointer transition-all duration-300 border
-                                      ${isSelected ? 'border-gold shadow-[0_0_20px_rgba(212,175,55,0.2)]' : 'border-white/5 hover:border-white/30'}
-                                  `}
-                               >
-                                   {/* BACKGROUND IMAGE */}
-                                   <div className="absolute inset-0 bg-gray-900">
-                                       <img 
-                                            src={thumbnail} 
-                                            className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${isSelected ? 'opacity-40' : 'opacity-80 group-hover:opacity-60'}`} 
-                                            alt={song.title}
-                                            onError={(e) => {
-                                                // Fallback if image fails
-                                                (e.target as HTMLImageElement).src = ARTIST_IMAGE_URL;
-                                            }}
-                                       />
-                                   </div>
-
-                                   {/* GRADIENT OVERLAY */}
-                                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90"></div>
-
-                                   {/* CONTENT */}
-                                   <div className="absolute inset-0 p-4 flex flex-col justify-end">
-                                       
-                                       {/* TOP BADGES */}
-                                       <div className="absolute top-3 left-3 flex gap-2">
-                                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full backdrop-blur-sm ${isSelected ? 'bg-gold text-black font-bold' : 'bg-white/10 text-white'}`}>
-                                                #{String(index + 1).padStart(2, '0')}
-                                            </span>
-                                       </div>
-                                       
-                                       <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                           {isYouTube ? (
-                                                <div className="bg-red-600/90 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider shadow-lg">
-                                                    YouTube
-                                                </div>
-                                           ) : (
-                                                <div className="bg-white/20 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider backdrop-blur-md">
-                                                    Audio
-                                                </div>
-                                           )}
-                                       </div>
-
-                                       {/* CENTER PLAY BUTTON (Appears on Hover) */}
-                                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100">
-                                            <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center">
-                                                <PlayIcon className="w-5 h-5 text-white ml-0.5" />
+               {songs.map((song, index) => {
+                   const isSelected = selectedIds.includes(song.id);
+                   const isPlaying = playingId === song.id;
+                   const isYouTube = !!song.youtubeId;
+                   const thumbnail = isYouTube ? getYouTubeThumbnail(song.youtubeId!) : (song.customImageUrl || ARTIST_IMAGE_URL);
+                   
+                   return (
+                       <FadeIn key={song.id} delay={index * 50} className="w-full">
+                           <div 
+                              onClick={() => setDetailSongId(song.id)}
+                              className={`
+                                  relative group p-3 rounded-md border transition-all duration-300 cursor-pointer active:scale-[0.98] overflow-hidden flex gap-4 items-center
+                                  ${isSelected ? 'bg-white/5 border-gold/50' : 'bg-[#111] border-white/5 hover:border-white/20'}
+                              `}
+                           >
+                               {/* THUMBNAIL AREA */}
+                               <div className="relative w-20 h-20 shrink-0 bg-black rounded-sm overflow-hidden border border-white/10 group-hover:border-white/30 transition-colors">
+                                   <img src={thumbnail} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt={song.title} />
+                                   
+                                   {/* Center Play Overlay */}
+                                   <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-transparent transition-colors">
+                                       {isYouTube ? (
+                                           <div className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20 text-white">
+                                               <PlayIcon className="w-4 h-4 translate-x-0.5" />
+                                           </div>
+                                       ) : (
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <AudioPlayer 
+                                                    id={song.id}
+                                                    driveId={song.driveId}
+                                                    src={song.customAudioUrl}
+                                                    title={song.title}
+                                                />
                                             </div>
-                                       </div>
-
-                                       {/* BOTTOM INFO */}
-                                       <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                                            <h3 className={`font-serif text-lg leading-tight mb-2 line-clamp-2 ${isSelected ? 'text-gold italic' : 'text-white'}`}>
-                                                {song.title}
-                                            </h3>
-                                            
-                                            <div className="flex items-center justify-between mt-3">
-                                                <span className="text-[9px] text-gray-400 uppercase tracking-widest group-hover:text-white transition-colors">
-                                                    {isYouTube ? 'Watch Video' : 'Listen Track'}
-                                                </span>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); toggleVote(song.id); }}
-                                                    disabled={!isSelected && selectedIds.length >= MAX_VOTES}
-                                                    className={`
-                                                        w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90
-                                                        ${isSelected 
-                                                            ? 'bg-gold text-black shadow-[0_0_10px_rgba(212,175,55,0.4)]' 
-                                                            : 'bg-white/10 text-white hover:bg-white hover:text-black'
-                                                        }
-                                                    `}
-                                                >
-                                                    {isSelected ? <CheckIcon className="w-4 h-4" /> : <HeartIcon className="w-4 h-4" />}
-                                                </button>
-                                            </div>
-                                       </div>
+                                       )}
                                    </div>
                                </div>
-                           </FadeIn>
-                       );
-                   })}
-               </div>
+
+                               <div className="flex-1 min-w-0 flex flex-col justify-center h-full">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className={`font-mono text-xs ${isSelected ? 'text-gold' : 'text-gray-500'}`}>
+                                            #{String(index + 1).padStart(2, '0')}
+                                        </span>
+                                    </div>
+                                    <h3 className={`font-serif text-base leading-tight truncate mb-1 ${isSelected ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
+                                        {song.title}
+                                    </h3>
+                                    {isSelected && voteReasons[song.id] && (
+                                        <p className="text-[10px] text-gray-500 italic mt-1 truncate">"{voteReasons[song.id]}"</p>
+                                    )}
+                               </div>
+
+                               <div className="flex items-center pr-2">
+                                   <button
+                                       onClick={(e) => { e.stopPropagation(); toggleVote(song.id); }}
+                                       disabled={!isSelected && selectedIds.length >= MAX_VOTES}
+                                       className={`
+                                           w-10 h-10 flex items-center justify-center rounded-full border transition-all active:scale-90
+                                           ${isSelected 
+                                               ? 'bg-gold border-gold text-black shadow-[0_0_15px_rgba(212,175,55,0.3)]' 
+                                               : 'border-gray-800 text-gray-700 hover:border-white hover:text-white'
+                                           }
+                                           ${(!isSelected && selectedIds.length >= MAX_VOTES) ? 'opacity-30 cursor-not-allowed' : ''}
+                                       `}
+                                   >
+                                       {isSelected ? <CheckIcon className="w-5 h-5" /> : <HeartIcon className="w-5 h-5" />}
+                                   </button>
+                               </div>
+                           </div>
+                       </FadeIn>
+                   );
+               })}
            </div>
 
            <div className="fixed bottom-0 left-0 w-full bg-[#050505] border-t border-white/10 p-4 z-40 backdrop-blur-xl">
@@ -510,15 +469,7 @@ const AppContent = () => {
   const { pause, playingId } = useAudio();
 
   useEffect(() => {
-    // Robust data loading: Ensure we have songs.
-    const loadedSongs = getSongs();
-    if (loadedSongs && loadedSongs.length > 0) {
-        setSongs(loadedSongs);
-    } else {
-        // Fallback should technically be handled by storage.ts, but safety first
-        import('./constants').then(m => setSongs(m.SONGS));
-    }
-
+    setSongs(getSongs());
     const globalConfig = getGlobalConfig();
     if (globalConfig.introAudioUrl) setIntroAudioId(globalConfig.introAudioUrl);
   }, [step]);

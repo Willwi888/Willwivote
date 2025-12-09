@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { getAudioUrl } from '../constants';
-import { PlayIcon, PauseIcon, SpinnerIcon, VolumeIcon } from './Icons';
+import { PlayIcon, PauseIcon, SpinnerIcon, VolumeIcon, RetryIcon } from './Icons';
 import { useAudio } from './AudioContext';
 
 interface AudioPlayerProps {
@@ -32,8 +32,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     duration, 
     volume, 
     playSong, 
-    pause, 
-    resume, 
     seek, 
     setVolume 
   } = useAudio();
@@ -54,14 +52,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     e.stopPropagation();
     if (onToggleExternal) onToggleExternal();
 
-    if (isCurrent) {
-        if (isPlaying) pause();
-        else resume();
-    } else {
-        const url = getFinalSource();
-        if (url) playSong(id, url, title);
-        else alert("No audio URL found for this track.");
+    const url = getFinalSource();
+    if (!url) {
+        alert("No audio URL found for this track.");
+        return;
     }
+
+    // playSong now handles toggle (play/pause), resume, and retry logic internally
+    // safely because we always pass the valid URL.
+    playSong(id, url, title);
   };
 
   // Format time helper
@@ -87,10 +86,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   ${isReallyPlaying ? 'text-white' : 'text-gray-500 hover:text-white'}
                   ${isError ? 'text-red-500' : ''}
               `}
-              title={isError ? "Error loading audio" : title}
+              title={isError ? "Error - Click to retry" : title}
               >
               {isBuffering ? (
-                  <SpinnerIcon className="w-4 h-4" />
+                  <SpinnerIcon className="w-4 h-4 text-gold" />
               ) : isReallyPlaying ? (
                   <div className="flex gap-1 h-3 items-center">
                       <span className="w-0.5 h-full bg-current animate-[pulse_1s_ease-in-out_infinite]"></span>
@@ -98,7 +97,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                       <span className="w-0.5 h-full bg-current animate-[pulse_0.8s_ease-in-out_infinite]"></span>
                   </div>
               ) : isError ? (
-                  <div className="w-2 h-2 rounded-full bg-red-500/50">!</div>
+                  <RetryIcon className="w-4 h-4" />
               ) : (
                   <PlayIcon className="w-4 h-4 translate-x-0.5" />
               )}
@@ -108,16 +107,25 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               <button
               onClick={handleToggle}
               className={`
-                  w-20 h-20 flex items-center justify-center rounded-full border border-white/20 backdrop-blur-md transition-all duration-500
+                  w-20 h-20 flex items-center justify-center rounded-full border backdrop-blur-md transition-all duration-500 relative overflow-hidden
                   ${isReallyPlaying 
                       ? 'bg-white text-black shadow-[0_0_40px_rgba(212,175,55,0.4)] border-gold' 
-                      : 'bg-black/40 text-white hover:bg-white hover:text-black hover:scale-110'
+                      : 'bg-black/40 text-white border-white/20 hover:bg-white hover:text-black hover:scale-110'
                   }
-                  ${isError ? '!border-red-500 !text-red-500' : ''}
+                  ${isError ? '!border-red-500 !text-red-500 !bg-red-900/20' : ''}
+                  ${isBuffering ? 'cursor-wait border-gold/50' : ''}
               `}
               >
               {isBuffering ? (
-                      <SpinnerIcon className="w-8 h-8" />
+                  <div className="flex flex-col items-center justify-center">
+                      <SpinnerIcon className="w-8 h-8 text-gold mb-1" />
+                      <span className="text-[8px] uppercase tracking-widest font-bold text-gold animate-pulse">Loading</span>
+                  </div>
+              ) : isError ? (
+                   <div className="flex flex-col items-center justify-center animate-fade-in">
+                      <RetryIcon className="w-8 h-8 mb-1" />
+                      <span className="text-[8px] uppercase tracking-widest font-bold">Retry</span>
+                  </div>
               ) : isReallyPlaying ? (
                       <PauseIcon className="w-8 h-8" />
               ) : (
@@ -134,9 +142,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               {/* Play/Pause Mini Control */}
                <button
                   onClick={handleToggle}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all shrink-0"
+                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0
+                      ${isError ? 'bg-red-900/50 text-red-500 hover:bg-red-900 hover:text-red-400' : 'bg-white/10 hover:bg-white text-white hover:text-black'}
+                  `}
                >
-                   {isBuffering ? <SpinnerIcon className="w-3 h-3" /> : isReallyPlaying ? <PauseIcon className="w-3 h-3" /> : <PlayIcon className="w-3 h-3 translate-x-0.5" />}
+                   {isBuffering ? <SpinnerIcon className="w-3 h-3 text-gold" /> : isError ? <RetryIcon className="w-3 h-3" /> : isReallyPlaying ? <PauseIcon className="w-3 h-3" /> : <PlayIcon className="w-3 h-3 translate-x-0.5" />}
                </button>
 
               {/* Progress Slider */}
@@ -146,8 +156,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               
               <div className="flex-1 relative h-6 flex items-center group/seek">
                   {isBuffering && (
-                      <div className="absolute top-[-15px] left-0 w-full text-center text-[8px] text-gray-500 tracking-widest uppercase animate-pulse">
+                      <div className="absolute top-[-15px] left-0 w-full text-center text-[8px] text-gold tracking-widest uppercase animate-pulse font-bold">
                           Buffering...
+                      </div>
+                  )}
+                  {isError && (
+                      <div className="absolute top-[-15px] left-0 w-full text-center text-[8px] text-red-500 tracking-widest uppercase font-bold animate-pulse">
+                          Connection Error
                       </div>
                   )}
                   
@@ -163,7 +178,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   />
                   {/* Progress fill visual */}
                   <div 
-                    className="absolute h-1 bg-gold rounded-l-lg pointer-events-none z-10 transition-all duration-100" 
+                    className={`absolute h-1 rounded-l-lg pointer-events-none z-10 transition-all duration-100 ${isError ? 'bg-red-500' : 'bg-gold'}`}
                     style={{ width: `${isCurrent ? (currentTime / (duration || 1)) * 100 : 0}%` }} 
                   />
               </div>
