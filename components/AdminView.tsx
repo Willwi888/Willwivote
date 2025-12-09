@@ -66,9 +66,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 console.warn("Supabase check error:", tableError);
                 setCloudStatus('offline');
             } else {
-                // 2. Table Exists, Now Check Write Permissions (RLS)
-                // We attempt to verify by looking at the table configuration or connection
-                // A true write test is better done on demand or implicitly
+                // 2. Table Exists
                 setCloudStatus('connected');
                 checkWritePermission();
             }
@@ -85,12 +83,6 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const checkWritePermission = async () => {
       if (!supabase) return;
-      
-      // Try to insert a dummy row that will be immediately deleted or invalid
-      // Actually, standard check is to see if we can read. 
-      // If we are seeing 0 votes but 'connected', users might worry.
-      
-      // Let's just set a success message if we are connected.
       setPermissionCheckMsg("Connection established.");
   };
 
@@ -131,11 +123,6 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const handleBulkImport = () => {
       if (!importText.trim()) return;
       
-      if (importText.includes('/fo/') || importText.includes('/t/')) {
-          const proceed = confirm("WARNING: Folder links detected. Direct file links are required. Proceed anyway?");
-          if (!proceed) return;
-      }
-
       const lines = importText.split(/\r?\n/).filter(line => line.trim() !== '');
       if (lines.length === 0) return;
 
@@ -235,6 +222,8 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   }
 
   const leaderboard = getLeaderboard(localSongs, users);
+  const totalVotesCast = users.reduce((acc, user) => acc + user.votes.length, 0);
+  const maxVotesForSingleSong = leaderboard.length > 0 ? leaderboard[0].count : 1;
 
   return (
     <div className="min-h-screen bg-[#050505] text-gray-200 p-8 font-sans">
@@ -257,25 +246,12 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             Browser Mode
                         </span>
                     )}
-                    {cloudStatus === 'missing_table' && (
-                        <span className="text-red-400 font-bold px-2 py-0.5 bg-red-900/20 rounded border border-red-900/50 flex items-center gap-1 animate-pulse">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                            Database Error
-                        </span>
-                    )}
                 </div>
                 
-                {/* Status Messages */}
-                {cloudStatus === 'missing_table' && (
-                    <p className="text-[10px] text-red-400 mt-1 bg-red-900/10 p-2 rounded border border-red-900/30">
-                        <strong>Error 42P01: Table 'votes' is missing.</strong><br/>
-                        Please run the setup script in Supabase SQL Editor.
-                    </p>
-                )}
                  {cloudStatus === 'connected' && (
                     <p className="text-[9px] text-green-500/80 flex items-center gap-1">
                         <CheckIcon className="w-3 h-3" />
-                        Database connected. Voting is active.
+                        Live data enabled.
                     </p>
                 )}
             </div>
@@ -308,11 +284,11 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <div className="flex justify-between items-center">
                     <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-3">
                     <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
-                    Top Candidates
+                    Popularity Ranking
                     </h3>
-                    <button onClick={loadAllData} className="text-[10px] text-gold hover:underline uppercase tracking-widest">
-                        Refresh Data
-                    </button>
+                    <div className="text-[10px] text-gray-500">
+                        Total Users: <span className="text-white font-bold">{users.length}</span>
+                    </div>
                 </div>
                 
                 {loadingData ? (
@@ -324,19 +300,35 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <table className="w-full text-left text-xs">
                             <thead className="sticky top-0 bg-[#1e1e1e] text-gray-500 uppercase tracking-wider z-10">
                             <tr>
-                                <th className="p-4 font-medium w-16">No.</th>
-                                <th className="p-4 font-medium">Title</th>
+                                <th className="p-4 font-medium w-12 text-center">#</th>
+                                <th className="p-4 font-medium">Song Title</th>
+                                <th className="p-4 font-medium w-32">Preference</th>
                                 <th className="p-4 font-medium text-right">Votes</th>
                             </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                            {leaderboard.map((item, index) => (
-                                <tr key={item.song?.id} className="hover:bg-white/5 transition-colors">
-                                <td className="p-4 text-gray-500 font-mono">{(index + 1).toString().padStart(2, '0')}</td>
-                                <td className="p-4 font-medium text-gray-300">{item.song?.title}</td>
-                                <td className="p-4 text-right font-bold text-white">{item.count}</td>
-                                </tr>
-                            ))}
+                            {leaderboard.map((item, index) => {
+                                const percentage = maxVotesForSingleSong > 0 ? (item.count / maxVotesForSingleSong) * 100 : 0;
+                                return (
+                                    <tr key={item.song?.id} className="hover:bg-white/5 transition-colors">
+                                        <td className="p-4 text-gray-600 font-mono text-center">{(index + 1)}</td>
+                                        <td className="p-4 font-medium text-gray-300">
+                                            {item.song?.title}
+                                            {index < 10 && <span className="ml-2 text-[8px] text-black bg-gold px-1 rounded font-bold">TOP 10</span>}
+                                        </td>
+                                        <td className="p-4">
+                                            {/* Visual Bar for "Degree of Preference" */}
+                                            <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full bg-gold transition-all duration-500" 
+                                                    style={{ width: `${percentage}%` }}
+                                                />
+                                            </div>
+                                        </td>
+                                        <td className="p-4 text-right font-bold text-white">{item.count}</td>
+                                    </tr>
+                                );
+                            })}
                             </tbody>
                         </table>
                     </div>
@@ -347,7 +339,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <section className="space-y-6">
                 <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-3">
                 <span className="w-1.5 h-1.5 bg-gray-600 rounded-full"></span>
-                Recent Activity ({users.length})
+                User Feedback
                 </h3>
                 
                 <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden flex flex-col h-[600px]">
@@ -355,23 +347,35 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <table className="w-full text-left text-xs text-gray-400">
                         <thead className="sticky top-0 bg-[#1e1e1e] text-gray-500 uppercase tracking-wider z-10">
                         <tr>
-                            <th className="p-4 font-medium">User</th>
-                            <th className="p-4 font-medium text-right">Time</th>
+                            <th className="p-4 font-medium">User & Comments</th>
+                            <th className="p-4 font-medium text-right">Date</th>
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                         {users.slice().reverse().map((user, idx) => (
                             <tr key={idx} className="hover:bg-white/5 transition-colors">
                             <td className="p-4 font-serif text-gray-200">
-                                <div>{user.name}</div>
-                                <div className="text-[9px] text-gray-600 font-mono">{user.email}</div>
+                                <div className="mb-1 text-white">{user.name}</div>
+                                <div className="text-[9px] text-gray-600 font-mono mb-2">{user.email}</div>
+                                
+                                {/* Final Message */}
+                                {user.voteReasons && user.voteReasons[0] && (
+                                    <div className="bg-white/5 p-2 rounded text-[10px] text-gray-300 mb-2 italic border-l-2 border-gold">
+                                        "{user.voteReasons[0]}"
+                                    </div>
+                                )}
+
+                                {/* Specific Song Comments */}
                                 {user.voteReasons && Object.keys(user.voteReasons).length > 0 && (
-                                    <div className="mt-2 text-[10px] text-gray-500 border-l border-white/10 pl-2">
-                                        {Object.entries(user.voteReasons).map(([songId, reason]) => (
-                                            <div key={songId} className="mb-1">
-                                                <span className="text-gold">#{songId.toString().padStart(2,'0')}:</span> <span className="italic">"{reason}"</span>
-                                            </div>
-                                        ))}
+                                    <div className="space-y-1">
+                                        {Object.entries(user.voteReasons).map(([songId, reason]) => {
+                                            if (songId === '0') return null; // Skip general message
+                                            return (
+                                                <div key={songId} className="text-[10px] text-gray-500">
+                                                    <span className="text-gold opacity-70">Track #{songId.toString().padStart(2,'0')}:</span> <span className="italic">"{reason}"</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </td>

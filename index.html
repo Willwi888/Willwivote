@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+TC:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Noto+Serif+TC:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         darkMode: 'class',
@@ -19,13 +19,16 @@
               sans: ['Montserrat', 'sans-serif'],
             },
             colors: {
-              gold: '#D4AF37',
+              gold: '#D4AF37', // Classic Metallic Gold
+              'gold-light': '#F4E5B0',
               surface: '#0a0a0a',
             },
             animation: {
-              'fade-in': 'fadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-              'slide-up': 'slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'fade-in': 'fadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'slide-up': 'slideUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'pulse-slow': 'pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'breathe': 'breathe 8s ease-in-out infinite',
+              'shimmer': 'shimmer 3s linear infinite',
             },
             keyframes: {
               fadeIn: {
@@ -33,9 +36,20 @@
                 '100%': { opacity: 1 },
               },
               slideUp: {
-                '0%': { opacity: 0, transform: 'translateY(20px)' },
+                '0%': { opacity: 0, transform: 'translateY(30px)' },
                 '100%': { opacity: 1, transform: 'translateY(0)' },
+              },
+              breathe: {
+                '0%, 100%': { opacity: 0.3, transform: 'scale(1)' },
+                '50%': { opacity: 0.6, transform: 'scale(1.1)' },
+              },
+              shimmer: {
+                '0%': { backgroundPosition: '-200% 0' },
+                '100%': { backgroundPosition: '200% 0' },
               }
+            },
+            backgroundImage: {
+              'shimmer-gradient': 'linear-gradient(90deg, transparent 25%, rgba(212,175,55,0.1) 50%, transparent 75%)',
             }
           }
         }
@@ -43,7 +57,7 @@
     </script>
     <style>
       body {
-        background-color: #050505;
+        background-color: #030303; /* Deepest black */
         color: #e5e5e5;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
@@ -51,7 +65,6 @@
         -webkit-tap-highlight-color: transparent;
       }
       
-      /* Only disable selection on specific UI elements if needed, not globally */
       .no-select {
         user-select: none;
         -webkit-user-select: none;
@@ -74,6 +87,7 @@
         pointer-events: none;
       }
 
+      /* Noise Texture - Subtle Grain */
       .bg-noise {
         position: fixed;
         top: 0;
@@ -81,9 +95,9 @@
         width: 100vw;
         height: 100vh;
         pointer-events: none;
-        z-index: 1;
-        opacity: 0.035;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        z-index: 50; /* Above regular content, below modals */
+        opacity: 0.04;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
       }
 
       .no-scrollbar::-webkit-scrollbar {
@@ -94,6 +108,7 @@
         scrollbar-width: none;
       }
       
+      /* Cinematic Backdrop - The Blur Layer */
       .cinematic-backdrop {
         position: fixed;
         top: 0;
@@ -101,13 +116,34 @@
         width: 100%;
         height: 100%;
         z-index: 0;
-        opacity: 0.15;
-        filter: blur(80px);
-        transform: scale(1.2);
-        transition: background-image 1s ease;
+        opacity: 0.2; /* Slightly increased for visibility */
+        filter: blur(90px) grayscale(100%);
+        transform: scale(1.1);
+        transition: background-image 1.5s ease-in-out;
         background-size: cover;
         background-position: center;
         pointer-events: none;
+      }
+
+      /* Glassmorphism Utilities */
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      
+      .glass-button {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.4s ease;
+      }
+      .glass-button:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(212, 175, 55, 0.5); /* Gold border on hover */
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
       }
     </style>
   <script type="importmap">

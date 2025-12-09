@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 // Shared background state for the cinematic blur
@@ -16,7 +17,11 @@ export const Layout: React.FC<{ children: React.ReactNode; className?: string }>
           style={{ backgroundImage: `url(${bgImage})` }}
         />
       )}
-      <div className={`min-h-screen w-full max-w-[500px] mx-auto flex flex-col relative z-10 ${className}`}>
+      {/* 
+         UPDATED: Removed max-w-[500px] and mx-auto constraints. 
+         Now uses w-full to allow full-screen immersive design on desktop.
+      */}
+      <div className={`min-h-screen w-full relative z-10 ${className}`}>
         {children}
       </div>
     </BackgroundContext.Provider>
