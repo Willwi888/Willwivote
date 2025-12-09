@@ -48,13 +48,15 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         overflow-x: hidden;
-        /* Disable selection only for UI elements */
-        user-select: none;
-        -webkit-user-select: none;
         -webkit-tap-highlight-color: transparent;
       }
       
-      /* CRITICAL: Enable text selection for Inputs */
+      /* Only disable selection on specific UI elements if needed, not globally */
+      .no-select {
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      
       input, textarea {
         user-select: text !important;
         -webkit-user-select: text !important;
@@ -105,6 +107,7 @@
         transition: background-image 1s ease;
         background-size: cover;
         background-position: center;
+        pointer-events: none;
       }
     </style>
   <script type="importmap">

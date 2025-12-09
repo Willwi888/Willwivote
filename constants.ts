@@ -121,25 +121,24 @@ export const SONGS: Song[] = rawLinks.map((driveId, index) => ({
 export const getAudioUrl = (input: string) => {
     if (!input) return '';
     
+    const url = input.trim();
+    
     // Check for Full URL
-    if (input.startsWith('http')) {
-        let url = input.trim();
-        
+    if (url.startsWith('http')) {
         // --- DROPBOX HANDLING ---
         // Match both 'www.dropbox.com' and 'dropbox.com'
         if (url.match(/dropbox\.com/)) {
             // Replace the domain with the content streaming domain
-            url = url.replace(/https?:\/\/(www\.)?dropbox\.com/, 'https://dl.dropboxusercontent.com');
+            const dlUrl = url.replace(/https?:\/\/(www\.)?dropbox\.com/, 'https://dl.dropboxusercontent.com');
             
-            // NOTE: For 'scl' (secure link) types, we MUST preserve the 'rlkey' parameter.
-            // We do NOT strip query parameters blindly anymore.
-            // If the user pasted a '?dl=0', it's fine, dl.dropboxusercontent handles it.
-            return url;
+            // Note: dl.dropboxusercontent.com works best without dl=0, but ignoring it is fine.
+            // We preserve all query parameters (like rlkey, st) which are required for private/scl links.
+            return dlUrl;
         }
         
         return url;
     }
 
     // Default to Google Drive ID if it's not a URL
-    return `https://drive.google.com/uc?export=download&id=${input}`;
+    return `https://drive.google.com/uc?export=download&id=${url}`;
 };

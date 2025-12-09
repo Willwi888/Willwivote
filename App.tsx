@@ -60,7 +60,7 @@ const IntroView: React.FC<{
     onAdmin: () => void;
 }> = ({ t, introAudioId, handleStart, lang, setLang, onAdmin }) => {
     const { setBgImage } = useContext(BackgroundContext);
-    const { playingId, isPlaying, playSong, pause, resume } = useAudio();
+    const { playingId, isPlaying, playSong, pause, resume, initializeAudio } = useAudio();
     
     // Check if Intro is currently playing in global context
     const isIntroPlaying = playingId === 'intro' && isPlaying;
@@ -71,21 +71,19 @@ const IntroView: React.FC<{
         } else if (playingId === 'intro' && !isPlaying) {
             resume();
         } else {
-            // Start fresh
-            // Use 'intro' as ID so it doesn't conflict with song ID 1, 2, 3...
-            // Although getAudioUrl is called inside AudioPlayer, we need URL here for context.
-            // But wait, the context needs raw URL? 
-            // Our AudioContext expects `url` as second arg. We need to process it.
-            // Let's rely on the AudioPlayer component to handle the interaction or do it manually.
-            // Actually, best to use AudioPlayer component hidden or visible.
-            // But here we have a Custom Play Button.
-            // Let's simulate the click or use context directly.
-            // To use context directly, we need to import getAudioUrl here.
             import('./constants').then(m => {
                  const url = m.getAudioUrl(introAudioId);
                  playSong('intro', url, "Intro");
             });
         }
+    };
+
+    const onEnterClick = () => {
+        // UNLOCK AUDIO FOR MOBILE: 
+        // Plays a silent buffer to ensure the audioContext is running within a user gesture
+        initializeAudio();
+        
+        handleStart();
     };
 
     useEffect(() => {
@@ -136,7 +134,7 @@ const IntroView: React.FC<{
             </button>
 
             <button 
-                onClick={handleStart}
+                onClick={onEnterClick}
                 className="group relative px-14 py-4 bg-white/90 hover:bg-white text-black font-serif text-lg tracking-[0.3em] uppercase overflow-hidden transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] active:scale-95 w-full md:w-auto"
             >
                 <span className="relative z-10">{t.enter}</span>
