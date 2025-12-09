@@ -28,7 +28,7 @@ const LangSwitcher: React.FC<{ lang: Language; setLang: (l: Language) => void }>
             <button 
                 key={l}
                 onClick={() => setLang(l)}
-                className={`text-[9px] uppercase tracking-[0.25em] transition-all duration-500 font-medium ${lang === l ? 'text-white border-b border-gold pb-1' : 'text-gray-400 hover:text-white'}`}
+                className={`text-sm md:text-base uppercase tracking-[0.25em] transition-all duration-500 font-medium ${lang === l ? 'text-white border-b border-gold pb-1' : 'text-gray-400 hover:text-white'}`}
             >
                 {l}
             </button>
@@ -49,15 +49,7 @@ const IntroView: React.FC<{
     const { initializeAudio, isPlaying, playingId, playSong, pause } = useAudio();
     const introYoutubeId = extractYouTubeId(introAudioId);
     
-    const togglePlayback = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (introYoutubeId) return;
-        if (isPlaying && playingId === 'intro') {
-            pause();
-        } else {
-            playSong('intro', introAudioId || '', t.title);
-        }
-    };
+    // Logic for toggling playback removed as requested (removing visual player)
 
     const onEnterClick = () => {
         initializeAudio(); 
@@ -113,15 +105,7 @@ const IntroView: React.FC<{
                             {/* Cinematic Overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10 mix-blend-multiply"></div>
                             
-                            {/* Play Button Overlay */}
-                            {!introYoutubeId && (
-                                <button 
-                                    onClick={togglePlayback}
-                                    className={`absolute bottom-6 right-6 w-12 h-12 rounded-full border border-white/20 flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black hover:border-white transition-all duration-500 z-20 ${isPlaying ? 'bg-white text-black border-white' : 'text-white'}`}
-                                >
-                                    {isPlaying ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4 translate-x-0.5" />}
-                                </button>
-                            )}
+                            {/* REMOVED PLAY BUTTON AS REQUESTED */}
                         </div>
                     )}
                  </div>

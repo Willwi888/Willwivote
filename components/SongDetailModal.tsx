@@ -75,6 +75,9 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   }
   
   const isYouTubeSource = !!finalYoutubeId;
+  // ONLY show audio player if there is actually a URL or Drive ID to play.
+  // This prevents the "fake player" appearance for songs without audio.
+  const hasAudio = (song.customAudioUrl && song.customAudioUrl.trim() !== '') || (song.driveId && song.driveId.trim() !== '');
 
   return (
     <div className="fixed inset-0 z-[100] bg-[#050505] w-full h-full flex flex-col md:flex-row animate-fade-in font-sans">
@@ -118,17 +121,19 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       <img src={defaultCover} className="w-full h-full object-cover opacity-80" alt="Cover" />
                       <div className="absolute inset-0 bg-black/40"></div>
                       
-                      {/* Centered Player for Audio-Only Tracks */}
-                      <div className="absolute inset-0 flex items-center justify-center p-12">
-                            <AudioPlayer 
-                                id={song.id} 
-                                driveId={song.driveId} 
-                                src={song.customAudioUrl} 
-                                title={song.title} 
-                                variant="featured" 
-                                showControls={true} 
-                            />
-                      </div>
+                      {/* Centered Player for Audio-Only Tracks - ONLY IF AUDIO EXISTS */}
+                      {hasAudio && (
+                          <div className="absolute inset-0 flex items-center justify-center p-12">
+                                <AudioPlayer 
+                                    id={song.id} 
+                                    driveId={song.driveId} 
+                                    src={song.customAudioUrl} 
+                                    title={song.title} 
+                                    variant="featured" 
+                                    showControls={true} 
+                                />
+                          </div>
+                      )}
                   </>
               )}
           </div>
