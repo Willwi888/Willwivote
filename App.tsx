@@ -5,13 +5,14 @@ import { getSongs, getGlobalConfig, extractYouTubeId } from './services/storage'
 import { Song, User, AppStep, MAX_VOTES, Language } from './types';
 import { TRANSLATIONS, getYouTubeThumbnail } from './constants';
 import { AudioProvider, useAudio } from './components/AudioContext';
-import { HeartIcon, ArrowLeftIcon, CheckIcon, PlayIcon, PauseIcon } from './components/Icons';
+import { HeartIcon, ArrowLeftIcon, CheckIcon, PlayIcon, PauseIcon, VolumeIcon } from './components/Icons';
 import { saveVote } from './services/storage';
 import { AdminView } from './components/AdminView';
 import { SongDetailModal } from './components/SongDetailModal';
 
 // --- CONFIGURATION ---
-const DEFAULT_FEATURED_AUDIO_ID = "1Li45a4NhWYbrsuNDEPUOLos_q_dXbFYb"; 
+// Switched to a reliable YouTube ID for demonstration
+const DEFAULT_FEATURED_AUDIO_ID = "jfKfPfyJRdk"; 
 const ARTIST_IMAGE_URL = "https://drive.google.com/thumbnail?id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9&sz=w1000";
 
 const SOCIAL_LINKS = [
@@ -23,12 +24,12 @@ const SOCIAL_LINKS = [
 // --- COMMON COMPONENTS ---
 
 const LangSwitcher: React.FC<{ lang: Language; setLang: (l: Language) => void }> = ({ lang, setLang }) => (
-    <div className="flex gap-6 z-50">
+    <div className="flex gap-6 md:gap-8 z-50">
         {(['zh', 'jp', 'en'] as Language[]).map(l => (
             <button 
                 key={l}
                 onClick={() => setLang(l)}
-                className={`text-[10px] md:text-xs uppercase tracking-[0.2em] transition-all duration-500 ${lang === l ? 'text-gold border-b border-gold/50' : 'text-gray-600 hover:text-gray-300'} active:scale-95`}
+                className={`text-xs md:text-sm uppercase tracking-[0.2em] font-medium transition-all duration-500 ${lang === l ? 'text-white border-b border-gold scale-110 shadow-[0_4px_20px_rgba(212,175,55,0.5)]' : 'text-white/60 hover:text-white'} active:scale-95`}
             >
                 {l}
             </button>
@@ -36,15 +37,24 @@ const LangSwitcher: React.FC<{ lang: Language; setLang: (l: Language) => void }>
     </div>
 );
 
-const Footer: React.FC<{ t: any; onAdmin: () => void }> = ({ t, onAdmin }) => (
-    <footer className="w-full py-8 text-center space-y-3 z-40">
-        <p className="text-[10px] text-gray-600 uppercase tracking-[0.3em] opacity-50">{t.copyright}</p>
-        <button 
-            onClick={onAdmin}
-            className="text-[9px] text-gray-700 hover:text-gold transition-colors uppercase tracking-widest opacity-30 hover:opacity-100 p-2"
-        >
-            {t.managerLogin}
-        </button>
+const Footer: React.FC<{ t: any; onAdmin: () => void; className?: string }> = ({ t, onAdmin, className="" }) => (
+    <footer className={`w-full py-8 text-center space-y-4 z-40 border-t border-white/5 relative bg-transparent ${className}`}>
+        <div className="flex justify-center gap-8 mb-4">
+             {SOCIAL_LINKS.map(link => (
+                <a key={link.name} href={link.url} target="_blank" rel="noreferrer" className="text-[10px] md:text-xs text-gray-500 hover:text-gold uppercase tracking-widest transition-colors">
+                    {link.name}
+                </a>
+            ))}
+        </div>
+        <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
+             <p className="text-[9px] md:text-[10px] text-gray-600 uppercase tracking-[0.3em] opacity-60">{t.copyright}</p>
+             <button 
+                onClick={onAdmin}
+                className="text-[9px] text-gray-700 hover:text-gray-400 transition-colors uppercase tracking-widest p-1 border-b border-transparent hover:border-gray-700"
+            >
+                {t.managerLogin}
+            </button>
+        </div>
     </footer>
 );
 
@@ -123,40 +133,28 @@ const IntroView: React.FC<{
     onAdmin: () => void;
 }> = ({ t, introAudioId, handleStart, lang, setLang, onAdmin }) => {
     const { setBgImage } = useContext(BackgroundContext);
-    const { playingId, isPlaying, playSong, pause, initializeAudio } = useAudio();
-    const [isYtPlaying, setIsYtPlaying] = useState(false);
+    const { initializeAudio, isPlaying, playingId, playSong, pause } = useAudio();
     
-    // Check if Intro is a YouTube Link
     const introYoutubeId = extractYouTubeId(introAudioId);
     
-    // Audio Context State (for MP3s)
-    const isAudioPlaying = playingId === 'intro' && isPlaying;
-    
-    const handleToggleIntro = async () => {
+    // Playback Logic
+    const togglePlayback = () => {
         if (introYoutubeId) {
-            if (isYtPlaying) {
-                const iframe = document.getElementById('intro-yt-iframe') as HTMLIFrameElement;
-                iframe?.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-                setIsYtPlaying(false);
-            } else {
-                const iframe = document.getElementById('intro-yt-iframe') as HTMLIFrameElement;
-                iframe?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                setIsYtPlaying(true);
-            }
+            // YouTube is handled by the iframe interaction
+            return;
+        }
+        if (isPlaying && playingId === 'intro') {
+            pause();
         } else {
-            const m = await import('./constants');
-            const url = m.getAudioUrl(introAudioId);
-            playSong('intro', url, "Intro");
+            // If it's audio only
+            playSong('intro', introAudioId || '', t.title);
         }
     };
 
     const onEnterClick = () => {
-        if (isYtPlaying && introYoutubeId) {
-            const iframe = document.getElementById('intro-yt-iframe') as HTMLIFrameElement;
-            iframe?.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-            setIsYtPlaying(false);
+        if (!introYoutubeId) {
+             initializeAudio(); // Initialize audio context for mobile if needed
         }
-        initializeAudio();
         handleStart();
     };
 
@@ -165,101 +163,101 @@ const IntroView: React.FC<{
     }, [setBgImage]);
 
     return (
-      <div className="relative min-h-screen w-full flex flex-col items-center overflow-x-hidden">
-        {/* ATMOSPHERIC GLOW BACKGROUND */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[1000px] md:h-[1000px] bg-gold/5 rounded-full blur-[120px] opacity-40 animate-breathe pointer-events-none z-0"></div>
-
-        {/* HIDDEN YOUTUBE IFRAME (Background Audio) */}
-        {introYoutubeId ? (
-                <div className="absolute top-0 left-0 w-0 h-0 overflow-hidden opacity-0 pointer-events-none">
-                    <iframe 
-                    id="intro-yt-iframe"
-                    src={`https://www.youtube.com/embed/${introYoutubeId}?enablejsapi=1&autoplay=0&controls=0&showinfo=0&rel=0&loop=1&playlist=${introYoutubeId}&playsinline=1&origin=${window.location.origin}`}
-                    allow="autoplay; encrypted-media"
-                    title="Intro Music"
-                />
-                </div>
-        ) : null}
-
-        {/* --- HEADER --- */}
-        <header className="w-full flex justify-end p-8 md:p-12 relative z-50">
-            <LangSwitcher lang={lang} setLang={setLang} />
-        </header>
+      <div className="relative min-h-screen w-full flex flex-col bg-[#030303] overflow-x-hidden">
         
-        {/* --- MAIN CONTENT (Flex Grow ensures it pushes Footer down) --- */}
-        <main className="flex-1 flex flex-col items-center justify-center w-full px-8 py-10 relative z-30">
-            <FadeIn delay={200} className="flex flex-col items-center max-w-6xl w-full">
+        {/* 1. BACKGROUND ATMOSPHERE (Blur Layer) */}
+        <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
+             <img 
+                 src={ARTIST_IMAGE_URL} 
+                 alt="Background Atmosphere" 
+                 className="w-full h-full object-cover blur-[100px] scale-125 brightness-50"
+             />
+             <div className="absolute inset-0 bg-black/60"></div>
+        </div>
+
+        {/* 2. HEADER (Fixed Top) */}
+        <header className="absolute top-0 left-0 w-full flex justify-between items-start px-8 py-8 md:px-12 md:py-10 z-50">
+             <div>
+                 <h1 className="text-white font-serif tracking-[0.2em] text-lg font-bold drop-shadow-md">
+                     WILLWI MUSIC
+                 </h1>
+                 <p className="text-[10px] text-gold uppercase tracking-[0.4em] mt-1 ml-1 opacity-80">
+                     2026 Collection
+                 </p>
+             </div>
+             <LangSwitcher lang={lang} setLang={setLang} />
+        </header>
+
+        {/* 3. CENTER STAGE (Album Cover + Glow) */}
+        <main className="relative z-20 flex-1 flex flex-col items-center justify-center p-4 py-20 min-h-[600px]">
+            
+            {/* THE GLOW (Subtle Dynamic) - Positioned behind the image container */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[80%] max-w-4xl bg-gold/10 blur-[90px] rounded-full animate-pulse-slow pointer-events-none z-10"></div>
+
+            {/* MEDIA CONTAINER */}
+            <div className="relative z-20 w-full max-w-[90vw] md:max-w-4xl h-[55vh] md:h-[65vh] shadow-[0_30px_60px_rgba(0,0,0,0.8)] bg-black/20 backdrop-blur-sm group transition-all duration-700 border border-white/5 rounded-sm overflow-hidden">
+                {introYoutubeId ? (
+                     <iframe 
+                        className="w-full h-full object-contain pointer-events-auto"
+                        src={`https://www.youtube.com/embed/${introYoutubeId}?rel=0&modestbranding=1&playsinline=1&controls=1&color=white&iv_load_policy=3`}
+                        title="Intro Video"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    ></iframe>
+                ) : (
+                    <img 
+                        src={ARTIST_IMAGE_URL} 
+                        alt="Beloved Album Cover" 
+                        className="w-full h-full object-contain object-center opacity-95 transition-opacity duration-700"
+                    />
+                )}
+            </div>
+
+            {/* TYPOGRAPHY & ACTIONS (Below Image) */}
+            <div className="relative z-30 mt-12 flex flex-col items-center text-center space-y-8">
+                <h2 className="font-serif italic text-4xl md:text-6xl text-white drop-shadow-2xl tracking-wide opacity-90">
+                    {t.title}
+                </h2>
                 
-                {/* --- HERO IMAGE (LARGE) --- */}
-                {/* Container */}
-                <div className="relative w-64 h-64 md:w-[450px] md:h-[450px] lg:w-[500px] lg:h-[500px] mb-12 md:mb-16 group transition-all duration-[1.5s]">
-                    {/* 1. Halo Glow (Back) */}
-                    <div className={`absolute inset-0 bg-gold/20 rounded-sm blur-[40px] md:blur-[80px] transition-opacity duration-1000 ${(isAudioPlaying || isYtPlaying) ? 'opacity-80' : 'opacity-30'}`}></div>
-                    
-                    {/* 2. Image Wrapper */}
-                    <div className={`
-                        relative w-full h-full overflow-hidden rounded-sm shadow-2xl transition-transform duration-[20s] ease-in-out border border-white/5
-                        ${isAudioPlaying || isYtPlaying ? 'scale-[1.02] shadow-[0_0_60px_rgba(212,175,55,0.2)]' : 'scale-100'}
-                    `}>
-                        <img 
-                            src={ARTIST_IMAGE_URL} 
-                            alt="Artist Portrait" 
-                            className="w-full h-full object-cover"
-                        />
-                        {/* Glass Overlay on Image - Subtle */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-40"></div>
-                    </div>
+                {/* ACTION BUTTONS GROUP */}
+                <div className="flex items-center gap-6">
+                    {/* Play Button (Only if NOT YouTube video, or strictly for audio mode) */}
+                    {!introYoutubeId && (
+                        <button 
+                            onClick={togglePlayback}
+                            className={`
+                                w-14 h-14 rounded-full border border-white/20 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:border-gold hover:text-gold
+                                ${isPlaying && playingId === 'intro' ? 'bg-white text-black border-transparent shadow-[0_0_20px_rgba(255,255,255,0.3)]' : 'bg-black/30 text-white backdrop-blur-md'}
+                            `}
+                            title="Play Intro Audio"
+                        >
+                            {isPlaying && playingId === 'intro' ? (
+                                <PauseIcon className="w-5 h-5" />
+                            ) : (
+                                <PlayIcon className="w-5 h-5 translate-x-0.5" />
+                            )}
+                        </button>
+                    )}
 
-                    {/* 3. Shimmer Border Overlay */}
-                    <div className="absolute -inset-[1px] rounded-sm bg-gradient-to-tr from-white/10 to-transparent opacity-20 pointer-events-none"></div>
-                </div>
-
-                {/* TYPOGRAPHY */}
-                <div className="mb-12 md:mb-16 space-y-6 md:space-y-8 relative text-center">
-                    <span className="block text-[10px] md:text-sm uppercase tracking-[0.8em] text-gold/80 font-sans">{t.subtitle}</span>
-                    <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl text-transparent bg-clip-text bg-gradient-to-b from-white via-gray-200 to-gray-500 tracking-wide italic drop-shadow-2xl opacity-95 py-2">Beloved</h1>
-                </div>
-
-                {/* MANIFESTO TEXT */}
-                <div className="mb-16 md:mb-20 w-full max-w-lg md:max-w-2xl mx-auto relative">
-                    <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 w-px h-24 bg-gradient-to-b from-transparent via-gold/30 to-transparent -mt-16"></div>
-                    
-                    <p className="text-gray-300 font-serif text-sm md:text-lg leading-[2.8] md:leading-[3] whitespace-pre-wrap tracking-wider text-center drop-shadow-lg mix-blend-screen opacity-90">
-                        {t.homeBody}
-                    </p>
-                    
-                    <div className="hidden md:block absolute left-1/2 -translate-x-1/2 bottom-0 w-px h-24 bg-gradient-to-b from-transparent via-gold/30 to-transparent -mb-16"></div>
-                </div>
-
-                {/* CONTROLS */}
-                <div className="flex flex-col md:flex-row items-center gap-10 md:gap-20">
-                    {/* Play Button - Minimal & Gold */}
-                    <button 
-                        onClick={handleToggleIntro}
-                        className={`
-                            flex items-center gap-4 text-[10px] md:text-xs uppercase tracking-[0.3em] transition-all duration-500
-                            ${(isAudioPlaying || isYtPlaying) ? 'text-gold opacity-100 scale-105' : 'text-gray-500 opacity-60 hover:opacity-100 hover:text-white'}
-                        `}
-                    >
-                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all duration-500 ${(isAudioPlaying || isYtPlaying) ? 'border-gold shadow-[0_0_15px_rgba(212,175,55,0.4)] bg-gold/5' : 'border-gray-700'}`}>
-                            {(isAudioPlaying || isYtPlaying) ? <PauseIcon className="w-3 h-3 md:w-4 md:h-4" /> : <PlayIcon className="w-3 h-3 md:w-4 md:h-4 translate-x-0.5" />}
-                        </div>
-                        <span>{(isAudioPlaying || isYtPlaying) ? 'Pause Music' : 'Play Music'}</span>
-                    </button>
-
-                    {/* ENTER BUTTON - GLASSMORPHISM */}
+                    {/* Main Enter Button */}
                     <button 
                         onClick={onEnterClick}
-                        className="group relative px-16 md:px-24 py-5 md:py-6 glass-button overflow-hidden rounded-[2px]"
+                        className="group relative px-12 py-4 overflow-hidden transition-all duration-500 hover:scale-105"
                     >
-                        <div className="absolute inset-0 bg-shimmer-gradient animate-shimmer opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        <span className="relative z-10 font-serif text-sm md:text-base tracking-[0.4em] uppercase text-gray-100 group-hover:text-white transition-colors">{t.enter}</span>
+                        <div className="absolute inset-0 bg-white/10 backdrop-blur-sm border border-white/20 group-hover:border-gold/60 transition-colors duration-500 rounded-[2px]"></div>
+                        <span className="relative z-10 font-serif text-sm md:text-base tracking-[0.3em] uppercase text-gray-200 group-hover:text-gold transition-colors duration-300 flex items-center gap-3">
+                            {t.enter}
+                            <ArrowLeftIcon className="w-4 h-4 rotate-180 opacity-60 group-hover:opacity-100 transition-all duration-300" />
+                        </span>
                     </button>
                 </div>
-            </FadeIn>
+            </div>
+
         </main>
 
-        <Footer t={t} onAdmin={onAdmin} />
+        {/* 4. FOOTER (Restored) */}
+        <Footer t={t} onAdmin={onAdmin} className="mt-auto" />
       </div>
     );
 };
@@ -390,7 +388,9 @@ const VotingView: React.FC<{
                {songs.map((song, index) => {
                    const isSelected = selectedIds.includes(song.id);
                    const isYouTube = !!song.youtubeId;
-                   const thumbnail = song.customImageUrl || (isYouTube ? getYouTubeThumbnail(song.youtubeId!) : ARTIST_IMAGE_URL);
+                   // MODIFIED: Use the uniform ARTIST_IMAGE_URL (Beloved Cover) unless a custom image is explicitly set.
+                   // This ignores YouTube thumbnails to maintain the "Album" aesthetic.
+                   const thumbnail = song.customImageUrl || ARTIST_IMAGE_URL;
                    
                    return (
                        <FadeIn key={song.id} delay={index * 30} className="w-full">

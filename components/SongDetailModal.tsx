@@ -5,6 +5,7 @@ import { TRANSLATIONS, getYouTubeThumbnail } from '../constants';
 import AudioPlayer from './AudioPlayer';
 import { useAudio } from './AudioContext';
 import { CheckIcon, HeartIcon, ArrowLeftIcon } from './Icons';
+import { extractYouTubeId } from '../services/storage';
 
 interface SongDetailModalProps {
   song: Song | null;
@@ -64,10 +65,20 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
       setVoteStage('view');
   };
 
-  const isYouTube = !!song.youtubeId;
-  const displayImage = song.customImageUrl 
-      ? song.customImageUrl 
-      : (isYouTube ? getYouTubeThumbnail(song.youtubeId!) : defaultCover);
+  // ROBUST YOUTUBE DETECTION:
+  // 1. Check explicit youtubeId
+  // 2. Check if customAudioUrl looks like a youtube link
+  let finalYoutubeId = song.youtubeId;
+  if (!finalYoutubeId && song.customAudioUrl) {
+      finalYoutubeId = extractYouTubeId(song.customAudioUrl);
+  }
+
+  const isYouTube = !!finalYoutubeId;
+  
+  // UNIFORM ALBUM COVER LOGIC:
+  // Use the uniform 'defaultCover' (Artist Image) unless a custom image is explicitly set.
+  // This removes the "YouTube Thumbnail" fallback to ensure the app looks like a cohesive album.
+  const displayImage = song.customImageUrl ? song.customImageUrl : defaultCover;
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#050505] animate-fade-in overflow-hidden">
@@ -95,7 +106,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
               {isYouTube ? (
                   <iframe 
                       className="w-full h-full"
-                      src={`https://www.youtube.com/embed/${song.youtubeId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&controls=1&fs=1&color=white&iv_load_policy=3`}
+                      src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&controls=1&fs=1&color=white&iv_load_policy=3`}
                       title={song.title}
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
