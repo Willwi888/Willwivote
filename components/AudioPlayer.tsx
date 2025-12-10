@@ -54,14 +54,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
     const url = getFinalSource();
     if (!url) {
-        // SILENT FAIL - Do not alert "No audio URL found"
-        // This ensures the presentation is not interrupted by popups.
         console.warn("AudioPlayer: No valid URL for track", id);
         return;
     }
 
-    // playSong now handles toggle (play/pause), resume, and retry logic internally
-    // safely because we always pass the valid URL.
     playSong(id, url, title);
   };
 
@@ -75,7 +71,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   return (
     <div 
-        className={`flex ${showControls ? 'flex-col gap-3 w-full' : 'items-center justify-center'}`}
+        className={`flex ${showControls ? 'flex-col gap-4 w-full' : 'items-center justify-center'}`}
     >
       {/* Play/Pause Button */}
       {!showControls && (
@@ -84,20 +80,16 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               <button
               onClick={handleToggle}
               className={`
-                  group/btn flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 outline-none
-                  ${isReallyPlaying ? 'text-white' : 'text-gray-500 hover:text-white'}
-                  ${isError ? 'text-red-500' : ''}
+                  group/btn flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 outline-none
+                  ${isReallyPlaying ? 'bg-gold text-black shadow-[0_0_15px_rgba(197,160,89,0.5)]' : 'border border-gold/30 text-gold hover:bg-gold hover:text-black'}
+                  ${isError ? '!border-red-500 !text-red-500 !bg-transparent shadow-[0_0_15px_rgba(220,38,38,0.3)]' : ''}
               `}
-              title={isError ? "Error - Click to retry" : title}
+              title={isError ? "Playback Error - Click to Retry" : title}
               >
               {isBuffering ? (
-                  <SpinnerIcon className="w-4 h-4 text-gold" />
+                  <SpinnerIcon className="w-4 h-4" />
               ) : isReallyPlaying ? (
-                  <div className="flex gap-1 h-3 items-center">
-                      <span className="w-0.5 h-full bg-current animate-[pulse_1s_ease-in-out_infinite]"></span>
-                      <span className="w-0.5 h-2/3 bg-current animate-[pulse_1.2s_ease-in-out_infinite]"></span>
-                      <span className="w-0.5 h-full bg-current animate-[pulse_0.8s_ease-in-out_infinite]"></span>
-                  </div>
+                  <PauseIcon className="w-4 h-4" />
               ) : isError ? (
                   <RetryIcon className="w-4 h-4" />
               ) : (
@@ -111,17 +103,16 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               className={`
                   w-20 h-20 flex items-center justify-center rounded-full border backdrop-blur-md transition-all duration-500 relative overflow-hidden
                   ${isReallyPlaying 
-                      ? 'bg-white text-black shadow-[0_0_40px_rgba(212,175,55,0.4)] border-gold' 
-                      : 'bg-black/40 text-white border-white/20 hover:bg-white hover:text-black hover:scale-110'
+                      ? 'bg-gold text-black shadow-[0_0_50px_rgba(197,160,89,0.4)] border-gold scale-105' 
+                      : 'bg-black/40 text-white border-white/20 hover:border-gold hover:text-gold hover:scale-105'
                   }
-                  ${isError ? '!border-red-500 !text-red-500 !bg-red-900/20' : ''}
+                  ${isError ? '!border-red-500 !text-red-500 !bg-red-900/10 shadow-[0_0_30px_rgba(220,38,38,0.4)]' : ''}
                   ${isBuffering ? 'cursor-wait border-gold/50' : ''}
               `}
               >
               {isBuffering ? (
                   <div className="flex flex-col items-center justify-center">
-                      <SpinnerIcon className="w-8 h-8 text-gold mb-1" />
-                      <span className="text-[8px] uppercase tracking-widest font-bold text-gold animate-pulse">Loading</span>
+                      <SpinnerIcon className="w-8 h-8 mb-1" />
                   </div>
               ) : isError ? (
                    <div className="flex flex-col items-center justify-center animate-fade-in">
@@ -138,35 +129,37 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         </div>
       )}
 
-      {/* Expanded Controls (Waveform-style) - Only rendered if this is the active track or forced */}
+      {/* Expanded Controls (Waveform-style) - Jewelry Design */}
       {showControls && (
-          <div className="flex items-center gap-3 w-full bg-[#1e1e1e] rounded-md p-3 animate-fade-in border border-white/10 shadow-lg flex-wrap sm:flex-nowrap">
-              <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className={`flex items-center gap-4 w-full bg-[#0a0a0a] rounded-lg p-4 animate-fade-in border transition-colors duration-500 ${isError ? 'border-red-900 shadow-[0_0_20px_rgba(220,38,38,0.1)]' : 'border-gold/20 shadow-[0_0_20px_rgba(197,160,89,0.05)]'}`}>
+              
+              <div className="flex items-center gap-4 w-full sm:w-auto">
                  {/* Play/Pause Mini Control */}
                  <button
                     onClick={handleToggle}
-                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0
-                        ${isError ? 'bg-red-900/50 text-red-500 hover:bg-red-900 hover:text-red-400' : 'bg-white/10 hover:bg-white text-white hover:text-black'}
+                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-all shrink-0
+                        ${isError ? 'bg-red-900/20 text-red-500 border border-red-500/50' : 'bg-gold text-black hover:scale-105 shadow-[0_0_10px_rgba(197,160,89,0.3)]'}
                     `}
                  >
-                     {isBuffering ? <SpinnerIcon className="w-3 h-3 text-gold" /> : isError ? <RetryIcon className="w-3 h-3" /> : isReallyPlaying ? <PauseIcon className="w-3 h-3" /> : <PlayIcon className="w-3 h-3 translate-x-0.5" />}
+                     {isBuffering ? <SpinnerIcon className="w-4 h-4" /> : isError ? <RetryIcon className="w-4 h-4" /> : isReallyPlaying ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4 translate-x-0.5" />}
                  </button>
 
-                {/* Progress Slider */}
-                <span className="text-[9px] font-mono text-gold w-8 text-right tabular-nums">
+                {/* Progress Time */}
+                <span className={`text-[10px] font-serif tracking-widest w-10 text-right tabular-nums ${isError ? 'text-red-400' : 'text-gold'}`}>
                     {isCurrent ? formatTime(currentTime) : "0:00"}
                 </span>
               </div>
               
-              <div className="flex-1 relative h-6 flex items-center group/seek w-full order-3 sm:order-2 mt-2 sm:mt-0">
+              {/* Progress Bar */}
+              <div className="flex-1 relative h-8 flex items-center group/seek w-full">
                   {isBuffering && (
-                      <div className="absolute top-[-15px] left-0 w-full text-center text-[8px] text-gold tracking-widest uppercase animate-pulse font-bold">
+                      <div className="absolute -top-3 left-0 w-full text-center text-[8px] text-gold tracking-[0.2em] uppercase animate-pulse font-bold">
                           Buffering...
                       </div>
                   )}
                   {isError && (
-                      <div className="absolute top-[-15px] left-0 w-full text-center text-[8px] text-red-500 tracking-widest uppercase font-bold animate-pulse">
-                          Connection Error
+                      <div className="absolute -top-3 left-0 w-full text-center text-[8px] text-red-500 tracking-[0.2em] uppercase font-bold animate-pulse">
+                          Unable to Play
                       </div>
                   )}
                   
@@ -178,22 +171,22 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                       onClick={(e) => e.stopPropagation()}
                       onChange={(e) => isCurrent && seek(parseFloat(e.target.value))}
                       disabled={!isCurrent}
-                      className="absolute w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-gold z-20 hover:h-2 transition-all disabled:opacity-50"
+                      className="absolute w-full h-1 bg-gray-800 rounded-full appearance-none cursor-pointer accent-gold z-20 hover:h-1.5 transition-all disabled:opacity-30"
                   />
-                  {/* Progress fill visual */}
+                  {/* Progress Glow */}
                   <div 
-                    className={`absolute h-1 rounded-l-lg pointer-events-none z-10 transition-all duration-100 ${isError ? 'bg-red-500' : 'bg-gold'}`}
+                    className={`absolute h-1 rounded-full pointer-events-none z-10 transition-all duration-100 ${isError ? 'bg-red-500 shadow-[0_0_10px_red]' : 'bg-gold shadow-[0_0_10px_#C5A059]'}`}
                     style={{ width: `${isCurrent ? (currentTime / (duration || 1)) * 100 : 0}%` }} 
                   />
               </div>
               
-              <div className="flex items-center gap-2 order-2 sm:order-3">
-                  <span className="text-[9px] font-mono text-gray-500 w-8 tabular-nums">
+              <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-serif tracking-widest text-gray-500 w-10 tabular-nums">
                       {isCurrent ? formatTime(duration) : "0:00"}
                   </span>
 
-                  {/* Volume Slider - ENHANCED VISIBILITY */}
-                  <div className="flex items-center gap-2 group/vol pl-2 border-l border-white/10" onClick={(e) => e.stopPropagation()}>
+                  {/* Volume */}
+                  <div className="hidden sm:flex items-center gap-2 group/vol pl-4 border-l border-white/10" onClick={(e) => e.stopPropagation()}>
                       <VolumeIcon className="w-4 h-4 text-gray-400 group-hover/vol:text-white transition-colors" />
                       <input 
                           type="range" 
@@ -202,7 +195,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                           step="0.01" 
                           value={volume}
                           onChange={(e) => setVolume(parseFloat(e.target.value))}
-                          className="w-24 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-white hover:accent-gold"
+                          className="w-20 h-1 bg-gray-800 rounded-full appearance-none cursor-pointer accent-white hover:accent-gold"
                       />
                   </div>
               </div>

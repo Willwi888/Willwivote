@@ -19,11 +19,9 @@ export const TRANSLATIONS = {
     homeBody: "《摯愛》，是一場關於理解、陪伴與被看見的旅程。\n這一次，我不是從創作開始，而是從你們的耳朵與心開始。\n\n從泡麵聲學院一路到今天，我親自演唱過無數你們點給我的歌。\n在那些夜晚裡，我看見了許多情感的影子。\n於是，我從中 精心挑選了 40 首歌曲，作為《摯愛》專輯可能走向的起點。\n\n最終會收錄多少首，我不想急著定案。\n因為這張專輯想保留的，是「我們一起選擇的溫度」。\n\n今天，邀請你從 40 首裡選出 10 首屬於你的感動。",
     enter: "開始投票",
 
-    // II. Guide / About (Refactored for Luxury Layout)
+    // II. Guide / About
     aboutTitle: "邀請您共同完成屬於你的摯愛",
-    aboutIntro: "因為這張專輯不是我的獨白。\n它是一段由你們的留言、點歌、聆聽交織而成的共同記憶。",
-    aboutMiddle: "是你們讓這些歌在深夜裡亮起。\n而我希望，最後真正被收入《摯愛》的歌曲，也由你們的感受來參與決定。\n\n你的一票不是排名，而是一份記憶。\n是某一句旋律曾經照亮你的一瞬。\n\n專輯最後會收錄多少首，我不想急著定案。\n因為《摯愛》，是我們一起完成的作品。",
-    aboutWarning: "重要提醒：這 40 首歌曲嚴格禁止分享與外流。\n因為這是即將發行的正式作品，請戴上耳機，將這份體驗留給自己。",
+    aboutBody: "因為這張專輯不是我的獨白。\n它是一段由你們的留言、點歌、聆聽交織而成的共同記憶。\n\n⚠️ 重要提醒：\n這 40 首歌曲嚴格禁止分享與外流。\n因為這是即將發行的正式作品，請戴上耳機，將這份體驗留給自己。\n\n是你們讓這些歌在深夜裡亮起。\n而我希望，最後真正被收入《摯愛》的歌曲，也由你們的感受來參與決定。\n\n你的一票不是排名，而是一份記憶。\n是某一句旋律曾經照亮你的一瞬。\n\n專輯最後會收錄多少首，將依照整體的情緒與故事自然長成。\n沒有框架，也不急著定案。\n\n因為《摯愛》，是我們一起完成的作品。",
 
     // III. How to Vote (New Section)
     howToTitle: "如何參與",
@@ -73,9 +71,7 @@ export const TRANSLATIONS = {
 
     // II. Guide / About
     aboutTitle: "We invite you to complete your Beloved together",
-    aboutIntro: "Because this album is not a monologue from me.\nIt is a shared memory shaped by your requests, your comments, and your listening.",
-    aboutMiddle: "These 40 songs come from moments in Noodle Acoustic Academy.\nYou are the ones who gave them light in the quiet hours.\nAnd I hope the songs that ultimately enter the album will be guided by your feelings.\n\nYour vote is not a ranking.\nIt is a memory.\n\n“Beloved” is something we build together.",
-    aboutWarning: "STRICTLY PRIVATE: These 40 tracks are unreleased works.\nPlease do not share or leak them. Keep this experience to yourself.",
+    aboutBody: "Because this album is not a monologue from me.\nIt is a shared memory shaped by your requests, your comments, and your listening.\n\n⚠️ STRICTLY PRIVATE:\nThese 40 tracks are unreleased works for the upcoming album.\nPlease do not share or leak them.\n\nThese 40 songs come from moments in Noodle Acoustic Academy.\nYou are the ones who gave them light in the quiet hours.\nAnd I hope the songs that ultimately enter the album will be guided by your feelings.\n\nYour vote is not a ranking.\nIt is a memory.\nA moment when a melody spoke to you.\n\nThe final number of songs will grow naturally, according to the emotional arc we discover together.\nNo deadlines. No constraints.\n\n“Beloved” is something we build together.",
 
     // III. How to Vote
     howToTitle: "How to Vote",
@@ -125,9 +121,7 @@ export const TRANSLATIONS = {
 
     // II. Guide / About
     aboutTitle: "あなたの「最愛」を共に完成させるために",
-    aboutIntro: "このアルバムは、私だけの独白ではありません。\nあなたのリクエスト、言葉、そして聴いてくれた時間で編まれた共同の記憶です。",
-    aboutMiddle: "40曲は泡麵声学院で生まれた即興と対話の断片。\n深夜にそれらを灯してくれたのは、あなたです。\n\n一票は順位ではなく、記憶です。\n\n「摯愛」は、あなたと共につくる作品です。",
-    aboutWarning: "重要：この40曲は未発表作品のため、共有・拡散は固くお断りします。\nヘッドフォンをつけて、あなただけの秘密として楽しんでください。",
+    aboutBody: "このアルバムは、私だけの独白ではありません。\nあなたのリクエスト、言葉、そして聴いてくれた時間で編まれた共同の記憶です。\n\n⚠️ 重要：\nこの40曲は未発表作品のため、共有・拡散は固くお断りします。\nヘッドフォンをつけて、あなただけの秘密として楽しんでください。\n\n40曲は泡麵声学院で生まれた即興と対話の断片。\n深夜にそれらを灯してくれたのは、あなたです。\nだからこそ、最終的に「摯愛」に収められる曲も、あなたの想いを受けて決めたいのです。\n\n一票は順位ではなく、記憶です。\nある旋律があなたの心に触れた、その一瞬。\n\n最終収録曲数は、物語の流れと感情に合わせて自然に形づくられます。\n枠も、急ぎもありません。\n\n「摯愛」は、あなたと共につくる作品です。",
 
     // III. How to Vote
     howToTitle: "参加方法",
@@ -205,5 +199,3 @@ export const getAudioUrl = (input: string) => {
 export const getYouTubeThumbnail = (id: string) => {
   return `https://img.youtube.com/vi/${id}/mqdefault.jpg`; 
 };
-
-export const DEFAULT_FEATURED_AUDIO_ID = '';
