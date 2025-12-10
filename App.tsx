@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
-import { getSongs, getGlobalConfig, saveUserSession, getUserSession, fetchRemoteSongs } from './services/storage';
+import { getSongs, getGlobalConfig, saveUserSession, getUserSession, fetchRemoteSongs, extractYouTubeId } from './services/storage';
 import { Song, User, AppStep, MAX_VOTES, Language } from './types';
 import { TRANSLATIONS, ARTIST_DATA } from './constants';
 import { AudioProvider, useAudio } from './components/AudioContext';
@@ -45,12 +45,17 @@ const ArtistHomeView: React.FC<{
     featuredSong: { title: string; url: string };
 }> = ({ t, lang, setLang, onEnterEvent, onAdmin, featuredSong }) => {
     const [scrolled, setScrolled] = useState(false);
+    const [playHeroVideo, setPlayHeroVideo] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 50);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    const youtubeId = extractYouTubeId(featuredSong.url);
+    // Check for Playlist ID
+    const playlistId = featuredSong.url.match(/[?&]list=([^&]+)/)?.[1];
 
     return (
         <div className="min-h-screen bg-[#020202] text-white font-serif selection:bg-gold selection:text-black">
@@ -63,90 +68,118 @@ const ArtistHomeView: React.FC<{
                         <div className="w-[1px] h-4 bg-white/20 hidden md:block"></div>
                         <LangSwitcher lang={lang} setLang={setLang} className="hidden md:flex" />
                     </div>
-
-                    {/* RIGHT SIDE: Removed redundant button */}
-                    <div></div>
                 </div>
             </nav>
 
-            {/* Hero Section - Designed as an ALBUM COVER Showcase */}
+            {/* Hero Section - IMAGE PRIORITY (Album Cover Style) */}
             <header className="relative w-full min-h-screen flex flex-col md:flex-row pt-20 md:pt-0">
-                 {/* Left/Top: Main Image (Album Cover Aesthetic) */}
-                 <div className="w-full md:w-1/2 h-[50vh] md:h-screen relative overflow-hidden bg-gradient-to-b from-gray-900 to-black">
-                     {/* Placeholder animation while loading */}
-                     <div className="absolute inset-0 bg-neutral-900 animate-pulse"></div>
-                     <img 
-                        src="https://drive.google.com/uc?export=view&id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9" 
-                        onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.parentElement?.classList.add('bg-gradient-to-b', 'from-gray-800', 'to-black');
-                        }}
-                        className="absolute inset-0 w-full h-full object-cover object-top opacity-90 hover:scale-105 transition-transform duration-[3s]" 
-                        alt="Willwi Main Portrait" 
-                     />
-                     {/* Gradient Overlays for Text Readability */}
-                     <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:to-[#020202]"></div>
+                 {/* Left/Top: MAIN IMAGE (Hero) */}
+                 <div className="w-full md:w-[60%] h-[50vh] md:h-screen relative overflow-hidden bg-black group">
+                     {/* 
+                        LOGIC: Always show Image unless 'playHeroVideo' is true. 
+                        This ensures the Artist's Photo is the "Album Cover" and primary visual.
+                     */}
+                     {!playHeroVideo ? (
+                         <>
+                            <img 
+                                src={ARTIST_DATA.images.hero}
+                                className="absolute inset-0 w-full h-full object-cover object-top opacity-90 transition-transform duration-[10s] hover:scale-105" 
+                                alt="Willwi Main Portrait" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent"></div>
+                            
+                            {/* Overlay Play Button if Video or Playlist Exists */}
+                            {(youtubeId || playlistId) && (
+                                <button 
+                                    onClick={() => setPlayHeroVideo(true)}
+                                    className="absolute inset-0 w-full h-full flex items-center justify-center bg-black/10 hover:bg-black/30 transition-all duration-500 group/play cursor-pointer z-20"
+                                >
+                                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border border-white/30 bg-white/10 backdrop-blur-sm flex items-center justify-center group-hover/play:scale-110 group-hover/play:bg-gold group-hover/play:border-gold transition-all duration-500 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                                        <PlayIcon className="w-8 h-8 md:w-10 md:h-10 text-white group-hover/play:text-black ml-1 transition-colors" />
+                                    </div>
+                                    <div className="absolute bottom-12 md:bottom-20 left-1/2 -translate-x-1/2 text-white/80 text-[10px] uppercase tracking-[0.3em] font-sans group-hover/play:text-gold transition-colors">
+                                        {playlistId ? "Play Album" : "Watch Music Video"}
+                                    </div>
+                                </button>
+                            )}
+                         </>
+                     ) : (
+                         <div className="absolute inset-0 w-full h-full bg-black">
+                             {playlistId ? (
+                                <iframe 
+                                    className="w-full h-full object-cover" 
+                                    src={`https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1&mute=0&loop=1&controls=1&rel=0&modestbranding=1&playsinline=1`}
+                                    title="Hero Video Playlist"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                ></iframe>
+                             ) : youtubeId ? (
+                                 <iframe 
+                                    className="w-full h-full object-cover" 
+                                    src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0&loop=1&playlist=${youtubeId}&controls=1&rel=0&modestbranding=1&playsinline=1`}
+                                    title="Hero Video"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                ></iframe>
+                             ) : (
+                                 <div className="flex items-center justify-center h-full text-white">Video Unavailable</div>
+                             )}
+                             <button 
+                                onClick={() => setPlayHeroVideo(false)}
+                                className="absolute top-4 right-4 z-50 text-white/50 hover:text-white uppercase text-[9px] tracking-widest border border-white/20 px-4 py-2 rounded bg-black/50"
+                             >
+                                Close Video
+                             </button>
+                         </div>
+                     )}
                  </div>
 
-                 {/* Right/Bottom: Text Content & Featured Song */}
-                 <div className="w-full md:w-1/2 min-h-[50vh] md:h-screen flex flex-col justify-center items-center px-8 md:px-20 py-12 relative z-10 text-center">
+                 {/* Right/Bottom: Text Content & Action */}
+                 <div className="w-full md:w-[40%] min-h-[50vh] md:h-screen flex flex-col justify-center items-start px-8 md:px-16 py-12 relative z-10 bg-[#020202] border-l border-white/5">
                      
-                     {/* Breathing Halo Effect - Enhanced */}
-                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gold/10 blur-[120px] rounded-full animate-pulse-slow pointer-events-none"></div>
-
-                     <div className="animate-slide-up space-y-10 relative z-20 w-full max-w-lg">
+                     <div className="animate-slide-up space-y-8 relative z-20 w-full">
                         {/* Artist Identity & Event Title */}
                         <div>
-                            {ARTIST_DATA.englishName && (
-                                <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold/30 pb-4 inline-block mb-4">
-                                    {ARTIST_DATA.englishName}
-                                </h2>
-                            )}
-                            <h1 className="text-4xl md:text-6xl font-serif text-white tracking-wide leading-tight mb-4">
-                                BELOVED<br/><span className="text-2xl md:text-4xl italic text-metallic">摯愛</span>
+                            <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold/30 pb-4 inline-block mb-6">
+                                The 2026 Collection
+                            </h2>
+                            <h1 className="text-5xl md:text-7xl font-serif text-white tracking-wide leading-none mb-2 text-glow">
+                                BELOVED
                             </h1>
-                            <p className="text-[10px] text-gray-400 uppercase tracking-[0.4em]">The 2026 Collection</p>
+                            <div className="text-3xl md:text-4xl italic text-metallic font-serif">摯愛</div>
                         </div>
 
-                        {/* Event Copy - The Core Focus */}
-                        <div className="relative">
-                            <p className="text-gray-300 text-sm md:text-base font-serif leading-8 whitespace-pre-wrap tracking-wide text-justify md:text-center">
+                        {/* Event Copy */}
+                        <div className="relative border-l-2 border-white/10 pl-6">
+                            <p className="text-gray-400 text-sm font-serif leading-8 whitespace-pre-wrap tracking-wide text-justify">
                                 {t.homeBody}
                             </p>
                         </div>
 
-                        {/* START VOTING BUTTON - MOVED ABOVE PLAYER */}
-                        <div className="pt-4 flex justify-center">
-                             <button onClick={onEnterEvent} className="group relative px-10 py-4 border border-white/20 hover:border-gold transition-all duration-500 overflow-hidden">
-                                <div className="absolute inset-0 bg-gold/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out"></div>
-                                <span className="relative z-10 text-xs font-bold text-white group-hover:text-gold uppercase tracking-[0.4em] transition-colors">
-                                    {t.enter}
+                        {/* START VOTING BUTTON - PROMINENT */}
+                        <div className="pt-8">
+                             <button onClick={onEnterEvent} className="group relative w-full md:w-auto px-12 py-5 border border-white/20 hover:border-gold transition-all duration-500 overflow-hidden bg-white/[0.03]">
+                                <div className="absolute inset-0 bg-gold translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out"></div>
+                                <span className="relative z-10 text-xs font-bold text-white group-hover:text-black uppercase tracking-[0.4em] transition-colors flex items-center justify-center gap-4">
+                                    {t.enter} <ArrowLeftIcon className="rotate-180 w-4 h-4" />
                                 </span>
                             </button>
                         </div>
 
-                        {/* Featured Song Player - ENHANCED JEWELRY BOX DESIGN */}
-                        <div className="pt-6 pb-2">
-                            <div className="bg-white/5 border border-white/10 p-6 rounded-lg backdrop-blur-md relative overflow-hidden group animate-breathe-gold transition-all duration-1000">
-                                {/* Inner Sheen */}
-                                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-gold/10 to-transparent opacity-30 group-hover:opacity-50 transition-opacity"></div>
-                                
-                                <div className="text-[9px] text-gold uppercase tracking-[0.3em] mb-4 flex items-center justify-center gap-2 relative z-10">
-                                    <span className="w-1.5 h-1.5 bg-gold rounded-full animate-pulse shadow-[0_0_5px_#D4AF37]"></span>
-                                    Now Playing
-                                    <span className="w-1.5 h-1.5 bg-gold rounded-full animate-pulse shadow-[0_0_5px_#D4AF37]"></span>
-                                </div>
-                                <div className="relative z-10">
-                                    <AudioPlayer 
-                                        id="homepage-featured"
-                                        src={featuredSong.url}
-                                        title={featuredSong.title}
-                                        variant="minimal"
-                                        showControls={true}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                        {/* If Audio Only (Fallback) - Only show if NO video at all */}
+                        {!youtubeId && !playlistId && featuredSong.url && (
+                             <div className="pt-6 w-full">
+                                <AudioPlayer 
+                                    id="homepage-featured"
+                                    src={featuredSong.url}
+                                    title={featuredSong.title}
+                                    variant="minimal"
+                                    showControls={true}
+                                />
+                             </div>
+                        )}
                      </div>
                  </div>
             </header>
@@ -183,7 +216,7 @@ const ArtistHomeView: React.FC<{
                           {/* Secondary Image */}
                           <div className="absolute inset-0 bg-neutral-900"></div>
                           <img 
-                            src="https://drive.google.com/uc?export=view&id=18rpLhJQKHKK5EeonFqutlOoKAI2Eq_Hd" 
+                            src={ARTIST_DATA.images.profile}
                              onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                                 e.currentTarget.parentElement?.classList.add('bg-gradient-to-br', 'from-gray-900', 'to-[#1a1a1a]');
@@ -224,9 +257,12 @@ const ArtistHomeView: React.FC<{
                         <div className="text-[10px] md:text-xs font-sans tracking-[0.5em] uppercase text-gray-500">
                             這裡 沒有標籤 只有故事
                         </div>
-                        
-                        {/* Hidden/Subtle Admin Access */}
-                        <button onClick={onAdmin} className="mt-8 text-[9px] text-gray-800 hover:text-gray-600 transition-colors uppercase tracking-widest px-2 py-1 rounded opacity-20 hover:opacity-100">
+                    </div>
+                    
+                     {/* Minimal Copyright Below */}
+                     <div className="text-[9px] text-gray-800 uppercase tracking-widest mt-8">
+                        © {ARTIST_DATA.copyright.year} {ARTIST_DATA.copyright.owner}
+                        <button onClick={onAdmin} className="ml-4 hover:text-gray-600 transition-colors">
                             System
                         </button>
                     </div>
@@ -379,10 +415,14 @@ const VotingView: React.FC<{
 
     const handleListPlay = (e: React.MouseEvent, song: Song) => {
         e.stopPropagation(); 
+        
+        // Critical: YouTube Logic for List View
         if (song.youtubeId) {
             setDetailSongId(song.id);
             return;
         }
+        
+        // Audio Logic
         if (playingId === song.id && isPlaying) {
             pause();
         } else {
@@ -393,6 +433,7 @@ const VotingView: React.FC<{
              if (url) {
                  playSong(song.id, url, song.title);
              } else {
+                 // Fallback if no URL but item exists
                  setDetailSongId(song.id);
              }
         }
@@ -442,7 +483,7 @@ const VotingView: React.FC<{
                                 key={song.id}
                                 onClick={() => setDetailSongId(song.id)}
                                 className={`
-                                    group relative flex items-center justify-between py-5 px-6 md:px-10 cursor-pointer transition-all duration-500 rounded-sm border
+                                    group relative flex items-center justify-between py-5 px-6 md:px-10 cursor-pointer transition-all duration-500 rounded-sm border overflow-hidden
                                     ${isSelected 
                                         ? 'bg-gold/5 border-gold shadow-[0_0_30px_rgba(197,160,89,0.1)] translate-x-2' 
                                         : 'bg-[#0a0a0a] border-white/5 hover:bg-[#111] hover:border-white/10 hover:shadow-2xl hover:translate-x-1'
@@ -458,27 +499,41 @@ const VotingView: React.FC<{
                                         </span>
                                     </div>
 
-                                    <button 
-                                        onClick={(e) => handleListPlay(e, song)}
-                                        className={`
-                                            w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-500 shrink-0 relative z-20 overflow-hidden
-                                            ${isThisError 
-                                                ? 'border-red-500 text-red-500 bg-red-900/10' 
-                                                : isThisPlaying 
-                                                    ? 'border-gold bg-gold text-black shadow-[0_0_20px_rgba(212,175,55,0.6)] scale-110' 
-                                                    : 'border-white/20 text-gold hover:border-gold hover:bg-gold hover:text-black hover:scale-110'}
-                                        `}
-                                    >
-                                        {isVideo ? (
-                                            <PlayIcon className="w-3 h-3 ml-0.5" />
-                                        ) : (
-                                            isThisBuffering ? <SpinnerIcon className="w-3 h-3" /> : isThisError ? <RetryIcon className="w-3 h-3 animate-pulse" /> : isThisPlaying && isPlaying ? <PauseIcon className="w-3 h-3" /> : <PlayIcon className="w-3 h-3 ml-0.5" />
+                                    {/* THUMBNAIL / PLAY BUTTON AREA */}
+                                    <div className="relative w-12 h-12 flex-shrink-0">
+                                        {/* If video, show faint thumbnail in background of button area */}
+                                        {isVideo && (
+                                            <div className="absolute inset-0 rounded-full overflow-hidden opacity-30">
+                                                <img 
+                                                    src={`https://img.youtube.com/vi/${song.youtubeId}/mqdefault.jpg`} 
+                                                    className="w-full h-full object-cover" 
+                                                    alt="" 
+                                                />
+                                            </div>
                                         )}
-                                    </button>
+                                        
+                                        <button 
+                                            onClick={(e) => handleListPlay(e, song)}
+                                            className={`
+                                                w-full h-full rounded-full flex items-center justify-center border transition-all duration-500 shrink-0 relative z-20 overflow-hidden
+                                                ${isThisError 
+                                                    ? 'border-red-500 text-red-500 bg-red-900/10' 
+                                                    : isThisPlaying 
+                                                        ? 'border-gold bg-gold text-black shadow-[0_0_20px_rgba(212,175,55,0.6)] scale-110' 
+                                                        : 'border-white/20 text-gold hover:border-gold hover:bg-gold hover:text-black hover:scale-110'}
+                                            `}
+                                        >
+                                            {isVideo ? (
+                                                <PlayIcon className="w-4 h-4 ml-0.5" />
+                                            ) : (
+                                                isThisBuffering ? <SpinnerIcon className="w-4 h-4" /> : isThisError ? <RetryIcon className="w-4 h-4 animate-pulse" /> : isThisPlaying && isPlaying ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4 ml-0.5" />
+                                            )}
+                                        </button>
+                                    </div>
 
                                     <div className="min-w-0 flex-1 py-1">
                                         <div className="flex items-center gap-3 mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                                            {isVideo && <span className="text-[8px] bg-red-500/10 text-red-400 px-2 py-0.5 tracking-widest rounded-full border border-red-500/20">VIDEO</span>}
+                                            {isVideo && <span className="text-[8px] bg-red-500/10 text-red-400 px-2 py-0.5 tracking-widest rounded-full border border-red-500/20 font-bold">VIDEO</span>}
                                             <span className="text-[8px] text-gray-600 tracking-[0.2em] uppercase">Willwi Demo</span>
                                         </div>
                                         <h3 className={`font-serif text-lg md:text-xl tracking-wide truncate transition-all duration-300 ${isSelected ? 'text-gold' : 'text-gray-300 group-hover:text-white'}`}>
