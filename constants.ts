@@ -7,18 +7,17 @@ export const ARTIST_DATA = {
     englishName: "WILLWI", 
     title: "Singer-Songwriter & Producer",
     images: {
-        // [IMPORTANT]: REPLACE THIS URL WITH YOUR UPLOADED PHOTO URL
-        // Currently set to a placeholder: Young Asian Man, Black Suit, White Shirt, Tie.
-        hero: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=2468&auto=format&fit=crop", 
+        // Main Artist Portrait
+        hero: "https://drive.google.com/uc?export=view&id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9", 
         
         // Secondary Profile Image
         profile: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1287&auto=format&fit=crop" 
     },
-    // MAIN FEATURED VIDEO -> CHANGED TO PLAYLIST
+    // MAIN FEATURED VIDEO -> FULL ALBUM PLAYLIST
     featuredSong: {
-        title: "Beloved 摯愛 (Full Album Playlist)",
-        // Using the playlist ID provided
-        url: "https://www.youtube.com/playlist?list=PLNXUTdsHGB-ylxLTlhASHNbYQ4VT0CnRI" 
+        title: "Beloved 摯愛 (The 2026 Collection)",
+        // The YouTube Playlist containing the 40 songs
+        url: "https://www.youtube.com/playlist?list=PLNXUTdsHGB-ylxLTlhASHNbYQ4VT0CRIA" 
     },
     bio: {
         zh: `來自台灣的 Willwi 陳威兒，是一位跨語系創作歌手與音樂製作人。\n作品多次獲得 Spotify 等國際串流平台編輯精選與推薦。\n\n「語言對我而言是承載情緒的器皿。」\n此理念貫穿其創作方向，並推動他持續探索多語系流行音樂的可能性。`,
