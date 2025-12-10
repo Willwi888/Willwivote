@@ -42,7 +42,8 @@ const ArtistHomeView: React.FC<{
     setLang: (l: Language) => void; 
     onEnterEvent: () => void;
     onAdmin: () => void;
-}> = ({ t, lang, setLang, onEnterEvent, onAdmin }) => {
+    featuredSong: { title: string; url: string };
+}> = ({ t, lang, setLang, onEnterEvent, onAdmin, featuredSong }) => {
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
@@ -134,8 +135,8 @@ const ArtistHomeView: React.FC<{
                                 <div className="relative z-10">
                                     <AudioPlayer 
                                         id="homepage-featured"
-                                        src={ARTIST_DATA.featuredSong.url}
-                                        title={ARTIST_DATA.featuredSong.title}
+                                        src={featuredSong.url}
+                                        title={featuredSong.title}
                                         variant="minimal"
                                         showControls={true}
                                     />
@@ -191,33 +192,34 @@ const ArtistHomeView: React.FC<{
                  </div>
             </section>
 
-            {/* Footer - Moved Links Here */}
-            <footer className="w-full py-16 border-t border-white/5 bg-[#050505] relative z-20">
-                <div className="max-w-7xl mx-auto px-6 md:px-12">
-                    <div className="grid md:grid-cols-2 gap-12 mb-12">
-                         <div>
-                            <h4 className="text-gold text-xs tracking-[0.2em] uppercase mb-6">{t.contact}</h4>
-                            <a href={`mailto:${ARTIST_DATA.links.email}`} className="text-xl font-serif text-white hover:text-gold transition-colors">{ARTIST_DATA.links.email}</a>
-                         </div>
-                         <div>
-                            <h4 className="text-gold text-xs tracking-[0.2em] uppercase mb-6">Platforms</h4>
-                            {/* Updated Platforms Layout: Single row, no boxes */}
-                            <div className="flex flex-wrap gap-x-8 gap-y-4 items-center">
-                                {ARTIST_DATA.links.socials.map((link, idx) => (
-                                    <SocialButton key={idx} platform={link.platform} url={link.url} />
-                                ))}
-                            </div>
-                         </div>
+            {/* Footer - Redesigned to Cartier-style minimalist jewelry aesthetics */}
+            <footer className="w-full py-20 border-t border-white/5 bg-[#050505] relative z-20">
+                <div className="max-w-4xl mx-auto px-6 flex flex-col items-center text-center space-y-12">
+                    
+                    {/* Contact & Socials - Centered & Minimal */}
+                    <div className="space-y-6">
+                        <a href={`mailto:${ARTIST_DATA.links.email}`} className="text-lg font-serif text-white hover:text-gold transition-colors tracking-widest block">
+                            {ARTIST_DATA.links.email}
+                        </a>
+                        <div className="flex flex-wrap justify-center gap-6 opacity-70 hover:opacity-100 transition-opacity">
+                            {ARTIST_DATA.links.socials.map((link, idx) => (
+                                <SocialButton key={idx} platform={link.platform} url={link.url} />
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="text-center pt-8 border-t border-white/5 flex flex-col gap-4">
-                        <div className="text-[9px] text-gray-600 uppercase tracking-[0.3em] font-sans">
+                    {/* Divider */}
+                    <div className="w-8 h-[1px] bg-gold/50"></div>
+
+                    {/* Copyright Block - Stacked like an engraving */}
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="text-[10px] text-gray-500 uppercase tracking-[0.3em] font-serif">
                             © {ARTIST_DATA.copyright.year} {ARTIST_DATA.copyright.owner}
                         </div>
-                        <div className="text-[9px] text-gray-600 font-mono">
+                        <div className="text-[10px] text-gray-500 uppercase tracking-[0.3em] font-serif">
                             ℗ {ARTIST_DATA.copyright.year} {ARTIST_DATA.copyright.owner}
                         </div>
-                        <button onClick={onAdmin} className="mt-4 text-[9px] text-gray-800 hover:text-gray-500 transition-colors uppercase tracking-widest">
+                        <button onClick={onAdmin} className="mt-8 text-[9px] text-gray-800 hover:text-gray-600 transition-colors uppercase tracking-widest border border-transparent hover:border-gray-800 px-3 py-1 rounded-full">
                             System Access
                         </button>
                     </div>
@@ -537,6 +539,12 @@ const AppContent = () => {
   const [showFinalModal, setShowFinalModal] = useState(false);
   const { pause } = useAudio();
 
+  // New Featured Song State
+  const [homeFeaturedSong, setHomeFeaturedSong] = useState({ 
+      title: ARTIST_DATA.featuredSong.title, 
+      url: ARTIST_DATA.featuredSong.url 
+  });
+
   useEffect(() => {
     const local = getSongs();
     setSongs(local);
@@ -551,6 +559,15 @@ const AppContent = () => {
     syncCloud();
     const globalConfig = getGlobalConfig();
     if (globalConfig.introAudioUrl) setIntroAudioId(globalConfig.introAudioUrl);
+    
+    // Load Homepage Featured Song Config
+    if (globalConfig.homepageSongUrl) {
+        setHomeFeaturedSong({
+            title: globalConfig.homepageSongTitle || ARTIST_DATA.featuredSong.title,
+            url: globalConfig.homepageSongUrl
+        });
+    }
+
     const savedSession = getUserSession();
     if (savedSession && savedSession.name && savedSession.email) {
         setUser(prev => ({ ...prev, name: savedSession.name, email: savedSession.email }));
@@ -633,6 +650,7 @@ const AppContent = () => {
                 setLang={setLang} 
                 onEnterEvent={handleEnterEvent}
                 onAdmin={() => setStep(AppStep.ADMIN)}
+                featuredSong={homeFeaturedSong}
             />
         )}
 
@@ -657,24 +675,52 @@ const AppContent = () => {
         
         {showFinalModal && (
             <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-8 animate-fade-in font-serif">
-                <div className="max-w-md w-full space-y-8 text-center bg-[#0a0a0a] p-10 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold to-transparent opacity-80"></div>
-                    <div>
-                        <h2 className="font-serif text-3xl text-white tracking-wide mb-6 text-glow">{t.finalInquiryTitle}</h2>
-                        <div className="h-[1px] w-12 bg-gold mx-auto box-glow"></div>
+                <div className="max-w-4xl w-full flex flex-col md:flex-row bg-[#0a0a0a] border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.8)] relative overflow-hidden h-[80vh] md:h-auto">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold to-transparent opacity-80 z-20"></div>
+                    
+                    {/* Left: Receipt / Song List */}
+                    <div className="w-full md:w-1/2 bg-[#050505] p-8 md:p-12 overflow-y-auto border-b md:border-b-0 md:border-r border-white/5">
+                        <div className="mb-8">
+                             <h3 className="text-gold text-xs uppercase tracking-[0.3em] font-bold mb-2">My Selection</h3>
+                             <div className="text-2xl text-white font-serif italic">The Chosen {selectedIds.length}</div>
+                        </div>
+                        <ul className="space-y-4">
+                            {selectedIds.map((id, index) => {
+                                const s = songs.find(x => x.id === id);
+                                if (!s) return null;
+                                return (
+                                    <li key={id} className="flex gap-4 items-baseline group">
+                                        <span className="text-[10px] text-gray-600 font-mono">{(index + 1).toString().padStart(2, '0')}</span>
+                                        <div className="flex-1 border-b border-white/5 pb-2 group-hover:border-gold/30 transition-colors">
+                                            <span className="text-sm font-serif text-gray-300 group-hover:text-white transition-colors tracking-wide">{s.title}</span>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
                     </div>
-                    <p className="font-serif text-xs text-gray-400 leading-relaxed whitespace-pre-wrap">{t.finalInquiryPrompt}</p>
-                    <textarea 
-                        className="w-full bg-[#050505] border border-white/10 p-4 text-white font-serif outline-none focus:border-gold h-32 text-sm placeholder-gray-700 transition-colors"
-                        placeholder={t.finalInquiryPlaceholder}
-                        onKeyDown={(e) => { if(e.key === 'Enter' && e.metaKey) handleFinalSubmit((e.target as HTMLTextAreaElement).value) }}
-                    />
-                    <div className="flex gap-6 justify-center pt-4">
-                        <button onClick={() => setShowFinalModal(false)} className="text-[10px] uppercase tracking-[0.2em] text-gray-600 hover:text-white transition-colors">{t.cancel}</button>
-                        <button onClick={(e) => {
-                            const txt = (e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement).value;
-                            handleFinalSubmit(txt);
-                        }} className="text-[10px] font-bold uppercase tracking-[0.2em] text-white hover:text-gold transition-colors text-glow">{t.submitFinal}</button>
+
+                    {/* Right: Message Input */}
+                    <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center text-center">
+                        <div>
+                            <h2 className="font-serif text-3xl text-white tracking-wide mb-6 text-glow">{t.finalInquiryTitle}</h2>
+                            <div className="h-[1px] w-12 bg-gold mx-auto box-glow mb-8"></div>
+                        </div>
+                        <p className="font-serif text-xs text-gray-400 leading-relaxed whitespace-pre-wrap mb-8 text-justify">{t.finalInquiryPrompt}</p>
+                        
+                        <textarea 
+                            className="w-full bg-[#080808] border border-white/10 p-4 text-white font-serif outline-none focus:border-gold h-40 text-sm placeholder-gray-700 transition-colors mb-8 resize-none"
+                            placeholder={t.finalInquiryPlaceholder}
+                            onKeyDown={(e) => { if(e.key === 'Enter' && e.metaKey) handleFinalSubmit((e.target as HTMLTextAreaElement).value) }}
+                        />
+                        
+                        <div className="flex gap-6 justify-center pt-4">
+                            <button onClick={() => setShowFinalModal(false)} className="text-[10px] uppercase tracking-[0.2em] text-gray-600 hover:text-white transition-colors">{t.cancel}</button>
+                            <button onClick={(e) => {
+                                const txt = (e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement).value;
+                                handleFinalSubmit(txt);
+                            }} className="text-[10px] font-bold uppercase tracking-[0.2em] text-white hover:text-gold transition-colors text-glow border-b border-gold/50 pb-1 hover:border-gold">{t.submitFinal}</button>
+                        </div>
                     </div>
                 </div>
             </div>

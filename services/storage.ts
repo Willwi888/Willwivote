@@ -11,6 +11,9 @@ const USER_SESSION_KEY = 'beloved_2026_user_session';
 export interface GlobalConfig {
   introAudioUrl: string;
   googleSheetUrl?: string;
+  // NEW: Homepage Featured Song Config
+  homepageSongTitle?: string;
+  homepageSongUrl?: string;
 }
 
 // --- GLOBAL CONFIG ---

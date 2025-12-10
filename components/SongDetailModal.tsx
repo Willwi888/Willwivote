@@ -100,7 +100,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
     <div className="fixed inset-0 z-[100] bg-[#020202] w-full h-full flex flex-col md:flex-row animate-fade-in font-serif">
       
       {/* Left Panel: Visual/Media */}
-      <div className="w-full md:w-1/2 h-[45vh] md:h-full relative bg-black flex-shrink-0">
+      <div className="w-full md:w-1/2 h-[40vh] md:h-full relative bg-black flex-shrink-0">
           
           <div className="absolute top-6 left-6 z-50 mix-blend-difference">
              <button 
@@ -153,8 +153,8 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
           </div>
       </div>
 
-      {/* Right Panel: Content */}
-      <div className="w-full md:w-1/2 h-[55vh] md:h-full relative bg-[#050505] flex flex-col border-l border-white/5">
+      {/* Right Panel: Content (Lyrics & Credits) */}
+      <div className="w-full md:w-1/2 h-[60vh] md:h-full relative bg-[#050505] flex flex-col border-l border-white/5">
           
           <div 
             ref={lyricsContainerRef}
@@ -163,7 +163,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
               <div className="min-h-full flex flex-col p-8 md:p-20">
                   
                   {/* Header */}
-                  <div className="mb-16 space-y-6 animate-slide-up">
+                  <div className="mb-12 space-y-6 animate-slide-up">
                       <div className="flex items-center justify-between border-b border-white/10 pb-4">
                          <div className="flex items-center gap-3">
                             <span className="text-gold text-lg">✦</span>
@@ -185,21 +185,26 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                          </div>
                       </div>
                       
-                      <h2 className="font-serif text-5xl md:text-7xl text-white tracking-wide leading-tight text-metallic">
+                      <h2 className="font-serif text-4xl md:text-6xl text-white tracking-wide leading-tight text-metallic">
                           {song.title}
                       </h2>
                   </div>
 
-                  {/* Lyrics area */}
+                  {/* Lyrics & Credits Area - Enhanced Visibility */}
                   <div className="space-y-12 animate-slide-up flex-grow" style={{ animationDelay: '150ms' }}>
+                       
+                       {/* LYRICS */}
                        <div className="relative pl-4 md:pl-8 border-l border-white/10">
+                           <h4 className="text-[10px] text-gold uppercase tracking-[0.3em] mb-6 font-bold">Lyrics</h4>
                            <p className="font-serif text-gray-300 text-sm md:text-base leading-[2.5] tracking-[0.05em] whitespace-pre-wrap">
-                               {song.lyrics || "..."}
+                               {song.lyrics || "Lyrics unavailable..."}
                            </p>
                        </div>
                        
-                       <div className="pt-12 opacity-50 hover:opacity-100 transition-opacity">
-                           <p className="font-sans text-gray-500 text-[10px] uppercase tracking-[0.2em] leading-relaxed whitespace-pre-wrap">
+                       {/* CREDITS - Prominently Displayed */}
+                       <div className="relative pl-4 md:pl-8 border-l border-gold/30 bg-white/[0.02] p-6 rounded-r">
+                           <h4 className="text-[10px] text-gold uppercase tracking-[0.3em] mb-4 font-bold">Credits</h4>
+                           <p className="font-sans text-gray-400 text-xs uppercase tracking-[0.1em] leading-loose whitespace-pre-wrap">
                                {song.credits || "PRODUCED BY WILLWI"}
                            </p>
                        </div>
@@ -211,7 +216,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 
           {/* Bottom Action Bar */}
           <div className="absolute bottom-0 left-0 w-full z-20">
-              <div className="bg-[#050505]/90 backdrop-blur-xl border-t border-white/10 p-6 md:p-8">
+              <div className="bg-[#050505]/95 backdrop-blur-xl border-t border-white/10 p-6 md:p-8">
                   {voteStage === 'view' ? (
                       <button
                           onClick={handleVoteClick}

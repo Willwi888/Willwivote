@@ -24,11 +24,18 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [cloudStatus, setCloudStatus] = useState<'connected' | 'offline' | 'checking' | 'missing_table'>('checking');
   
   const [editingSongId, setEditingSongId] = useState<number | null>(null);
+  
+  // Config States
   const [introUrl, setIntroUrl] = useState('');
+  const [homeSongTitle, setHomeSongTitle] = useState('');
+  const [homeSongUrl, setHomeSongUrl] = useState('');
+
   const [editForm, setEditForm] = useState<Partial<Song>>({});
   const { playingId } = useAudio();
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
+  
+  // Ref for the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -56,6 +63,8 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       
       const config = getGlobalConfig();
       setIntroUrl(config.introAudioUrl || '');
+      setHomeSongTitle(config.homepageSongTitle || '');
+      setHomeSongUrl(config.homepageSongUrl || '');
 
       try {
         const fetchedVotes = await getVotes();
@@ -96,8 +105,12 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const handleSaveGlobalConfig = () => {
-      saveGlobalConfig({ introAudioUrl: introUrl });
-      alert("Homepage Intro Audio Updated!");
+      saveGlobalConfig({ 
+          introAudioUrl: introUrl,
+          homepageSongTitle: homeSongTitle,
+          homepageSongUrl: homeSongUrl
+      });
+      alert("✅ Homepage Settings Updated!");
   };
 
   const handlePublishToCloud = async () => {
@@ -151,7 +164,11 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const handleDownloadBackup = () => {
       const data = {
           songs: localSongs,
-          globalConfig: { introAudioUrl: introUrl },
+          globalConfig: { 
+              introAudioUrl: introUrl,
+              homepageSongTitle: homeSongTitle,
+              homepageSongUrl: homeSongUrl
+          },
           votes: users, 
           timestamp: new Date().toISOString()
       };
@@ -160,14 +177,17 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `beloved_FULL_backup_${new Date().toISOString().slice(0,10)}.json`;
+      link.download = `beloved_backup_${new Date().toISOString().slice(0,10)}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
   };
 
   const handleRestoreClick = () => {
-      if (fileInputRef.current) fileInputRef.current.click();
+      if (fileInputRef.current) {
+          fileInputRef.current.value = ''; // Reset value to allow re-importing same file
+          fileInputRef.current.click();
+      }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,14 +205,16 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               if (data.globalConfig) {
                   saveGlobalConfig(data.globalConfig);
                   setIntroUrl(data.globalConfig.introAudioUrl || '');
+                  setHomeSongTitle(data.globalConfig.homepageSongTitle || '');
+                  setHomeSongUrl(data.globalConfig.homepageSongUrl || '');
               }
-              alert("Restored! Click 'Publish to Cloud' to make it live.");
+              alert("✅ Restore Successful! \n\nIMPORTANT: If you are on the Live Site, please click 'Publish to Cloud' now to sync these changes to the database.");
+              loadAllData(); // Refresh UI
           } catch (err) {
-              alert("Failed to restore backup.");
+              alert("❌ Failed to restore backup. Invalid JSON file.");
           }
       };
       reader.readAsText(file);
-      e.target.value = '';
   };
 
   if (!isAuthenticated) {
@@ -252,44 +274,124 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
         {activeTab === 'dashboard' ? (
             <div className="grid lg:grid-cols-2 gap-12">
-            <section className="space-y-6">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Popularity Ranking</h3>
-                    <div className="text-[10px] text-gray-500">Total Votes: <span className="text-white font-bold">{users.length}</span></div>
+            
+            {/* LEFT COLUMN: Data & Backup */}
+            <section className="space-y-8">
+                
+                {/* 1. Global Config / Homepage Audio */}
+                <div className="bg-[#121212] rounded-xl border border-white/10 p-6 space-y-4">
+                     <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gold mb-2">Homepage Audio Settings</h3>
+                     
+                     <div className="space-y-3">
+                        <div>
+                            <label className="block text-[9px] uppercase text-gray-500 mb-1">Featured Song Title</label>
+                            <input 
+                                className="w-full bg-[#050505] border border-white/10 p-2 text-white text-xs outline-none focus:border-gold rounded"
+                                value={homeSongTitle}
+                                onChange={e => setHomeSongTitle(e.target.value)}
+                                placeholder="e.g. Beloved (Official Theme)"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[9px] uppercase text-gray-500 mb-1">Featured Song URL (Mp3/Drive/YouTube)</label>
+                            <input 
+                                className="w-full bg-[#050505] border border-white/10 p-2 text-white text-xs outline-none focus:border-gold rounded font-mono"
+                                value={homeSongUrl}
+                                onChange={e => setHomeSongUrl(e.target.value)}
+                                placeholder="Paste link here..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[9px] uppercase text-gray-500 mb-1">Intro Audio (Voting Page)</label>
+                            <input 
+                                className="w-full bg-[#050505] border border-white/10 p-2 text-white text-xs outline-none focus:border-gold rounded font-mono"
+                                value={introUrl}
+                                onChange={e => setIntroUrl(e.target.value)}
+                                placeholder="Optional Intro Audio URL"
+                            />
+                        </div>
+                        <div className="flex justify-end pt-2">
+                             <button onClick={handleSaveGlobalConfig} className="bg-gold text-black px-4 py-2 rounded text-[10px] font-bold uppercase hover:bg-white">Save Settings</button>
+                        </div>
+                     </div>
                 </div>
-                {loadingData ? (
-                    <div className="h-64 flex items-center justify-center text-gray-500 gap-2"><SpinnerIcon className="w-4 h-4" /> Syncing...</div>
-                ) : (
-                    <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden max-h-[600px] overflow-y-auto no-scrollbar">
-                        <table className="w-full text-left text-xs">
-                            <thead className="sticky top-0 bg-[#1e1e1e] text-gray-500 uppercase tracking-wider z-10">
-                            <tr>
-                                <th className="p-4 font-medium w-12 text-center">#</th>
-                                <th className="p-4 font-medium">Song Title</th>
-                                <th className="p-4 font-medium w-32">Preference</th>
-                                <th className="p-4 font-medium text-right">Votes</th>
-                            </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                            {leaderboard.map((item, index) => {
-                                const percentage = maxVotesForSingleSong > 0 ? (item.count / maxVotesForSingleSong) * 100 : 0;
-                                return (
-                                    <tr key={item.song?.id} className="hover:bg-white/5 transition-colors">
-                                        <td className="p-4 text-gray-600 font-mono text-center">{(index + 1)}</td>
-                                        <td className="p-4 font-medium text-gray-300">{item.song?.title}</td>
-                                        <td className="p-4"><div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-gold" style={{ width: `${percentage}%` }}/></div></td>
-                                        <td className="p-4 text-right font-bold text-white">{item.count}</td>
-                                    </tr>
-                                );
-                            })}
-                            </tbody>
-                        </table>
+
+                {/* 2. Backup & Restore Card */}
+                <div className="bg-[#121212] rounded-xl border border-white/10 p-6 space-y-4">
+                     <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gold mb-2">Data Backup & Restore</h3>
+                     <p className="text-[10px] text-gray-500 leading-relaxed">
+                        Use this to transfer data from Localhost to Production, or to save a snapshot of your current settings.
+                     </p>
+                     
+                     <div className="grid grid-cols-2 gap-4 pt-2">
+                        <button 
+                            onClick={handleDownloadBackup}
+                            className="bg-white/5 border border-white/10 hover:bg-white/10 text-white py-3 rounded text-[10px] uppercase tracking-widest transition-colors flex flex-col items-center gap-2"
+                        >
+                            <span>📤 Export JSON</span>
+                            <span className="text-[8px] text-gray-500">Save current data to file</span>
+                        </button>
+
+                        <button 
+                            onClick={handleRestoreClick}
+                            className="bg-white/5 border border-white/10 hover:bg-white/10 text-white py-3 rounded text-[10px] uppercase tracking-widest transition-colors flex flex-col items-center gap-2"
+                        >
+                            <span>📥 Import JSON</span>
+                            <span className="text-[8px] text-gray-500">Restore from file</span>
+                        </button>
+                        {/* Hidden Input for Import */}
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            style={{ display: 'none' }} 
+                            accept=".json" 
+                            onChange={handleFileChange} 
+                        />
+                     </div>
+                </div>
+
+                {/* 3. Leaderboard */}
+                <div>
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Popularity Ranking</h3>
+                        <div className="text-[10px] text-gray-500">Total Votes: <span className="text-white font-bold">{users.length}</span></div>
                     </div>
-                )}
+                    {loadingData ? (
+                        <div className="h-64 flex items-center justify-center text-gray-500 gap-2"><SpinnerIcon className="w-4 h-4" /> Syncing...</div>
+                    ) : (
+                        <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden max-h-[500px] overflow-y-auto no-scrollbar">
+                            <table className="w-full text-left text-xs">
+                                <thead className="sticky top-0 bg-[#1e1e1e] text-gray-500 uppercase tracking-wider z-10">
+                                <tr>
+                                    <th className="p-4 font-medium w-12 text-center">#</th>
+                                    <th className="p-4 font-medium">Song Title</th>
+                                    <th className="p-4 font-medium w-32">Preference</th>
+                                    <th className="p-4 font-medium text-right">Votes</th>
+                                </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                {leaderboard.map((item, index) => {
+                                    const percentage = maxVotesForSingleSong > 0 ? (item.count / maxVotesForSingleSong) * 100 : 0;
+                                    return (
+                                        <tr key={item.song?.id} className="hover:bg-white/5 transition-colors">
+                                            <td className="p-4 text-gray-600 font-mono text-center">{(index + 1)}</td>
+                                            <td className="p-4 font-medium text-gray-300">{item.song?.title}</td>
+                                            <td className="p-4"><div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-gold" style={{ width: `${percentage}%` }}/></div></td>
+                                            <td className="p-4 text-right font-bold text-white">{item.count}</td>
+                                        </tr>
+                                    );
+                                })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </section>
+
+            {/* RIGHT COLUMN: User Feedback */}
             <section className="space-y-6">
                 <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">User Feedback</h3>
-                <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden flex flex-col h-[600px]">
+                <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden flex flex-col h-[750px]">
                 <div className="flex-1 overflow-y-auto no-scrollbar">
                     <table className="w-full text-left text-xs text-gray-400">
                         <thead className="sticky top-0 bg-[#1e1e1e] text-gray-500 uppercase tracking-wider z-10">
@@ -369,6 +471,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                              <div><label className="block text-[10px] uppercase text-gray-500 mb-1">Song Title</label><input className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none" value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})} /></div>
                              <div><label className="block text-[10px] uppercase text-gray-500 mb-1">Audio Link / YouTube Link</label><input className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none font-mono text-xs" value={editForm.customAudioUrl} onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})} placeholder="https://..." /></div>
                              <div><label className="block text-[10px] uppercase text-gray-500 mb-1">Lyrics</label><textarea className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none h-32" value={editForm.lyrics} onChange={e => setEditForm({...editForm, lyrics: e.target.value})} /></div>
+                             <div><label className="block text-[10px] uppercase text-gray-500 mb-1">Credits</label><textarea className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none h-24" value={editForm.credits} onChange={e => setEditForm({...editForm, credits: e.target.value})} placeholder="Arranger: Willwi..." /></div>
                          </div>
                          <div className="flex justify-end gap-3 mt-8">
                              <button onClick={() => setEditingSongId(null)} className="px-4 py-2 text-xs text-gray-400 hover:text-white">Cancel</button>
