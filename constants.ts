@@ -199,3 +199,5 @@ export const getAudioUrl = (input: string) => {
 export const getYouTubeThumbnail = (id: string) => {
   return `https://img.youtube.com/vi/${id}/mqdefault.jpg`; 
 };
+
+export const DEFAULT_FEATURED_AUDIO_ID = '';

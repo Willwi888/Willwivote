@@ -54,7 +54,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
     const url = getFinalSource();
     if (!url) {
-        alert("No audio URL found for this track.");
+        // SILENT FAIL - Do not alert "No audio URL found"
+        // This ensures the presentation is not interrupted by popups.
+        console.warn("AudioPlayer: No valid URL for track", id);
         return;
     }
 

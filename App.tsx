@@ -3,7 +3,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Layout, FadeIn, BackgroundContext } from './components/Layout';
 import { getSongs, getGlobalConfig, extractYouTubeId } from './services/storage';
 import { Song, User, AppStep, MAX_VOTES, Language } from './types';
-import { TRANSLATIONS } from './constants';
+import { TRANSLATIONS, DEFAULT_FEATURED_AUDIO_ID } from './constants';
 import { AudioProvider, useAudio } from './components/AudioContext';
 import { HeartIcon, ArrowLeftIcon, CheckIcon, PlayIcon, PauseIcon } from './components/Icons';
 import { saveVote } from './services/storage';
@@ -11,9 +11,9 @@ import { AdminView } from './components/AdminView';
 import { SongDetailModal } from './components/SongDetailModal';
 
 // --- CONFIGURATION ---
-// FIXED: Set to empty string to prioritize the Album Cover Image over the broken YouTube video.
-const DEFAULT_FEATURED_AUDIO_ID = ""; 
-// NOTE: Ensure this URL points to your high-res artist image.
+// [ARTIST IMAGE]
+// 請確認此連結是您剛才提供的 "西裝黑白獨照"。
+// 這張照片將成為整個網站的核心視覺（首頁大片 + 內頁展示）。
 const ARTIST_IMAGE_URL = "https://drive.google.com/thumbnail?id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9&sz=w1000";
 
 const SOCIAL_LINKS = [
@@ -23,12 +23,12 @@ const SOCIAL_LINKS = [
 ];
 
 const LangSwitcher: React.FC<{ lang: Language; setLang: (l: Language) => void }> = ({ lang, setLang }) => (
-    <div className="flex gap-6 z-50 mix-blend-difference pt-2">
+    <div className="flex gap-8 z-50">
         {(['zh', 'jp', 'en'] as Language[]).map(l => (
             <button 
                 key={l}
                 onClick={() => setLang(l)}
-                className={`text-sm md:text-base uppercase tracking-[0.25em] transition-all duration-500 font-medium ${lang === l ? 'text-white border-b border-gold pb-1' : 'text-gray-400 hover:text-white'}`}
+                className={`text-[10px] uppercase tracking-[0.2em] transition-all duration-700 font-serif ${lang === l ? 'text-gold border-b border-gold pb-1' : 'text-gray-600 hover:text-gray-300'}`}
             >
                 {l}
             </button>
@@ -46,107 +46,97 @@ const IntroView: React.FC<{
     setLang: (l: Language) => void;
     onAdmin: () => void;
 }> = ({ t, introAudioId, handleStart, lang, setLang, onAdmin }) => {
-    const { initializeAudio, isPlaying, playingId, playSong, pause } = useAudio();
-    const introYoutubeId = extractYouTubeId(introAudioId);
+    const { initializeAudio } = useAudio();
     
-    // Logic for toggling playback removed as requested (removing visual player)
-
     const onEnterClick = () => {
         initializeAudio(); 
         handleStart();
     };
 
     return (
-      <div className="relative h-screen w-full bg-[#050505] overflow-hidden flex flex-col">
+      <div className="relative h-screen w-full bg-[#000000] overflow-hidden flex flex-col justify-between group">
         
-        {/* BACKGROUND AMBIENCE */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
-             {/* Dynamic Light Leaks */}
-             <div className="absolute top-[-20%] left-[-20%] w-[800px] h-[800px] bg-gold/10 rounded-full blur-[150px] animate-pulse-slow"></div>
-             <div className="absolute bottom-[-20%] right-[-20%] w-[600px] h-[600px] bg-blue-900/10 rounded-full blur-[150px] animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+        {/* HERO VISUAL (Cartier Style - Responsive Portrait) */}
+        <div className="absolute inset-0 z-0 select-none overflow-hidden flex justify-center items-end md:items-center">
+             {/* 
+                UPDATE: Changed from background-image to <img> tag.
+                Mobile: object-cover + object-top (Fills screen, prioritizes face).
+                Desktop: object-contain (Shows FULL image, letterboxed with black).
+             */}
+            <img 
+                src={ARTIST_IMAGE_URL}
+                alt="Artist"
+                className="
+                    w-full h-full 
+                    object-cover object-top md:object-contain md:object-center 
+                    transition-transform duration-[60s] ease-linear scale-100 group-hover:scale-105
+                "
+                style={{ 
+                    // Subtle filter to blend better with dark theme
+                    filter: 'contrast(110%) brightness(0.9)',
+                }}
+            />
+            
+            {/* Gradient Overlay for Text Readability (Stronger at bottom) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-black/30 z-10"></div>
+            
+            {/* Side Vignettes (Desktop Only) to blend the contained image edges */}
+            <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60 z-10 pointer-events-none"></div>
+            
+            {/* Film Grain Texture (Luxury Feel) */}
+            <div className="absolute inset-0 bg-noise opacity-[0.03] z-10 pointer-events-none mix-blend-screen"></div>
         </div>
 
-        {/* TOP NAVIGATION */}
-        <div className="w-full px-8 py-8 flex justify-between items-start z-50">
-            <div>
-                {/* INCREASED FONT SIZE HERE */}
-                <h1 className="text-white font-serif tracking-[0.3em] text-2xl md:text-4xl font-bold mb-2">WILLWI MUSIC</h1>
-                <p className="text-xs md:text-sm text-gold uppercase tracking-[0.25em] opacity-80 pl-1">The 2026 Collection</p>
+        {/* HEADER */}
+        <div className="w-full px-12 py-10 flex justify-between items-start z-50 animate-fade-in">
+            <div className="flex flex-col gap-2">
+                <div className="text-[10px] tracking-[0.4em] text-white font-serif uppercase">The 2026 Collection</div>
             </div>
             <LangSwitcher lang={lang} setLang={setLang} />
         </div>
 
-        {/* MAIN CONTENT: EDITORIAL LAYOUT */}
-        <div className="flex-1 relative z-10 flex flex-col md:flex-row items-center justify-center gap-12 md:gap-24 px-8 pb-12">
+        {/* CENTERPIECE: Editorial Typography */}
+        <div className="relative z-20 flex flex-col items-center text-center px-6 animate-slide-up" style={{ animationDuration: '2s' }}>
             
-            {/* LEFT: ALBUM ART (THE HERO) - WITH STRONG GLOW */}
-            <div className="relative group cursor-pointer w-full max-w-[320px] md:max-w-[400px] aspect-[4/5] animate-slide-up" onClick={onEnterClick}>
-                 {/* STRONG GLOW EFFECT */}
-                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gold/30 blur-[60px] rounded-full opacity-60 animate-pulse-slow pointer-events-none"></div>
-                 
-                 {/* Image Container */}
-                 <div className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-[2px] shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-white/10 z-10 transition-transform duration-1000 group-hover:scale-[1.01]">
-                    {introYoutubeId ? (
-                         <iframe 
-                            className="w-full h-full object-cover"
-                            src={`https://www.youtube.com/embed/${introYoutubeId}?rel=0&controls=0&playsinline=1&iv_load_policy=3&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=${introYoutubeId}`}
-                            title="Intro"
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            style={{ pointerEvents: 'none' }} 
-                        ></iframe>
-                    ) : (
-                        <div className="w-full h-full relative">
-                            <img 
-                                src={ARTIST_IMAGE_URL} 
-                                className="w-full h-full object-cover transition-transform duration-[3s] ease-out group-hover:scale-105" 
-                                alt="Cover" 
-                            />
-                            {/* Cinematic Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10 mix-blend-multiply"></div>
-                            
-                            {/* REMOVED PLAY BUTTON AS REQUESTED */}
-                        </div>
-                    )}
-                 </div>
-            </div>
+            <h1 className="font-serif text-6xl md:text-9xl text-white tracking-widest leading-none mb-6 drop-shadow-2xl mix-blend-screen">
+                <span className="block text-[0.3em] tracking-[0.8em] mb-4 text-gray-300 uppercase font-sans font-light">Maison Willwi Presents</span>
+                {t.title}
+            </h1>
+            
+            {/* Elegant Separator */}
+            <div className="h-[1px] w-12 bg-gold mb-12"></div>
 
-            {/* RIGHT: TYPOGRAPHY */}
-            <div className="text-center md:text-left space-y-8 animate-slide-up max-w-lg relative z-20" style={{ animationDelay: '200ms' }}>
-                <div>
-                    <h2 className="font-serif text-6xl md:text-8xl text-white italic tracking-tight leading-none mb-4 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] whitespace-pre-line text-balance">
-                        {t.title}
-                    </h2>
-                    <p className="font-sans text-xs md:text-sm text-gray-300 tracking-[0.3em] uppercase leading-relaxed border-t border-white/20 pt-4 inline-block text-shadow-sm">
-                        {t.subtitle}
-                    </p>
-                </div>
+            <p className="font-serif text-xs md:text-sm text-gray-300 tracking-[0.2em] leading-relaxed max-w-lg mb-16 text-shadow-sm">
+                {t.subtitle}
+            </p>
 
-                <div className="md:pl-1">
-                     <p className="font-serif text-sm text-gray-400 leading-relaxed mb-10 max-w-sm whitespace-pre-wrap">
-                        {t.homeBody}
-                     </p>
-                     
-                     <button 
-                        onClick={onEnterClick}
-                        className="group relative px-10 py-4 overflow-hidden bg-white text-black text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-gold transition-colors duration-500 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(197,160,89,0.5)]"
-                    >
-                        <span className="relative z-10 flex items-center gap-3">
-                            {t.enter} <span className="text-lg leading-none mb-0.5 transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
-                        </span>
-                    </button>
-                </div>
-            </div>
+            {/* Cartier Style Button: Minimal, Bordered, Elegant */}
+            <button 
+                onClick={onEnterClick}
+                className="group/btn relative px-12 py-4 overflow-hidden transition-all duration-700 border border-white/40 hover:border-gold hover:bg-black/20"
+            >
+                <span className="relative z-10 text-[10px] font-bold text-white group-hover/btn:text-gold uppercase tracking-[0.4em] transition-colors duration-500">
+                    {t.enter}
+                </span>
+            </button>
         </div>
 
         {/* FOOTER */}
-        <div className="w-full px-8 py-6 flex justify-between items-end z-50 border-t border-white/5 bg-[#050505]/50 backdrop-blur-sm">
-            <div className="flex gap-6">
+        <div className="w-full px-12 py-10 flex justify-between items-end z-50 animate-fade-in">
+            <div className="flex gap-12 border-t border-white/10 pt-4">
                 {SOCIAL_LINKS.map(l => (
-                    <a key={l.name} href={l.url} target="_blank" className="text-[9px] text-gray-600 hover:text-gold uppercase tracking-widest transition-colors">{l.name}</a>
+                    <a key={l.name} href={l.url} target="_blank" className="text-[9px] text-gray-500 hover:text-white uppercase tracking-[0.25em] transition-colors font-serif">{l.name}</a>
                 ))}
             </div>
-            <button onClick={onAdmin} className="text-[9px] text-gray-700 hover:text-white uppercase tracking-widest transition-colors">Manager</button>
+            
+            {/* Admin Trigger - Made subtle but visible for the user */}
+            <button 
+                onClick={onAdmin} 
+                className="text-[9px] text-gray-800 hover:text-gold uppercase tracking-[0.2em] transition-colors font-serif pb-1"
+                title="Manager Access"
+            >
+                Staff Only
+            </button>
         </div>
       </div>
     );
@@ -163,75 +153,62 @@ const AuthView: React.FC<{
 }> = ({ t, user, setUser, handleLogin, handleBack, lang, setLang }) => (
     <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#050505]">
        
-       {/* LEFT PANEL: FIXED VISUAL (Matches Intro Layout) */}
-       <div className="w-full md:w-1/2 h-[40vh] md:h-screen relative md:sticky md:top-0 bg-[#000] overflow-hidden border-b md:border-b-0 md:border-r border-white/5 z-0">
+       {/* LEFT: Portrait Display (Clean, High End) */}
+       <div className="w-full md:w-1/2 h-[40vh] md:h-screen relative overflow-hidden group border-r border-white/5">
            <img 
                src={ARTIST_IMAGE_URL} 
-               className="w-full h-full object-cover object-center opacity-80" 
+               className="w-full h-full object-cover object-top transition-transform duration-[20s] group-hover:scale-105" 
                alt="Artist" 
            />
-           {/* Cinematic Overlay */}
-           <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-black/40 md:bg-gradient-to-r md:from-transparent md:to-[#050505]/80"></div>
+           {/* Subtle gradient to ensure text readability if needed, but keeping image pure */}
+           <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent opacity-80 z-10"></div>
            
-           <button onClick={handleBack} className="absolute top-8 left-8 text-white/50 hover:text-white transition-colors z-50 mix-blend-difference flex items-center gap-2">
-               <ArrowLeftIcon className="w-6 h-6" />
-               <span className="text-[9px] uppercase tracking-widest hidden md:inline">Back</span>
+           <button onClick={handleBack} className="absolute top-8 left-8 text-white/80 hover:text-white transition-colors z-50 flex items-center gap-4 group/back">
+               <ArrowLeftIcon className="w-4 h-4 transition-transform group-hover/back:-translate-x-1" />
+               <span className="text-[9px] uppercase tracking-[0.3em] font-serif">{t.back}</span>
            </button>
        </div>
 
-       {/* RIGHT PANEL: SCROLLABLE CONTENT */}
-       <div className="w-full md:w-1/2 min-h-screen bg-[#050505] relative z-10 flex flex-col justify-center py-20 px-8 md:px-24 overflow-y-auto">
-           {/* Background Texture */}
-           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none z-0"></div>
-           
-           <div className="space-y-20 animate-fade-in relative z-10 max-w-xl mx-auto md:mx-0">
+       {/* RIGHT: Minimalist Registration (Like signing a guestbook) */}
+       <div className="w-full md:w-1/2 min-h-screen bg-[#050505] flex flex-col justify-center px-12 md:px-32 relative z-20">
+           <div className="max-w-md mx-auto w-full space-y-16 animate-slide-up">
                
-               {/* Section 1: About - THE CONCEPT */}
                <div className="space-y-8 text-center md:text-left">
-                   <div className="flex flex-col items-center md:items-start">
-                       <span className="text-[9px] text-gold uppercase tracking-[0.4em] drop-shadow-[0_0_10px_rgba(197,160,89,0.5)] mb-2">The Concept</span>
-                       <div className="w-8 h-[1px] bg-gold/50 mb-6"></div>
-                   </div>
-                   
-                   <h2 className="font-serif text-3xl md:text-5xl text-white italic leading-tight text-balance" style={{ wordBreak: 'keep-all' }}>{t.aboutTitle}</h2>
-                   
-                   <p className="font-serif text-base text-gray-400 leading-9 tracking-wide whitespace-pre-wrap">{t.aboutBody}</p>
+                   <div className="w-8 h-[1px] bg-gold mx-auto md:mx-0 mb-6"></div>
+                   <h2 className="font-serif text-3xl md:text-4xl text-white tracking-wide leading-tight">{t.aboutTitle}</h2>
+                   <p className="font-serif text-sm text-gray-400 leading-8 whitespace-pre-wrap">{t.aboutBody}</p>
                </div>
 
-                {/* Section 2: Guide */}
-               <div className="space-y-8 text-center md:text-left pt-8 border-t border-white/5">
-                   <span className="text-[9px] text-gray-500 uppercase tracking-[0.4em]">Guide</span>
-                   <p className="font-serif text-sm text-gray-500 leading-8 tracking-wide whitespace-pre-wrap">{t.howToBody}</p>
-               </div>
-
-               {/* LOGIN FORM */}
-               <form onSubmit={handleLogin} className="w-full space-y-10 pt-8">
-                   <div className="space-y-8">
-                       <div className="group">
-                            <label className="block text-[8px] uppercase text-gray-500 tracking-[0.3em] mb-2 group-focus-within:text-gold transition-colors">{t.name}</label>
+               <form onSubmit={handleLogin} className="space-y-12 pt-8">
+                   <div className="space-y-10">
+                       <div className="group relative">
+                            <label className="block text-[9px] text-gold uppercase tracking-[0.2em] mb-2 opacity-0 group-hover:opacity-100 transition-opacity absolute -top-4 left-0">{t.name}</label>
                             <input 
                                 required
                                 type="text" 
                                 value={user.name}
                                 onChange={e => setUser({...user, name: e.target.value})}
-                                className="w-full bg-transparent border-b border-white/10 py-3 text-xl text-white font-serif placeholder-white/10 focus:border-gold outline-none transition-all"
+                                placeholder={t.name}
+                                className="w-full bg-transparent border-b border-white/10 py-3 text-xl text-white font-serif placeholder-gray-700 focus:border-gold outline-none transition-all tracking-wide"
                             />
                        </div>
-                       <div className="group">
-                            <label className="block text-[8px] uppercase text-gray-500 tracking-[0.3em] mb-2 group-focus-within:text-gold transition-colors">{t.email}</label>
+                       <div className="group relative">
+                            <label className="block text-[9px] text-gold uppercase tracking-[0.2em] mb-2 opacity-0 group-hover:opacity-100 transition-opacity absolute -top-4 left-0">{t.email}</label>
                             <input 
                                 required
                                 type="email" 
                                 value={user.email}
                                 onChange={e => setUser({...user, email: e.target.value})}
-                                className="w-full bg-transparent border-b border-white/10 py-3 text-xl text-white font-serif placeholder-white/10 focus:border-gold outline-none transition-all"
+                                placeholder={t.email}
+                                className="w-full bg-transparent border-b border-white/10 py-3 text-xl text-white font-serif placeholder-gray-700 focus:border-gold outline-none transition-all tracking-wide"
                             />
                        </div>
                    </div>
+                   
                    <button 
                        type="submit" 
                        disabled={!user.name || !user.email}
-                       className="w-full py-5 bg-white text-black text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-gold transition-all duration-300 disabled:opacity-30 disabled:hover:bg-white shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(197,160,89,0.4)]"
+                       className="w-full py-5 border border-white/20 hover:border-gold text-white text-[10px] font-bold uppercase tracking-[0.4em] transition-all duration-500 hover:bg-white/5 disabled:opacity-30 disabled:hover:border-white/20"
                    >
                        {t.start}
                    </button>
@@ -252,59 +229,71 @@ const VotingView: React.FC<{
     setDetailSongId: (id: number) => void;
 }> = ({ t, songs, selectedIds, MAX_VOTES, voteReasons, onRequestSubmit, handleBack, setDetailSongId }) => {
     return (
-      <div className="min-h-screen bg-[#050505] text-white pb-32">
-           {/* HEADER */}
-           <div className="sticky top-0 z-40 bg-[#050505]/90 backdrop-blur-xl border-b border-white/5 py-6 px-8 flex justify-between items-center">
-               <button onClick={handleBack} className="text-gray-500 hover:text-white transition-colors">
-                   <ArrowLeftIcon className="w-5 h-5" />
+      <div className="min-h-screen bg-[#000000] text-white pb-40 font-serif">
+           {/* HEADER - Fixed & Minimal */}
+           <div className="sticky top-0 z-40 bg-[#000000]/90 backdrop-blur-md py-6 px-8 flex justify-between items-center border-b border-white/10 transition-all">
+               <button onClick={handleBack} className="text-gray-500 hover:text-white transition-colors group flex items-center gap-3">
+                   <ArrowLeftIcon className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                   <span className="text-[9px] uppercase tracking-[0.2em] hidden md:inline-block">{t.back}</span>
                </button>
-               <div className="text-[10px] uppercase tracking-[0.2em] text-gold font-medium drop-shadow-[0_0_5px_rgba(197,160,89,0.3)]">
-                   {t.mySelection} • {selectedIds.length} / {MAX_VOTES}
+               
+               <div className="text-[10px] uppercase tracking-[0.3em] text-gold">
+                   <span className="font-sans font-bold text-lg align-middle">{selectedIds.length}</span> 
+                   <span className="mx-2 text-gray-700">/</span> 
+                   <span className="align-middle">{MAX_VOTES}</span>
                </div>
-               <div className="w-5"></div>
+               
+               <div className="w-5"></div> 
            </div>
 
-           <div className="max-w-4xl mx-auto px-6 py-16">
-               <div className="text-center mb-20 space-y-6">
-                   <h2 className="font-serif text-4xl italic text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">{t.selection}</h2>
-                   <div className="w-px h-12 bg-gradient-to-b from-transparent via-gold to-transparent mx-auto"></div>
-                   <p className="text-[10px] text-gray-500 uppercase tracking-widest">{t.votingRule}</p>
+           <div className="max-w-4xl mx-auto px-6 py-24">
+               <div className="text-center mb-28 space-y-6 animate-fade-in">
+                   <p className="text-[9px] text-gray-500 uppercase tracking-[0.6em]">The Selection</p>
+                   <h2 className="font-serif text-5xl md:text-6xl text-white tracking-widest uppercase leading-snug">{t.selection}</h2>
+                   <div className="h-[1px] w-8 bg-gold mx-auto mt-8"></div>
                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+               {/* LIST LAYOUT (High Jewelry Catalog Style) */}
+               <div className="grid grid-cols-1 gap-0 border-t border-white/10">
                    {songs.map((song, index) => {
                        const isSelected = selectedIds.includes(song.id);
                        return (
                            <div 
                               key={song.id}
                               onClick={() => setDetailSongId(song.id)}
-                              className={`group flex items-center justify-between py-6 px-0 cursor-pointer transition-all duration-500 border-b border-white/5 hover:border-white/20 hover:pl-4`}
+                              className={`
+                                group relative flex items-center justify-between py-10 px-4 md:px-8 cursor-pointer transition-all duration-700 border-b border-white/10
+                                hover:bg-white/[0.03]
+                              `}
                            >
-                               <div className="flex items-baseline gap-6 min-w-0">
-                                   <span className={`text-[10px] font-mono w-6 ${isSelected ? 'text-gold' : 'text-gray-700'}`}>
+                               <div className="flex items-center gap-12 flex-1 min-w-0">
+                                   <span className={`text-[10px] font-sans tracking-widest w-8 text-gray-600 group-hover:text-gold transition-colors`}>
                                        {String(index + 1).padStart(2, '0')}
                                    </span>
-                                   <div className="min-w-0">
-                                       <h3 className={`font-serif text-lg tracking-wide truncate pr-4 transition-colors duration-300 ${isSelected ? 'text-white italic drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]' : 'text-gray-400 group-hover:text-gray-200'}`}>
+                                   
+                                   <div className="min-w-0 flex-1">
+                                       <h3 className={`font-serif text-2xl md:text-3xl tracking-wider truncate transition-all duration-500 ${isSelected ? 'text-gold' : 'text-gray-300 group-hover:text-white'}`}>
                                            {song.title}
                                        </h3>
                                        {isSelected && voteReasons[song.id] && (
-                                           <p className="text-[10px] text-gold/60 font-serif italic mt-1 truncate max-w-[200px]">"{voteReasons[song.id]}"</p>
+                                           <p className="text-[10px] text-gray-500 font-serif italic mt-3 max-w-md truncate tracking-wide border-l border-gold/30 pl-3">
+                                               {voteReasons[song.id]}
+                                           </p>
                                        )}
                                    </div>
                                </div>
 
-                               <div className="flex items-center gap-4 shrink-0">
-                                    <span className="text-[8px] text-gray-800 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Details</span>
-                                    {isSelected ? (
-                                        <div className="w-8 h-8 rounded-full border border-gold/30 flex items-center justify-center text-gold shadow-[0_0_10px_rgba(197,160,89,0.2)]">
-                                            <CheckIcon className="w-3 h-3" />
-                                        </div>
-                                    ) : (
-                                        <div className="w-8 h-8 rounded-full border border-white/5 flex items-center justify-center text-gray-800 group-hover:text-gray-400 group-hover:border-white/20 transition-all">
-                                            <HeartIcon className="w-3 h-3" />
-                                        </div>
-                                    )}
+                               <div className="flex items-center gap-8 shrink-0 pl-8">
+                                    <span className="text-[8px] text-gray-600 uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-all duration-500 hidden md:inline-block -translate-x-2 group-hover:translate-x-0">
+                                        Discover
+                                    </span>
+                                    
+                                    <div className={`
+                                        w-4 h-4 transition-all duration-500 transform
+                                        ${isSelected ? 'text-gold scale-110' : 'text-gray-800 group-hover:text-gray-400'}
+                                    `}>
+                                        {isSelected ? <CheckIcon className="w-full h-full" /> : <HeartIcon className="w-full h-full" />}
+                                    </div>
                                </div>
                            </div>
                        );
@@ -312,15 +301,13 @@ const VotingView: React.FC<{
                </div>
            </div>
 
-           <div className="fixed bottom-0 left-0 w-full bg-[#050505] border-t border-white/10 p-6 z-40">
-               <div className="max-w-4xl mx-auto flex items-center justify-between">
-                   <div className="text-[10px] text-gray-500 uppercase tracking-widest">
-                       {selectedIds.length === 0 ? t.selectMore : <span className="text-white">{selectedIds.length} Tracks Selected</span>}
-                   </div>
+           {/* FLOATING ACTION BAR (Minimal) */}
+           <div className={`fixed bottom-8 left-0 w-full z-40 transition-all duration-1000 ${selectedIds.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}`}>
+               <div className="flex justify-center">
                    <button 
                        onClick={onRequestSubmit}
                        disabled={selectedIds.length === 0}
-                       className={`px-10 py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 ${selectedIds.length > 0 ? 'bg-white text-black hover:bg-gold shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-white/5 text-gray-600 border border-white/5'}`}
+                       className="bg-[#000000] text-white border border-gold hover:bg-gold hover:text-black px-16 py-4 text-[10px] font-bold uppercase tracking-[0.4em] transition-all duration-500 shadow-[0_10px_40px_rgba(0,0,0,0.8)]"
                    >
                        {t.confirm}
                    </button>
@@ -331,20 +318,24 @@ const VotingView: React.FC<{
 };
 
 const SuccessView: React.FC<{ t: any; setStep: (s: AppStep) => void; user: User }> = ({ t, setStep, user }) => (
-    <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-8 text-center animate-fade-in relative">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gold/5 blur-[100px] rounded-full"></div>
+    <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center p-8 text-center animate-fade-in relative overflow-hidden">
+        {/* Abstract Background Element */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-white/5 rounded-full opacity-20 animate-pulse-slow"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-white/5 rounded-full opacity-30" style={{ animationDelay: '1s' }}></div>
         
-        <div className="max-w-lg w-full border border-white/10 p-16 relative bg-[#0a0a0a]/80 backdrop-blur-md shadow-2xl">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-[#050505] border border-white/10 rounded-full flex items-center justify-center text-gold shadow-[0_0_30px_rgba(197,160,89,0.4)]">
-                <CheckIcon className="w-8 h-8" />
+        <div className="max-w-lg w-full relative z-10">
+            <div className="w-16 h-16 border border-gold rounded-full flex items-center justify-center text-gold mx-auto mb-16 animate-slide-up">
+                <CheckIcon className="w-6 h-6" />
             </div>
             
-            <h2 className="font-serif text-4xl text-white italic mb-8 mt-6 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{t.thankYou}</h2>
-            <div className="w-12 h-px bg-white/10 mx-auto mb-8"></div>
-            <p className="font-serif text-sm text-gray-400 leading-8 mb-12 whitespace-pre-wrap">{t.thankYouDesc}</p>
+            <h2 className="font-serif text-5xl md:text-6xl text-white tracking-widest mb-12 animate-slide-up leading-tight" style={{ animationDelay: '200ms' }}>{t.thankYou}</h2>
             
-            <button onClick={() => setStep(AppStep.INTRO)} className="text-[10px] uppercase tracking-[0.2em] text-gray-500 border-b border-transparent hover:border-gold hover:text-gold transition-all pb-1">
+            <p className="font-serif text-sm text-gray-400 leading-9 mb-20 whitespace-pre-wrap animate-slide-up tracking-wide" style={{ animationDelay: '400ms' }}>{t.thankYouDesc}</p>
+            
+            <button 
+                onClick={() => setStep(AppStep.INTRO)} 
+                className="text-[10px] uppercase tracking-[0.4em] text-gray-600 hover:text-white transition-colors animate-slide-up" style={{ animationDelay: '600ms' }}
+            >
                 {t.close}
             </button>
         </div>
@@ -438,21 +429,29 @@ const AppContent = () => {
         
         {/* Final Modal (Tell Me Why) */}
         {showFinalModal && (
-            <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-8 animate-fade-in">
-                <div className="max-w-md w-full space-y-8 text-center bg-[#0a0a0a] p-8 border border-white/10 shadow-2xl">
-                    <h2 className="font-serif text-3xl text-white italic drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{t.finalInquiryTitle}</h2>
-                    <p className="font-serif text-sm text-gray-500 leading-relaxed whitespace-pre-wrap">{t.finalInquiryPrompt}</p>
+            <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-8 animate-fade-in font-serif">
+                <div className="max-w-md w-full space-y-12 text-center bg-[#0a0a0a] p-12 border border-white/10 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold to-transparent opacity-50"></div>
+                    
+                    <div>
+                        <h2 className="font-serif text-3xl text-white tracking-wide mb-4">{t.finalInquiryTitle}</h2>
+                        <div className="h-[1px] w-8 bg-gold mx-auto"></div>
+                    </div>
+
+                    <p className="font-serif text-sm text-gray-400 leading-relaxed whitespace-pre-wrap">{t.finalInquiryPrompt}</p>
+                    
                     <textarea 
-                        className="w-full bg-[#111] border border-white/10 p-4 text-white font-serif outline-none focus:border-gold h-32 text-sm shadow-inner"
+                        className="w-full bg-[#050505] border-b border-white/10 p-4 text-white font-serif outline-none focus:border-gold h-32 text-sm text-center placeholder-gray-800 transition-colors"
                         placeholder={t.finalInquiryPlaceholder}
                         onKeyDown={(e) => { if(e.key === 'Enter' && e.metaKey) handleFinalSubmit((e.target as HTMLTextAreaElement).value) }}
                     />
-                    <div className="flex gap-4">
-                        <button onClick={() => setShowFinalModal(false)} className="flex-1 py-4 text-[10px] uppercase tracking-widest text-gray-500 hover:text-white transition-colors">{t.cancel}</button>
+                    
+                    <div className="flex gap-10 justify-center pt-6">
+                        <button onClick={() => setShowFinalModal(false)} className="text-[10px] uppercase tracking-[0.2em] text-gray-600 hover:text-white transition-colors">{t.cancel}</button>
                         <button onClick={(e) => {
                             const txt = (e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement).value;
                             handleFinalSubmit(txt);
-                        }} className="flex-1 py-4 bg-white text-black text-[10px] font-bold uppercase tracking-widest hover:bg-gold transition-colors shadow-[0_0_15px_rgba(255,255,255,0.2)]">{t.submitFinal}</button>
+                        }} className="text-[10px] font-bold uppercase tracking-[0.2em] text-white hover:text-gold transition-colors">{t.submitFinal}</button>
                     </div>
                 </div>
             </div>
