@@ -1,27 +1,84 @@
 
-import { Song, Language } from './types';
+import { Song, Language, SocialLink } from './types';
+
+// --- ARTIST PROFILE DATA ---
+export const ARTIST_DATA = {
+    name: "Willwi 陳威兒",
+    englishName: "Willwi Chen Wei-Er",
+    title: "Singer-Songwriter & Multilingual Music Producer",
+    // NEW: Featured Song for the Homepage (The "Song I Prepared")
+    featuredSong: {
+        title: "Beloved (Official Theme)",
+        // Updated to user's provided Google Drive Audio
+        url: "https://drive.google.com/uc?export=download&confirm=t&id=13q3cVDiNybStPN1TavtXnHpOkBrqY-W1" 
+    },
+    bio: {
+        zh: `來自台灣的 Willwi 陳威兒，是一位跨語系創作歌手與音樂製作人。\n以中文、英文、日文、法文與韓文進行詞曲創作與聲音製作，並熟悉台語、義大利文與泰文。\n作品多次獲得 Spotify 等國際串流平台編輯精選與推薦，展現跨文化語境下的敘事能力與清晰可辨的聲音風格。\n\n同時為 Musixmatch 認證藝人與策展人，並通過 Apple Music、Spotify、YouTube（OAC）、Amazon Music 等主要平台之官方認證，亦收錄於 Google Knowledge Graph。\n代表作《再愛一次》入選 Spotify 四大官方歌單，是少數同時具備「認證歌手」與「國際策展人」雙重身份的音樂創作者。\n\n「語言對我而言是承載情緒的器皿。」\n此理念貫穿其創作方向，並推動他持續探索多語系流行音樂的可能性。`,
+        en: `Willwi Chen Wei-Er is a multilingual singer-songwriter and music producer from Taiwan.\nHe writes and produces music in Mandarin, English, Japanese, French, and Korean, with additional fluency in Taiwanese, Italian, and Thai.\nHis works have been repeatedly featured by Spotify and other major streaming platforms, recognized for cross-cultural storytelling and a distinct vocal identity.\n\nHe is a verified artist on Apple Music, Spotify, YouTube (OAC), Amazon Music, and Musixmatch, and is listed in the Google Knowledge Graph.\nHis track “Love Again” was selected for four major Spotify editorial playlists, making him one of the few music creators recognized both as a verified artist and an international curator.\n\n“For me, language is a vessel for emotion.”\nThis philosophy shapes his approach to multilingual composition and his ongoing exploration of contemporary pop music.`
+    },
+    copyright: {
+        year: "2025",
+        owner: "Willwi Music",
+        credits: [
+            "Main Artist : Willwi 陳威兒",
+            "Composer : Tsung Yu Chen",
+            "Lyricist : Tsung Yu Chen",
+            "Arranger : Willwi",
+            "Producer : Will Chen",
+            "Recording Engineer | Will Chen",
+            "Mixing Engineer | Will Chen",
+            "Mastering Engineer | Will Chen",
+            "Recording Studio | Willwi Studio, Taipei",
+            "Label | Willwi Music"
+        ]
+    },
+    links: {
+        website: "https://willwi.com/",
+        email: "will@willwi.com",
+        socials: [
+            { platform: "YouTube", url: "https://www.youtube.com/@Willwi888", icon: "youtube" },
+            { platform: "Spotify", url: "https://open.spotify.com/artist/3ascZ8Rb2KDw4QyCy29Om4", icon: "spotify" },
+            { platform: "Apple Music", url: "https://music.apple.com/us/artist/willwi/1798471457", icon: "apple" },
+            { platform: "Amazon Music", url: "https://music.amazon.com/artists/B0DYFC8CTG/willwi", icon: "amazon" },
+            { platform: "TIDAL", url: "https://tidal.com/artist/70636776", icon: "tidal" },
+            { platform: "YouTube Music", url: "https://music.youtube.com/channel/UCAF8vdEOJ5sBdRuZXL61ASw", icon: "youtubemusic" },
+            { platform: "Instagram", url: "https://www.instagram.com/willwi888", icon: "instagram" },
+            { platform: "Facebook", url: "https://www.facebook.com/Willwi888", icon: "facebook" },
+            { platform: "X (Twitter)", url: "https://x.com/@willwi888", icon: "twitter" },
+            { platform: "TikTok", url: "https://www.tiktok.com/@willwi888", icon: "tiktok" }
+        ] as SocialLink[]
+    }
+};
 
 // --- MASTER DATA: SINGLE SOURCE OF TRUTH ---
 export const MASTER_SONG_DATA: Record<number, Partial<Song>> = {
   1: {
       title: "Studio Session 01 (Audio Demo)",
-      // Valid copyright-free test URL for immediate playback check
       customAudioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", 
-      lyrics: "This is a demo track for Audio Playback.\n\n(Verse 1)\nThe night is young\nThe stars are bright\nWe are voting for the light\n\n(Chorus)\nBeloved, Beloved\nChoose your song\nBeloved, Beloved\nWhere we belong",
-      credits: "Arrangement: Willwi\nMixing: Willwi\n(Audio File Mode)"
+      lyrics: "This is a demo track for Audio Playback.\n\n(Verse 1)\nThe night is young\nThe stars are bright\nWe are voting for the light",
+      credits: "Arrangement: Willwi\nMixing: Willwi"
   },
   2: {
       title: "Studio Session 02 (YouTube Demo)",
-      // Valid YouTube Video ID for immediate video check
       youtubeId: "M7FIvfx5J10", 
-      lyrics: "This is a demo track for YouTube Integration.\n\nClicking this item opens the video player.\nThe visual experience is synchronized.\n\n(Chorus)\nWatch the motion\nFeel the sound\nIn the Beloved project\nWe are found",
-      credits: "Director: Willwi\nCinematography: Willwi\n(YouTube Mode)"
-  }
+      lyrics: "This is a demo track for YouTube Integration.\n\nClicking this item opens the video player.\nThe visual experience is synchronized.",
+      credits: "Director: Willwi"
+  },
+  // Placeholders for remaining songs
+  3: { title: "Midnight Echo", lyrics: "In the silence of the room...", credits: "Piano: Willwi" },
+  40: { title: "The End", lyrics: "Closing the book...", credits: "Piano: Willwi" }
 };
 
 // --- TRANSLATIONS ---
 export const TRANSLATIONS = {
   zh: {
+    // Artist Site
+    profile: "個人檔案",
+    music: "音樂作品",
+    contact: "聯絡資訊",
+    enterEvent: "開始投票",
+    backToSite: "返回官方網站",
+
     // I. Home
     title: "摯愛",
     subtitle: "2026 大碟票選活動",
@@ -76,6 +133,12 @@ export const TRANSLATIONS = {
     copyright: "© 2026 Willwi Music. All Rights Reserved.",
   },
   en: {
+    profile: "Profile",
+    music: "Music",
+    contact: "Contact",
+    enterEvent: "Start Voting",
+    backToSite: "Back to Official Site",
+
     // I. Home
     title: "THE 2026 COLLECTION",
     subtitle: "BELOVED",
@@ -130,6 +193,12 @@ export const TRANSLATIONS = {
     copyright: "© 2026 Willwi Music. All Rights Reserved.",
   },
   jp: {
+    profile: "プロフィール",
+    music: "音楽",
+    contact: "お問い合わせ",
+    enterEvent: "投票を始める",
+    backToSite: "公式サイトへ戻る",
+
     // I. Home
     title: "最愛",
     subtitle: "2026 コレクション",

@@ -19,6 +19,10 @@ export interface User {
 }
 
 export enum AppStep {
+  // Artist Site Steps
+  ARTIST_HOME = 'ARTIST_HOME',
+  
+  // Voting App Steps
   INTRO = 'INTRO',
   AUTH = 'AUTH',
   VOTING = 'VOTING',
@@ -29,3 +33,9 @@ export enum AppStep {
 export type Language = 'zh' | 'en' | 'jp';
 
 export const MAX_VOTES = 10;
+
+export interface SocialLink {
+    platform: string;
+    url: string;
+    icon?: string; // Label for icon mapping
+}

@@ -62,9 +62,9 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setUsers(fetchedVotes);
         
         if (supabase) {
+            // Check if table exists by selecting 1 row
             const { error: tableError } = await supabase.from('songs').select('count', { count: 'exact', head: true });
             if (tableError) {
-                console.warn(tableError);
                 if (tableError.code === '42P01') { 
                      setCloudStatus('missing_table');
                 } else {
@@ -101,6 +101,10 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const handlePublishToCloud = async () => {
+      if (cloudStatus === 'missing_table') {
+          alert("Database setup required. Please see instructions.");
+          return;
+      }
       if (!confirm("This will overwrite the Cloud song list with your local data. Are you sure?")) return;
       setIsPublishing(true);
       try {
@@ -315,7 +319,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                  {cloudStatus === 'missing_table' && (
                      <div className="bg-red-900/20 border border-red-500/50 p-6 rounded mb-8">
                          <h3 className="text-red-500 font-bold mb-2 uppercase tracking-widest">⚠️ Critical: Database Table Missing</h3>
-                         <p className="text-sm text-gray-300 mb-4">You must create the 'songs' table in Supabase for the app to work.</p>
+                         <p className="text-sm text-gray-300 mb-4">The App is currently in <strong>Local Mode</strong>. To enable Cloud Sync and real-time publishing, you must create the 'songs' table in Supabase.</p>
                          <p className="text-xs text-gray-400 mb-2">Copy this SQL code and run it in your Supabase SQL Editor:</p>
                          <div className="bg-black p-4 rounded text-xs font-mono text-green-400 overflow-x-auto select-all">
                              create table if not exists songs (<br/>
@@ -341,7 +345,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                          <h3 className="text-gold font-serif text-lg mb-1 flex items-center gap-2">🚀 Publish Changes</h3>
                          <p className="text-[10px] text-gray-400">Push your local song edits to the Cloud so everyone can see them.</p>
                      </div>
-                     <button onClick={handlePublishToCloud} disabled={isPublishing || cloudStatus === 'missing_table'} className="bg-gold text-black px-6 py-3 rounded text-xs font-bold uppercase hover:bg-white transition-colors shadow-[0_0_20px_rgba(197,160,89,0.3)] disabled:opacity-50 disabled:cursor-not-allowed">{isPublishing ? 'Publishing...' : 'Publish to Cloud'}</button>
+                     <button onClick={handlePublishToCloud} disabled={isPublishing || cloudStatus === 'missing_table'} className="bg-gold text-black px-6 py-3 rounded text-xs font-bold uppercase hover:bg-white transition-colors shadow-[0_0_20px_rgba(197,160,89,0.3)] disabled:opacity-50 disabled:cursor-not-allowed">{isPublishing ? 'Publishing...' : (cloudStatus === 'missing_table' ? 'Setup Required' : 'Publish to Cloud')}</button>
                  </div>
 
                  <div className="flex gap-2 mb-4 justify-end">
