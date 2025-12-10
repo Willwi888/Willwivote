@@ -4,7 +4,7 @@ import { Song, Language, SocialLink } from './types';
 // --- ARTIST PROFILE DATA ---
 export const ARTIST_DATA = {
     name: "Willwi 陳威兒",
-    englishName: "Willwi Chen Wei-Er",
+    englishName: "", // CLEARED as requested
     title: "Singer-Songwriter & Multilingual Music Producer",
     // NEW: Featured Song for the Homepage (The "Song I Prepared")
     featuredSong: {

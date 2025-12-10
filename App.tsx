@@ -97,7 +97,11 @@ const ArtistHomeView: React.FC<{
                      <div className="animate-slide-up space-y-10 relative z-20 w-full max-w-lg">
                         {/* Artist Identity & Event Title */}
                         <div>
-                            <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold/30 pb-4 inline-block mb-4">{ARTIST_DATA.englishName}</h2>
+                            {ARTIST_DATA.englishName && (
+                                <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold/30 pb-4 inline-block mb-4">
+                                    {ARTIST_DATA.englishName}
+                                </h2>
+                            )}
                             <h1 className="text-4xl md:text-6xl font-serif text-white tracking-wide leading-tight mb-4">
                                 BELOVED<br/><span className="text-2xl md:text-4xl italic text-metallic">摯愛</span>
                             </h1>
@@ -192,7 +196,7 @@ const ArtistHomeView: React.FC<{
                  </div>
             </section>
 
-            {/* Footer - Redesigned to Cartier-style minimalist jewelry aesthetics */}
+            {/* Footer - Redesigned to Poetic 'Cartier' Style - No Labels, Only Stories */}
             <footer className="w-full py-20 border-t border-white/5 bg-[#050505] relative z-20">
                 <div className="max-w-4xl mx-auto px-6 flex flex-col items-center text-center space-y-12">
                     
@@ -211,16 +215,19 @@ const ArtistHomeView: React.FC<{
                     {/* Divider */}
                     <div className="w-8 h-[1px] bg-gold/50"></div>
 
-                    {/* Copyright Block - Stacked like an engraving */}
-                    <div className="flex flex-col items-center gap-3">
-                        <div className="text-[10px] text-gray-500 uppercase tracking-[0.3em] font-serif">
-                            © {ARTIST_DATA.copyright.year} {ARTIST_DATA.copyright.owner}
+                    {/* STORY / POETIC FOOTER (Replaces Copyright) */}
+                    <div className="flex flex-col items-center gap-4 text-metallic">
+                        <div className="text-sm md:text-base font-serif tracking-[0.4em] uppercase text-gold">
+                            音樂為愛而唱
                         </div>
-                        <div className="text-[10px] text-gray-500 uppercase tracking-[0.3em] font-serif">
-                            ℗ {ARTIST_DATA.copyright.year} {ARTIST_DATA.copyright.owner}
+                        <div className="w-1 h-1 bg-gold rounded-full opacity-50"></div>
+                        <div className="text-[10px] md:text-xs font-sans tracking-[0.5em] uppercase text-gray-500">
+                            這裡 沒有標籤 只有故事
                         </div>
-                        <button onClick={onAdmin} className="mt-8 text-[9px] text-gray-800 hover:text-gray-600 transition-colors uppercase tracking-widest border border-transparent hover:border-gray-800 px-3 py-1 rounded-full">
-                            System Access
+                        
+                        {/* Hidden/Subtle Admin Access */}
+                        <button onClick={onAdmin} className="mt-8 text-[9px] text-gray-800 hover:text-gray-600 transition-colors uppercase tracking-widest px-2 py-1 rounded opacity-20 hover:opacity-100">
+                            System
                         </button>
                     </div>
                 </div>
