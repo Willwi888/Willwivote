@@ -6,12 +6,14 @@ import { supabase } from './supabaseClient';
 const VOTE_STORAGE_KEY = 'beloved_2026_votes';
 const SONG_METADATA_KEY = 'beloved_2026_song_metadata';
 const GLOBAL_CONFIG_KEY = 'beloved_2026_global_config';
+const USER_SESSION_KEY = 'beloved_2026_user_session';
 
 export interface GlobalConfig {
   introAudioUrl: string;
   googleSheetUrl?: string;
 }
 
+// --- GLOBAL CONFIG ---
 export const getGlobalConfig = (): GlobalConfig => {
   if (typeof window === 'undefined') return { introAudioUrl: '' };
   try {
@@ -28,25 +30,46 @@ export const saveGlobalConfig = (config: GlobalConfig) => {
   } catch (e) {}
 };
 
-// --- GOOGLE SHEET INTEGRATION (No-CORS Mode) ---
-const submitToGoogleSheet = async (user: User, scriptUrl: string) => {
+// --- SESSION MANAGEMENT ---
+export const saveUserSession = (user: User) => {
     try {
-        await fetch(scriptUrl, {
-            method: 'POST',
-            mode: 'no-cors', 
-            headers: {
-                'Content-Type': 'text/plain' 
-            },
-            body: JSON.stringify(user)
-        });
-        console.log("Submitted to Google Sheet (Opaque Response)");
+        localStorage.setItem(USER_SESSION_KEY, JSON.stringify(user));
+    } catch (e) {}
+};
+
+export const getUserSession = (): User | null => {
+    try {
+        const data = localStorage.getItem(USER_SESSION_KEY);
+        return data ? JSON.parse(data) : null;
     } catch (e) {
-        console.error("Google Sheet Sync Error:", e);
+        return null;
     }
 };
 
-// --- VOTING LOGIC ---
+export const clearUserSession = () => {
+    localStorage.removeItem(USER_SESSION_KEY);
+};
 
+// --- YOUTUBE HELPER (ROBUST) ---
+export const extractYouTubeId = (text: string): string | null => {
+    if (!text) return null;
+    // Enhanced Regex to capture:
+    // - youtube.com/watch?v=ID
+    // - youtu.be/ID
+    // - youtube.com/embed/ID
+    // - youtube.com/shorts/ID
+    // - youtube.com/live/ID
+    const urlMatch = text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    if (urlMatch) return urlMatch[1];
+    
+    // Captures raw ID if user just pastes the 11 chars
+    const rawMatch = text.trim().match(/^([a-zA-Z0-9_-]{11})$/);
+    if (rawMatch) return rawMatch[1];
+    
+    return null;
+};
+
+// --- VOTING LOGIC ---
 export const saveVote = async (user: User) => {
   const currentData = getLocalVotes();
   if (!currentData.find(u => u.email === user.email)) {
@@ -68,11 +91,6 @@ export const saveVote = async (user: User) => {
       } catch (e) {
           console.error("Supabase Error", e);
       }
-  }
-
-  const config = getGlobalConfig();
-  if (config.googleSheetUrl && config.googleSheetUrl.startsWith('https://script.google.com/')) {
-      submitToGoogleSheet(user, config.googleSheetUrl);
   }
 };
 
@@ -117,66 +135,89 @@ export const getLeaderboard = (songs: Song[], votes: User[]) => {
 
 // --- SONG MANAGEMENT ---
 
+const mergeSongs = (metadata: Song[]): Song[] => {
+    let merged = [...DEFAULT_SONGS];
+    merged = merged.map(s => {
+        const master = MASTER_SONG_DATA[s.id];
+        return master ? { ...s, ...master } : s;
+    });
+    if (metadata && metadata.length > 0) {
+        merged = merged.map(current => {
+            const update = metadata.find(m => m.id === current.id);
+            if (update) {
+                return {
+                    ...current,
+                    title: update.title || current.title,
+                    youtubeId: update.youtubeId || current.youtubeId,
+                    customAudioUrl: update.customAudioUrl || current.customAudioUrl,
+                    customImageUrl: update.customImageUrl || current.customImageUrl,
+                    lyrics: update.lyrics || current.lyrics,
+                    credits: update.credits || current.credits,
+                };
+            }
+            return current;
+        });
+    }
+    return merged;
+};
+
 export const getSongs = (): Song[] => {
   if (typeof window === 'undefined') return DEFAULT_SONGS;
-  
-  let mergedSongs = [...DEFAULT_SONGS];
-
-  // 1. Hydrate with Master Data
-  mergedSongs = mergedSongs.map(s => {
-      const master = MASTER_SONG_DATA[s.id];
-      return master ? { ...s, ...master } : s;
-  });
-
-  // 2. Hydrate with Local Storage
   try {
       const savedMetadata = localStorage.getItem(SONG_METADATA_KEY);
       if (savedMetadata) {
         const parsed = JSON.parse(savedMetadata);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-            mergedSongs = mergedSongs.map(currentSong => {
-                const saved = parsed.find((p: Song) => p.id === currentSong.id);
-                if (saved) {
-                    return {
-                        ...currentSong,
-                        title: saved.title || currentSong.title,
-                        youtubeId: saved.youtubeId || currentSong.youtubeId,
-                        customAudioUrl: saved.customAudioUrl || currentSong.customAudioUrl,
-                        customImageUrl: saved.customImageUrl || currentSong.customImageUrl,
-                        lyrics: saved.lyrics || currentSong.lyrics,
-                        credits: saved.credits || currentSong.credits,
-                    };
-                }
-                return currentSong;
-            });
-        }
+        return mergeSongs(parsed);
       }
   } catch (e) {}
-
-  return mergedSongs;
+  return mergeSongs([]);
 };
 
-// --- UPDATED: ROBUST YOUTUBE EXTRACTION ---
-export const extractYouTubeId = (text: string): string | null => {
-    if (!text) return null;
-    
-    // 1. Check for standard URLs (Full, Short, Embed, Mobile)
-    const urlMatch = text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-    if (urlMatch) return urlMatch[1];
+export const fetchRemoteSongs = async (): Promise<Song[] | null> => {
+    if (!supabase) return null;
+    try {
+        const { data, error } = await supabase.from('songs').select('*');
+        if (error || !data) return null;
+        
+        const remoteSongs: Song[] = data.map((row: any) => ({
+            id: Number(row.id),
+            title: row.title,
+            driveId: '', 
+            youtubeId: row.youtube_id,
+            customAudioUrl: row.custom_audio_url,
+            customImageUrl: row.custom_image_url,
+            lyrics: row.lyrics,
+            credits: row.credits
+        }));
+        
+        return mergeSongs(remoteSongs);
+    } catch (e) {
+        console.error("Fetch remote songs failed", e);
+        return null;
+    }
+};
 
-    // 2. Check for RAW ID (Strict 11 chars)
-    // If the user pastes JUST "jfKfPfyJRdk", we accept it.
-    // We trim and ensure it's exactly 11 valid characters to avoid false positives (like Drive IDs which are longer).
-    const rawMatch = text.trim().match(/^([a-zA-Z0-9_-]{11})$/);
-    if (rawMatch) return rawMatch[1];
-
-    return null;
+export const publishSongsToCloud = async (songs: Song[]) => {
+    if (!supabase) throw new Error("Supabase not configured");
+    const rows = songs.map(s => ({
+        id: s.id,
+        title: s.title,
+        youtube_id: s.youtubeId || null,
+        custom_audio_url: s.customAudioUrl || null,
+        custom_image_url: s.customImageUrl || null,
+        lyrics: s.lyrics || null,
+        credits: s.credits || null,
+        updated_at: new Date().toISOString()
+    }));
+    const { error } = await supabase.from('songs').upsert(rows);
+    if (error) throw error;
 };
 
 export const updateSong = (id: number, updates: Partial<Song>) => {
   const currentSongs = getSongs();
   let finalUpdates = { ...updates };
   
+  // Auto-extract YouTube ID if user pastes link into customAudioUrl
   if (updates.customAudioUrl && !updates.youtubeId) {
       const extractedId = extractYouTubeId(updates.customAudioUrl);
       if (extractedId) finalUpdates.youtubeId = extractedId;
@@ -189,7 +230,11 @@ export const updateSong = (id: number, updates: Partial<Song>) => {
   return updatedSongs;
 };
 
-const cleanTitleText = (rawTitle: string): string => {
+export const updateSongsBulk = (lines: string[]) => {
+  const currentSongs = getSongs();
+  const cleanLines = lines.filter(l => l.trim().length > 0);
+  
+  const cleanTitleText = (rawTitle: string): string => {
     return rawTitle
         .replace(/\(Uploaded by TunesToTube\)/gi, '')
         .replace(/TunesToTube/gi, '')
@@ -198,11 +243,7 @@ const cleanTitleText = (rawTitle: string): string => {
         .replace(/[\(\[]Demo[\)\]]/gi, '')
         .replace(/^\d+\s*[-.|]\s*/, '')
         .trim();
-};
-
-export const updateSongsBulk = (lines: string[]) => {
-  const currentSongs = getSongs();
-  const cleanLines = lines.filter(l => l.trim().length > 0);
+  };
 
   const updatedSongs = currentSongs.map((s, index) => {
       if (index >= cleanLines.length) return s;
@@ -214,7 +255,7 @@ export const updateSongsBulk = (lines: string[]) => {
       const ytId = extractYouTubeId(line);
       if (ytId) {
           newYoutubeId = ytId;
-          newCustomAudioUrl = ''; 
+          newCustomAudioUrl = ''; // Clear audio URL if YouTube is found to avoid conflict
           const textWithoutUrl = line.replace(/https?:\/\/\S+/g, '').trim();
           const cleanRawTitle = textWithoutUrl.replace(/^[-|]\s+/, '').replace(/\s+[-|]$/, '').trim();
           if (cleanRawTitle.length > 1) newTitle = cleanTitleText(cleanRawTitle);
@@ -237,8 +278,3 @@ export const restoreFromBackup = (songs: Song[]) => {
         localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(songs));
     } catch(e) {}
 };
-
-export const resetSongTitles = () => {
-    localStorage.removeItem(SONG_METADATA_KEY);
-    return DEFAULT_SONGS;
-}
