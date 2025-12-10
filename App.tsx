@@ -170,16 +170,23 @@ const AuthView: React.FC<{
        </div>
 
        {/* RIGHT: Minimalist Registration (Like signing a guestbook) */}
-       <div className="w-full md:w-1/2 min-h-screen bg-[#050505] flex flex-col justify-center px-12 md:px-32 relative z-20">
-           <div className="max-w-md mx-auto w-full space-y-16 animate-slide-up">
+       <div className="w-full md:w-1/2 min-h-screen bg-[#050505] flex flex-col justify-center px-12 md:px-32 relative z-20 py-16">
+           <div className="max-w-md mx-auto w-full flex flex-col h-full justify-center">
                
-               <div className="space-y-8 text-center md:text-left">
+               {/* 1. Header & Intro */}
+               <div className="space-y-8 text-center md:text-left animate-slide-up">
                    <div className="w-8 h-[1px] bg-gold mx-auto md:mx-0 mb-6"></div>
                    <h2 className="font-serif text-3xl md:text-4xl text-white tracking-wide leading-tight">{t.aboutTitle}</h2>
-                   <p className="font-serif text-sm text-gray-400 leading-8 whitespace-pre-wrap">{t.aboutBody}</p>
+                   
+                   {/* Elegant Intro Section */}
+                   <p className="font-serif text-sm text-gray-300 leading-8 whitespace-pre-wrap">{t.aboutIntro}</p>
+                   
+                   {/* Spaced Emotional Appeal */}
+                   <p className="font-serif text-sm text-gray-400 leading-8 whitespace-pre-wrap mt-6">{t.aboutMiddle}</p>
                </div>
 
-               <form onSubmit={handleLogin} className="space-y-12 pt-8">
+               {/* 2. The Login Form */}
+               <form onSubmit={handleLogin} className="space-y-12 pt-12 animate-slide-up" style={{ animationDelay: '200ms' }}>
                    <div className="space-y-10">
                        <div className="group relative">
                             <label className="block text-[9px] text-gold uppercase tracking-[0.2em] mb-2 opacity-0 group-hover:opacity-100 transition-opacity absolute -top-4 left-0">{t.name}</label>
@@ -213,6 +220,14 @@ const AuthView: React.FC<{
                        {t.start}
                    </button>
                </form>
+
+               {/* 3. Footer Warning (Subtle, High-End Legal Note Style) */}
+               <div className="mt-16 pt-8 border-t border-white/5 animate-slide-up" style={{ animationDelay: '400ms' }}>
+                   <p className="font-sans text-[10px] text-gray-600 tracking-wider leading-relaxed text-center md:text-left opacity-60 hover:opacity-100 transition-opacity">
+                       {t.aboutWarning}
+                   </p>
+               </div>
+
            </div>
        </div>
     </div>
