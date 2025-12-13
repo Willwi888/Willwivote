@@ -13,12 +13,12 @@ import AudioPlayer from './components/AudioPlayer';
 // --- CONFIGURATION ---
 
 const LangSwitcher: React.FC<{ lang: Language; setLang: (l: Language) => void; className?: string }> = ({ lang, setLang, className }) => (
-    <div className={`flex gap-6 z-50 ${className}`}>
+    <div className={`flex z-50 items-center ${className}`}>
         {(['zh', 'jp', 'en'] as Language[]).map(l => (
             <button 
                 key={l}
                 onClick={() => setLang(l)}
-                className={`text-[9px] uppercase tracking-[0.25em] transition-all duration-500 font-sans ${lang === l ? 'text-gold font-bold scale-125 drop-shadow-[0_0_15px_rgba(255,215,0,0.8)]' : 'text-gray-500 hover:text-white'}`}
+                className={`text-[10px] uppercase tracking-[0.2em] transition-all duration-300 font-sans px-2 ${lang === l ? 'text-gold font-bold scale-110 drop-shadow-[0_0_10px_rgba(255,215,0,0.6)]' : 'text-gray-500 hover:text-white'}`}
             >
                 {l}
             </button>
@@ -60,14 +60,17 @@ const ArtistHomeView: React.FC<{
     return (
         <div className="min-h-screen font-serif selection:bg-gold selection:text-black">
              {/* Navigation */}
-            <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-black/90 backdrop-blur-md py-4 border-b border-gold/30' : 'py-8'}`}>
+            <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-black/90 backdrop-blur-md py-3 border-b border-gold/30' : 'py-6 md:py-8'}`}>
                 <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
-                    <div className="flex items-center gap-10">
+                    <div className="flex items-center gap-4 md:gap-10">
                         {/* INCREASED LOGO SIZE: text-lg -> text-3xl */}
-                        <div className="text-2xl md:text-3xl lg:text-4xl font-serif font-bold text-metallic tracking-widest drop-shadow-[0_0_20px_rgba(255,215,0,0.6)] animate-pulse-slow">WILLWI</div>
+                        <div className="text-xl md:text-3xl lg:text-4xl font-serif font-bold text-metallic tracking-widest drop-shadow-[0_0_20px_rgba(255,215,0,0.6)] animate-pulse-slow">WILLWI</div>
                         <div className="w-[1px] h-4 bg-gold/50 hidden md:block"></div>
-                        <LangSwitcher lang={lang} setLang={setLang} className="hidden md:flex" />
+                        {/* Desktop Language Switcher */}
+                        <LangSwitcher lang={lang} setLang={setLang} className="hidden md:flex gap-4" />
                     </div>
+                    {/* Mobile Language Switcher (Explicitly Visible) */}
+                    <LangSwitcher lang={lang} setLang={setLang} className="flex md:hidden gap-1 bg-black/40 backdrop-blur-md rounded-full px-2 py-1 border border-white/10" />
                 </div>
             </nav>
 
@@ -101,29 +104,29 @@ const ArtistHomeView: React.FC<{
                      </div>
                  )}
 
-                 {/* Content Layer (RIGHT Aligned) - MOVED TO RIGHT SIDE with MORE PADDING */}
+                 {/* Content Layer (RIGHT Aligned on Desktop, CENTERED on Mobile) */}
                  {!playHeroVideo && (
-                     <div className="relative z-10 w-full md:w-[65%] h-full flex flex-col justify-center items-end ml-auto px-8 md:px-16 lg:pr-40 animate-slide-up text-right">
+                     <div className="relative z-10 w-full md:w-[65%] h-full flex flex-col justify-center items-center md:items-end ml-auto px-6 md:px-16 lg:pr-40 animate-slide-up text-center md:text-right pt-20 md:pt-0">
                         <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold pb-4 inline-block mb-8 drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]">
                             The 2026 Collection
                         </h2>
                         
                         {/* SACHIKO GLOW TITLE */}
-                        <h1 className="text-6xl md:text-8xl lg:text-9xl font-serif text-white tracking-wide leading-none mb-4 animate-sachiko-glow drop-shadow-[0_0_30px_rgba(255,215,0,0.5)]">
+                        <h1 className="text-5xl md:text-8xl lg:text-9xl font-serif text-white tracking-wide leading-none mb-4 animate-sachiko-glow drop-shadow-[0_0_30px_rgba(255,215,0,0.5)]">
                             BELOVED
                         </h1>
                         <div className="text-3xl md:text-5xl lg:text-6xl italic text-metallic font-serif mb-8 drop-shadow-[0_0_25px_rgba(255,215,0,0.8)]">摯愛</div>
 
-                        {/* Description - Removed Rigid Box, Added Soft Gradient Fade */}
-                        <div className="mb-12 w-full md:max-w-xl bg-gradient-to-l from-black/90 via-black/40 to-transparent p-8 md:pr-0 rounded-xl backdrop-blur-sm border-r border-gold/30 shadow-none md:shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
-                            <p className="text-white text-sm md:text-lg font-serif leading-9 whitespace-pre-wrap tracking-wide text-right drop-shadow-md pr-4">
+                        {/* Description - Adjusted for Mobile Readability - REMOVED JUSTIFY on Mobile */}
+                        <div className="mb-12 w-full md:max-w-xl bg-gradient-to-t md:bg-gradient-to-l from-black/90 via-black/40 to-transparent p-6 md:p-8 md:pr-0 rounded-xl backdrop-blur-sm md:border-r border-gold/30 shadow-none md:shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
+                            <p className="text-white text-sm md:text-lg font-serif leading-8 md:leading-9 whitespace-pre-wrap tracking-wide text-center md:text-right drop-shadow-md px-2 md:pr-4 md:pl-0">
                                 {t.homeBody}
                             </p>
                         </div>
 
-                        {/* BUTTONS CONTAINER - Aligned Right */}
-                        <div className="flex flex-col sm:flex-row w-full items-end sm:items-center justify-end gap-8 relative">
-                             {/* Primary Action Button - LARGER */}
+                        {/* BUTTONS CONTAINER */}
+                        <div className="flex flex-col sm:flex-row w-full items-center md:items-end justify-center md:justify-end gap-6 md:gap-8 relative">
+                             {/* Primary Action Button */}
                              <button 
                                 onClick={onEnterEvent} 
                                 className="group relative px-16 py-6 bg-gold text-black overflow-hidden shadow-[0_0_60px_rgba(255,215,0,0.6)] hover:shadow-[0_0_100px_rgba(255,215,0,1)] hover:scale-105 transition-all duration-500 border-2 border-white/20 sm:ml-auto md:ml-0 md:self-end"
@@ -165,7 +168,7 @@ const ArtistHomeView: React.FC<{
 
                              {/* Audio Player Fallback */}
                             {!youtubeId && !playlistId && !isDropboxFolder && featuredSong.url && (
-                                <div className="mt-4 w-full max-w-xs self-end">
+                                <div className="mt-4 w-full max-w-xs self-center md:self-end">
                                     <AudioPlayer 
                                         id="homepage-featured"
                                         src={featuredSong.url}
@@ -183,19 +186,20 @@ const ArtistHomeView: React.FC<{
             <section className="relative w-full py-20 md:py-32 px-6 md:px-12 max-w-7xl mx-auto border-t border-gold/20 bg-[#020202] z-10">
                  <div className="grid md:grid-cols-2 gap-16 items-center">
                       <div className="order-2 md:order-1 space-y-12 animate-slide-up">
-                          <div>
+                          <div className="text-center md:text-left">
                               <h3 className="text-4xl font-serif text-metallic mb-8 drop-shadow-[0_0_15px_rgba(255,215,0,0.4)]">{t.profile}</h3>
-                              <p className="text-gold font-sans tracking-[0.2em] uppercase leading-relaxed max-w-md mb-8 font-bold text-shadow-glow">
+                              <p className="text-gold font-sans tracking-[0.2em] uppercase leading-relaxed max-w-md mb-8 font-bold text-shadow-glow mx-auto md:mx-0">
                                   {ARTIST_DATA.title}
                               </p>
                               <div className="flex flex-col gap-6">
-                                  <p className="text-gray-200 text-sm md:text-lg font-serif leading-9 whitespace-pre-wrap tracking-wide text-justify">
+                                  {/* Changed text-justify to text-left for mobile to improve readability */}
+                                  <p className="text-gray-200 text-sm md:text-lg font-serif leading-9 whitespace-pre-wrap tracking-wide text-left md:text-justify">
                                       {lang === 'en' ? ARTIST_DATA.bio.en : ARTIST_DATA.bio.zh}
                                   </p>
                               </div>
                           </div>
 
-                          <div className="pt-6">
+                          <div className="pt-6 text-center md:text-left">
                               <h4 className="text-gold text-xs tracking-[0.2em] uppercase mb-4 font-bold border-b border-gold/20 pb-2 inline-block">Production Credits</h4>
                               <ul className="space-y-2">
                                   {ARTIST_DATA.copyright.credits.map((credit, i) => (
@@ -208,7 +212,7 @@ const ArtistHomeView: React.FC<{
                       </div>
 
                       {/* PROFILE IMAGE - SACHIKO GLOW FRAME - MAX INTENSITY */}
-                      <div className="order-1 md:order-2 relative h-[600px] w-full group">
+                      <div className="order-1 md:order-2 relative h-[400px] md:h-[600px] w-full group">
                            {/* 1. Massive Background Glow */}
                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-radial-gold blur-3xl animate-pulse-slow"></div>
                           
@@ -254,6 +258,7 @@ const App: React.FC = () => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [user, setUser] = useState<User>({ name: '', email: '', timestamp: '', votes: [] });
   const [globalConfig, setGlobalConfig] = useState({ homepageSongTitle: '', homepageSongUrl: '' });
+  const [isSyncing, setIsSyncing] = useState(false);
   
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -262,27 +267,36 @@ const App: React.FC = () => {
   const [playHeroVideo, setPlayHeroVideo] = useState(false);
 
   // Define data loading as a memoized function so we can call it whenever steps change
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (forceRemote = false) => {
       // 1. Load Local
-      const loadedSongs = getSongs();
-      setSongs(loadedSongs);
-      const config = getGlobalConfig();
-      setGlobalConfig({
-        homepageSongTitle: config.homepageSongTitle || '',
-        homepageSongUrl: config.homepageSongUrl || ''
-      });
+      if (!forceRemote) {
+        const loadedSongs = getSongs();
+        setSongs(loadedSongs);
+        const config = getGlobalConfig();
+        setGlobalConfig({
+            homepageSongTitle: config.homepageSongTitle || '',
+            homepageSongUrl: config.homepageSongUrl || ''
+        });
+      }
       
       // 2. Load Remote (Background)
-      const remote = await fetchRemoteSongs();
-      if (remote) {
-          setSongs(remote.songs);
-          if (remote.config) {
-              const newConfig = {
-                  homepageSongTitle: remote.config.homepageSongTitle || config.homepageSongTitle || '',
-                  homepageSongUrl: remote.config.homepageSongUrl || config.homepageSongUrl || ''
-              };
-              setGlobalConfig(newConfig);
+      try {
+          if (forceRemote) setIsSyncing(true);
+          const remote = await fetchRemoteSongs();
+          if (remote) {
+              setSongs(remote.songs);
+              if (remote.config) {
+                  const newConfig = {
+                      homepageSongTitle: remote.config.homepageSongTitle || '',
+                      homepageSongUrl: remote.config.homepageSongUrl || ''
+                  };
+                  setGlobalConfig(newConfig);
+              }
           }
+      } catch(e) {
+          console.error("Remote Fetch failed", e);
+      } finally {
+          setIsSyncing(false);
       }
       
       // 3. Sync Offline Votes
@@ -294,6 +308,12 @@ const App: React.FC = () => {
       loadData();
       const session = getUserSession();
       if (session) setUser(session);
+
+      // Auto-retry remote fetch after 3 seconds to fix mobile sync issues
+      const timer = setTimeout(() => {
+          loadData(true);
+      }, 3000);
+      return () => clearTimeout(timer);
   }, [loadData]);
 
   // RELOAD DATA WHEN RETURNING FROM ADMIN OR NAVIGATING
@@ -394,18 +414,18 @@ const App: React.FC = () => {
 
                 {(step === AppStep.INTRO || step === AppStep.AUTH || step === AppStep.VOTING || step === AppStep.SUCCESS) && (
                      <div className="min-h-screen text-white relative">
-                        <nav className="p-6 flex justify-between items-center border-b border-white/10 sticky top-0 bg-[#050505]/80 backdrop-blur-md z-40">
-                            <button onClick={() => setStep(AppStep.ARTIST_HOME)} className="text-xs uppercase tracking-widest text-gray-500 hover:text-white">
-                                 <ArrowLeftIcon className="w-4 h-4 inline mr-2" /> {t.backToSite}
+                        <nav className="p-4 md:p-6 flex justify-between items-center border-b border-white/10 sticky top-0 bg-[#050505]/80 backdrop-blur-md z-40">
+                            <button onClick={() => setStep(AppStep.ARTIST_HOME)} className="text-xs uppercase tracking-widest text-gray-500 hover:text-white flex items-center">
+                                 <ArrowLeftIcon className="w-4 h-4 mr-2" /> {t.backToSite}
                             </button>
-                            <LangSwitcher lang={lang} setLang={setLang} />
+                            <LangSwitcher lang={lang} setLang={setLang} className="gap-2" />
                         </nav>
 
                         {step === AppStep.INTRO && (
-                            <div className="max-w-2xl mx-auto p-12 text-center space-y-8 pt-20 animate-fade-in relative z-10">
-                                <h2 className="text-3xl font-serif text-metallic">{t.aboutTitle}</h2>
-                                <p className="text-gray-300 whitespace-pre-wrap leading-loose">{t.aboutIntro}</p>
-                                <div className="border border-gold/20 bg-black/40 backdrop-blur p-8 rounded shadow-[0_0_30px_rgba(255,215,0,0.1)]">
+                            <div className="max-w-2xl mx-auto p-8 md:p-12 text-center space-y-8 pt-12 md:pt-20 animate-fade-in relative z-10">
+                                <h2 className="text-2xl md:text-3xl font-serif text-metallic">{t.aboutTitle}</h2>
+                                <p className="text-gray-300 whitespace-pre-wrap leading-loose text-sm md:text-base">{t.aboutIntro}</p>
+                                <div className="border border-gold/20 bg-black/40 backdrop-blur p-6 md:p-8 rounded shadow-[0_0_30px_rgba(255,215,0,0.1)]">
                                     <h3 className="text-gold text-sm uppercase tracking-[0.2em] mb-4 font-bold">{t.warningTitle}</h3>
                                     <p className="text-gray-400 text-sm font-serif leading-loose tracking-wide">{t.warningBody}</p>
                                 </div>
@@ -416,41 +436,53 @@ const App: React.FC = () => {
                         )}
 
                         {step === AppStep.VOTING && (
-                            <div className="p-6 md:p-12 max-w-7xl mx-auto animate-fade-in relative z-10">
-                                <header className="mb-12 flex justify-between items-end">
+                            <div className="p-4 md:p-12 max-w-7xl mx-auto animate-fade-in relative z-10">
+                                <header className="mb-8 md:mb-12 flex flex-col md:flex-row justify-between items-end gap-6">
                                     <div>
-                                        <h2 className="text-3xl font-serif mb-2">{t.selection}</h2>
+                                        <h2 className="text-2xl md:text-3xl font-serif mb-2">{t.selection}</h2>
                                         <p className="text-gray-400 text-xs uppercase tracking-widest">{t.votingRule} ({user.votes.length}/{MAX_VOTES})</p>
                                     </div>
                                     <button 
                                         onClick={() => user.votes.length > 0 ? setStep(AppStep.AUTH) : alert(t.selectMore)}
-                                        className={`px-8 py-3 rounded text-xs uppercase tracking-widest font-bold transition-colors shadow-lg ${user.votes.length > 0 ? 'bg-gold text-black hover:bg-white' : 'bg-white/10 text-gray-500 cursor-not-allowed'}`}
+                                        className={`w-full md:w-auto px-8 py-3 rounded text-xs uppercase tracking-widest font-bold transition-colors shadow-lg ${user.votes.length > 0 ? 'bg-gold text-black hover:bg-white' : 'bg-white/10 text-gray-500 cursor-not-allowed'}`}
                                     >
                                         {t.confirm}
                                     </button>
                                 </header>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-12">
                                     {songs.map(song => (
                                         <div key={song.id} 
                                             onClick={() => { setSelectedSong(song); setIsModalOpen(true); }}
                                             className={`group p-4 rounded border backdrop-blur-sm transition-all cursor-pointer flex items-center gap-4 hover:bg-white/10 ${user.votes.includes(song.id) ? 'border-gold bg-gold/10' : 'border-white/10 bg-black/40'}`}
                                         >
-                                            <div className="w-12 h-12 flex items-center justify-center bg-black/60 rounded-full border border-white/10 group-hover:border-gold/50 transition-colors">
+                                            <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-black/60 rounded-full border border-white/10 group-hover:border-gold/50 transition-colors">
                                                 {user.votes.includes(song.id) ? <CheckIcon className="w-5 h-5 text-gold" /> : <PlayIcon className="w-4 h-4 text-gray-500 group-hover:text-white" />}
                                             </div>
                                             <div>
                                                 <div className="text-[10px] text-gray-500 font-mono mb-1">#{String(song.id).padStart(2,'0')}</div>
-                                                <div className="text-sm font-medium text-gray-200 group-hover:text-white">{song.title}</div>
+                                                <div className="text-sm font-medium text-gray-200 group-hover:text-white line-clamp-1">{song.title}</div>
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+                                
+                                {/* DATA SYNC FIX: Manual Refresh Button for users with stale data */}
+                                <div className="flex justify-center pb-8">
+                                    <button 
+                                        onClick={() => loadData(true)} 
+                                        disabled={isSyncing}
+                                        className="text-[10px] uppercase tracking-widest text-gray-600 hover:text-gold flex items-center gap-2 border border-gray-800 rounded-full px-4 py-2 hover:border-gold transition-colors"
+                                    >
+                                        {isSyncing ? <SpinnerIcon className="w-3 h-3" /> : '↻'} 
+                                        {isSyncing ? 'Syncing...' : 'Refresh Music Library'}
+                                    </button>
                                 </div>
                             </div>
                         )}
 
                         {step === AppStep.AUTH && (
-                             <div className="max-w-md mx-auto p-12 pt-20 space-y-8 animate-slide-up relative z-10">
+                             <div className="max-w-md mx-auto p-8 md:p-12 pt-20 space-y-8 animate-slide-up relative z-10">
                                  <div className="text-center">
                                      <h2 className="text-2xl font-serif mb-4">{t.finalInquiryTitle}</h2>
                                      <p className="text-gray-400 text-sm whitespace-pre-wrap">{t.finalInquiryPrompt}</p>

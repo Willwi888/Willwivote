@@ -44,194 +44,185 @@ export const ARTIST_DATA = {
     featuredSong: {
         title: "Beloved 摯愛 (The 2026 Collection)",
         // Updated with the user's specific Dropbox MP3 link, formatted for direct streaming
-        url: "https://dl.dropboxusercontent.com/scl/fi/rwcmf3btrk3j6zje18wjh/.mp3?rlkey=k6j6j5op06nnnd013pxmcgafw&st=4oa3y6it&dl=1" 
+        url: "https://dl.dropboxusercontent.com/scl/fi/rwcmf3btrk3j6k55r518l/Beloved-The-2026-Collection.mp3?rlkey=v14343143&dl=1"
     },
     bio: {
-        zh: `來自台灣的 Willwi 陳威兒，是一位跨語系創作歌手與音樂製作人。\n作品多次獲得 Spotify 等國際串流平台編輯精選與推薦。\n\n「語言對我而言是承載情緒的器皿。」\n此理念貫穿其創作方向，並推動他持續探索多語系流行音樂的可能性。`,
-        en: `Willwi Chen Wei-Er is a multilingual singer-songwriter and music producer from Taiwan.\nRecognized for cross-cultural storytelling and a distinct vocal identity.\n\n“For me, language is a vessel for emotion.”`
+        zh: `WILLWI 陳威兒，跨語系創作歌手與音樂製作人。
+
+本次活動為預計於 2026 年第二季隆重發行的《摯愛 BELOVED》專輯之前導暖身票選。這張作品彙集了 40 首橫跨不同風格的創作，由於涉及多家唱片公司的版權合作與發行規劃，我們決定打破常規，將歌單的最終決定權交給聽眾。
+
+這不僅是一張專輯，更是一場關於「選擇」的音樂實驗。
+
+日本演歌女王 小林幸子 老師曾說過：
+「舞台是自己唱出來的，不是人家給的。希望大家記得我是歌手，不是話題。」
+這句話，是我音樂路上的最高準則。
+
+以此為念。請聆聽，並選出你心中的摯愛。`,
+        
+        en: `WILLWI is a multilingual singer-songwriter and music producer.
+
+This event serves as the official pre-heat voting campaign for the upcoming album "BELOVED," scheduled for release in Q2 2026. This collection features 40 tracks spanning various genres. Due to complex copyright collaborations, we have decided to entrust the final tracklist decision to you.
+
+This is more than an album; it is a musical experiment about "choice."
+
+The legendary Sachiko Kobayashi once said:
+"The stage is earned through singing, not given. I hope to be remembered as a singer, not a topic."
+This quote stands as my highest guiding principle.
+
+With this in mind—listen, and choose your beloved.`
     },
     copyright: {
-        year: "2026",
-        owner: "Willwi Music",
+        text: "© 2026 Willwi Music Production. All Rights Reserved.",
         credits: [
-            "Executive Producer | Willwi",
-            "Musical Director | Will Chen",
-            "Visual Arts | Willwi Studio",
-            "Distributed by | Willwi Music"
+            "Executive Producer: Willwi Chen",
+            "Visual Direction: Studio Gold",
+            "Distributed by: Universal Music Group (Pending)"
         ]
-    },
-    links: {
-        website: "https://willwi.com/",
-        email: "will@willwi.com",
-        socials: [
-            { platform: "YouTube", url: "https://www.youtube.com/@Willwi888", icon: "youtube" },
-            { platform: "Spotify", url: "https://open.spotify.com/artist/3ascZ8Rb2KDw4QyCy29Om4", icon: "spotify" },
-            { platform: "Instagram", url: "https://www.instagram.com/willwi888", icon: "instagram" },
-            { platform: "Apple Music", url: "https://music.apple.com/us/artist/willwi/1798471457", icon: "apple" }
-        ] as SocialLink[]
     }
 };
 
-// --- MASTER DATA: PRE-FILLED CONTENT ---
-export const MASTER_SONG_DATA: Record<number, Partial<Song>> = {
-  // Empty to ensure Admin inputs take precedence
-};
-
-// --- TRANSLATIONS ---
 export const TRANSLATIONS = {
-  zh: {
-    profile: "個人檔案",
-    music: "音樂作品",
-    contact: "聯絡資訊",
-    enterEvent: "開始投票",
-    backToSite: "返回首頁",
-    title: "摯愛",
-    subtitle: "2026 大碟票選活動",
-    homeBody: "《摯愛》，是一場關於理解、陪伴與被看見的旅程。\n\n從泡麵聲學院一路到今天，我親自演唱過無數你們點給我的歌。\n在那些夜晚裡，我看見了許多情感的影子。\n於是，我從中 精心挑選了 40 首歌曲，作為《摯愛》專輯可能走向的起點。\n\n今天，邀請你選出 1 ~ 10 首屬於你的感動。",
-    enter: "進入投票所",
-    aboutTitle: "邀請您共同完成屬於你的摯愛",
-    aboutIntro: "因為這張專輯不是我的獨白。\n它是一段由你們的留言、點歌、聆聽交織而成的共同記憶。",
-    warningTitle: "溫馨提醒",
-    warningBody: "這是一場私密的聽覺旅程。\n請戴上耳機，在屬於你的空間裡，將這份體驗留給自己。",
-    aboutClosing: "是你們讓這些歌在深夜裡亮起。\n而我希望，最後真正被收入《摯愛》的歌曲，也由你們的感受來參與決定。\n\n你的一票不是排名，而是一份記憶。\n\n因為《摯愛》，是我們一起完成的作品。",
-    howToTitle: "如何參與",
-    howToBody: "這裡共有 我從泡麵聲學院精選出的 40 首歌曲。\n\n請選出 你最觸動的歌曲（最多 10 首）。\n\n送出後會跳出 留言框，你可以寫：\n為什麼選這些歌\n它陪你度過的瞬間\n\n你的留言可能會成為 MV 的文字素材之一。\n\n投票完成後，我會寄給你一張 有聲音樂卡片（Audio Postcard），作為我們一起完成《摯愛》的紀念。",
-    managerLogin: "Manager Login",
-    name: "您的尊稱",
-    email: "電子郵件",
-    start: "進入鑑賞",
-    selection: "您的摯愛",
-    votingRule: "請選出您最觸動的歌曲 (最多 10 首)。",
-    selectMore: "可選擇 1 ~ 10 首",
-    mySelection: "已選曲目",
-    confirm: "確認並送出",
-    back: "返回",
-    lyrics: "歌詞",
-    credits: "製作名單",
-    artistLabel: "Official Artist",
-    watchOnYoutube: "前往 YouTube 觀看",
-    voteForThis: "加入摯愛",
-    voted: "已收藏",
-    tellUsWhy: "這首歌觸動了什麼？(選填)",
-    reasonPlaceholder: "這段旋律讓我想起...",
-    confirmSelection: "確認選擇",
-    cancel: "取消",
-    finalInquiryTitle: "謝謝您選擇屬於我們共同擁有的 摯愛",
-    finalInquiryPrompt: "在這裡，我想聽你說一點故事。\n\n寫下：\n為什麼是它們\n哪一段旋律讓你停下\n或它陪你走過了什麼樣的夜晚\n\n你的留言不是評論，而是珍貴的情感痕跡。\n它可能成為 MV 的一部分，也會成為我創作裡的方向。\n(非強制，若不想留言可直接送出)",
-    finalInquiryPlaceholder: "寫下您的感受（您的文字可能會出現在未來的 MV 中）...",
-    submitFinal: "傳送我的心意",
-    thankYou: "謝謝您選擇屬於我們共同擁有的 摯愛",
-    thankYouDesc: "你的選擇與故事，我都收到了。\n\n我會親自閱讀，也會親自珍惜。\n\n所有參與投票的人，都會收到我錄製的 有聲音樂卡片。\n這是一份獻給你的回禮，也是你曾在這段旅程中陪著我的證明。\n\n謝謝你願意一起完成《摯愛》。",
-    close: "關閉",
-    copyright: "© 2026 Willwi Music. All Rights Reserved.",
-    openInApp: "在瀏覽器開啟",
-    playFile: "播放音檔"
-  },
-  en: {
-    profile: "Profile",
-    music: "Music",
-    contact: "Contact",
-    enterEvent: "Start Voting",
-    backToSite: "Back to Home",
-    title: "THE 2026 COLLECTION",
-    subtitle: "BELOVED",
-    homeBody: "“Beloved” is a journey of being understood, accompanied, and truly seen.\nThis time, the album doesn’t begin with my writing.\nIt begins with your ears, and your heart.\n\nFrom Noodle Acoustic Academy to now, I’ve carefully selected 40 songs as the starting point for what “Beloved” may become.\n\nToday, I invite you to choose up to 10 songs that speak to you.",
-    enter: "Start Voting",
-    aboutTitle: "Inviting you to complete “Beloved”",
-    aboutIntro: "Because this album is not a monologue from me.\nIt is a shared memory shaped by your requests, your comments, and your listening.",
-    warningTitle: "Gentle Reminder",
-    warningBody: "This is a private listening journey.\nPlease wear headphones and keep this experience to yourself.",
-    aboutClosing: "You are the ones who gave them light in the quiet hours.\nAnd I hope the songs that ultimately enter the album will be guided by your feelings.\n\n“Beloved” is something we build together.",
-    howToTitle: "How to Vote",
-    howToBody: "Choose up to 10 songs that resonate with you the most.\n\nAfter you submit, a comment box will appear. Write anything you wish.\n\nYour words may be used as part of the MV visuals.\n\nAfter voting, you’ll receive an Audio Postcard, recorded personally as a thank-you gift.",
-    managerLogin: "Manager Login",
-    name: "Your Name",
-    email: "Email Address",
-    start: "Enter Studio",
-    selection: "Your Beloved",
-    votingRule: "Choose up to 10 songs that resonate with you.",
-    selectMore: "Select 1 ~ 10 Tracks",
-    mySelection: "My Selection",
-    confirm: "Submit Selection",
-    back: "Back",
-    lyrics: "Lyrics",
-    credits: "Credits",
-    artistLabel: "Official Artist",
-    watchOnYoutube: "Watch on YouTube",
-    voteForThis: "Add to Beloved",
-    voted: "Collected",
-    tellUsWhy: "Why this track? (Optional)",
-    reasonPlaceholder: "It reminds me of...",
-    confirmSelection: "Confirm",
-    cancel: "Cancel",
-    finalInquiryTitle: "Thank you for choosing our shared BELOVED",
-    finalInquiryPrompt: "Here, I’d love to hear a little of your story.\n\nTell me:\nWhy these songs\nWhich moment or melody stayed with you\n\nYour message isn’t a review.\nIt’s a trace of your truth.\n(Optional - you can skip this)",
-    finalInquiryPlaceholder: "Write your thoughts (Your words might appear in a future MV)...",
-    submitFinal: "Send My Thoughts",
-    thankYou: "Thank you for choosing our shared BELOVED",
-    thankYouDesc: "I have received your choices and your stories.\nI will read them all personally, and I will keep them close.\n\nThank you for helping shape “Beloved.”",
-    close: "Close",
-    copyright: "© 2026 Willwi Music. All Rights Reserved.",
-    openInApp: "Open in Browser",
-    playFile: "Play Audio"
-  },
-  jp: {
-    profile: "プロフィール",
-    music: "音楽",
-    contact: "お問い合わせ",
-    enterEvent: "投票を始める",
-    backToSite: "公式サイトへ戻る",
-    title: "最愛",
-    subtitle: "2026 コレクション",
-    homeBody: "「摯愛」は、理解されること、寄り添われること、そして見つめ返される旅です。\n泡麵声学院で歌ってきた数えきれないリクエスト曲の中から、40曲を丁寧に選びました。\n\nこのアルバムが大切にしたいのは「あなたと一緒に選ぶ温度」です。\n\n最大10曲まで、あなたの心に響く曲を選んでください。",
-    enter: "投票を始める",
-    aboutTitle: "あなたと共に「摯愛」を完成させたい",
-    aboutIntro: "このアルバムは、私だけの独白ではありません。\nあなたのリクエスト、言葉、そして聴いてくれた時間で編まれた共同の記憶です。",
-    warningTitle: "温かいお知らせ",
-    warningBody: "これは私的な聴覚の旅です。\nイヤホンをして、あなただけの空間で、この体験を大切にしてください。",
-    aboutClosing: "40曲は泡麵声学院で生まれた即興と対話の断片。\n深夜にそれらを灯してくれたのは、あなたです。\n\n「摯愛」は、あなたと共につくる作品です。",
-    howToTitle: "参加方法",
-    howToBody: "ここには 40曲 が並んでいます。\n\n心に響いた曲（最大10曲）を選んでください。\n\n送信後、コメント欄 が表示されます。\n\nあなたの言葉は、MVの文字素材として使用される可能性があります。\n\n投票後、感謝の気持ちとして 音声付きミュージックカード をお送りします。",
-    managerLogin: "管理者ログイン",
-    name: "お名前",
-    email: "メールアドレス",
-    start: "スタジオへ",
-    selection: "あなたの最愛",
-    votingRule: "心に響いた曲を選んでください (最大10曲)。",
-    selectMore: "1 ~ 10曲を選んでください",
-    mySelection: "選択した曲",
-    confirm: "投票する",
-    back: "戻る",
-    lyrics: "歌詞",
-    credits: "クレジット",
-    artistLabel: "Official Artist",
-    watchOnYoutube: "YouTubeで見る",
-    voteForThis: "最愛に追加",
-    voted: "選択済み",
-    tellUsWhy: "選んだ理由は？ (任意)",
-    reasonPlaceholder: "このメロディは...",
-    confirmSelection: "確認",
-    cancel: "キャンセル",
-    finalInquiryTitle: "私たちの「最愛」を選んでくれて、ありがとう",
-    finalInquiryPrompt: "ここでは、少しだけあなたの物語を聞かせてください。\n\nなぜその曲なのか\n心に残った旋律や瞬間\n\nあなたの言葉は批評ではなく、かけがえのない感情の痕跡です。\n(任意ですので、空欄でも構いません)",
-    finalInquiryPlaceholder: "想いをここに（あなたの言葉が将来のMVに登場するかもしれません）...",
-    submitFinal: "想いを送る",
-    thankYou: "私たちの「最愛」を選んでくれて、ありがとう",
-    thankYouDesc: "あなたが選んだ曲、あなたが書いてくれた言葉。\nすべて受け取りました。大切に読ませていただきます。\n\n「摯愛」という作品が、本当の姿に近づくのはあなたのおかげです。",
-    close: "閉じる",
-    copyright: "© 2026 Willwi Music. All Rights Reserved.",
-    openInApp: "ブラウザで開く",
-    playFile: "再生する"
-  }
+    zh: {
+        enter: "進入票選",
+        homeBody: "每一首歌，都是靈魂的碎片。\n在 2026 年第二季《摯愛》正式降臨之前，\n因為版權與廠牌的跨界合作，\n我將 40 首未公開的創作交付予你。\n\n請聆聽，並選出你心中的摯愛。\n你的選擇，將決定這張專輯的模樣。",
+        profile: "關於 威兒",
+        managerLogin: "管理員登入",
+        copyright: "© 2026 WILLWI MUSIC. All Rights Reserved.",
+        
+        // Intro Step
+        aboutTitle: "《摯愛》2026 大碟票選活動",
+        aboutIntro: "這不僅是一次投票，而是一次共同製作。\n\n這裡收錄了 40 首創作靈感，涵蓋了各種風格與語言。由於涉及不同唱片公司的合作規劃，我們需要先確認最終歌單。\n\n致謝名單與詳細製作資訊，將列於每一首歌曲的歌詞下方，以表達我最高的敬意。",
+        warningTitle: "⚠️ 試聽須知",
+        warningBody: "所有曲目皆為 Demo 或未混音版本，僅供本次活動內部試聽。\n請勿錄音、轉載或公開分享，違者將追究法律責任。",
+        start: "開始聆聽",
+        backToSite: "返回首頁",
+
+        // Voting Step
+        selection: "曲目票選",
+        votingRule: "請選擇 10 首您最喜愛的歌曲",
+        confirm: "確認選擇",
+        selectMore: "請至少選擇 1 首歌曲",
+        
+        // Modal / Detail
+        close: "關閉",
+        voted: "已投票",
+        voteForThis: "投給這首歌",
+        tellUsWhy: "這首歌為什麼觸動了你？（選填）",
+        reasonPlaceholder: "寫下你的感覺...",
+        cancel: "取消",
+        confirmSelection: "確認投票",
+        openInApp: "開啟連結",
+
+        // Auth Step
+        finalInquiryTitle: "最後一步",
+        finalInquiryPrompt: "為了確保投票的真實性，並讓我們在專輯發行時通知您，請留下您的稱呼與聯繫方式。",
+        name: "您的稱呼",
+        email: "電子信箱",
+        submitFinal: "送出投票",
+        
+        // Success Step
+        thankYou: "感謝您的參與",
+        thankYouDesc: "您的選擇已記錄。\n\n每一票對我來說都意義非凡。這張專輯因為有你的參與而更加完整。\n請靜候 2026 年，讓我們一起見證《摯愛》的誕生。",
+    },
+    en: {
+        enter: "ENTER",
+        homeBody: "Every song is a fragment of the soul.\nBefore the official release of 'BELOVED' in Q2 2026,\ndue to cross-label collaborations,\nI entrust 40 unreleased tracks to you.\n\nListen, and choose your beloved.\nYour choice will define this album.",
+        profile: "PROFILE",
+        managerLogin: "MANAGER LOGIN",
+        copyright: "© 2026 WILLWI MUSIC. All Rights Reserved.",
+
+        // Intro Step
+        aboutTitle: "The 2026 'BELOVED' Campaign",
+        aboutIntro: "This is not just a vote; it's a co-production.\n\nHere are 40 demos representing my creative journey. Due to multi-label planning, we need your help to finalize the tracklist.\n\nAcknowledgments and credits are listed below the lyrics of each track to express my deepest gratitude.",
+        warningTitle: "⚠️ LISTENING POLICY",
+        warningBody: "All tracks are Demos or unmixed versions for internal review only.\nDo not record, distribute, or share publicly.",
+        start: "START LISTENING",
+        backToSite: "RETURN HOME",
+
+        // Voting Step
+        selection: "SELECTION",
+        votingRule: "Please select your top 10 favorites",
+        confirm: "CONFIRM",
+        selectMore: "Please select at least 1 song.",
+
+        // Modal / Detail
+        close: "CLOSE",
+        voted: "SELECTED",
+        voteForThis: "VOTE FOR THIS TRACK",
+        tellUsWhy: "Why did this song resonate with you? (Optional)",
+        reasonPlaceholder: "Share your thoughts...",
+        cancel: "CANCEL",
+        confirmSelection: "CONFIRM VOTE",
+        openInApp: "OPEN LINK",
+
+        // Auth Step
+        finalInquiryTitle: "Final Step",
+        finalInquiryPrompt: "To verify your vote and notify you upon release, please provide your details.",
+        name: "YOUR NAME",
+        email: "EMAIL ADDRESS",
+        submitFinal: "SUBMIT VOTE",
+
+        // Success Step
+        thankYou: "Thank You",
+        thankYouDesc: "Your voice has been heard.\n\nEvery vote means the world to me. This album is now more complete because of you.\nStay tuned for 2026, and let's witness the birth of 'BELOVED' together.",
+    },
+    jp: {
+        enter: "入場する",
+        homeBody: "すべての歌は、魂の欠片。\n2026年第2四半期、「BELOVED」が正式にリリースされる前に、\n版権とレーベルの枠を超えて、\n未公開の40曲をあなたに託します。\n\n聴いて、あなたの「最愛」を選んでください。\nその選択が、このアルバムの形を決めます。",
+        profile: "プロフィール",
+        managerLogin: "管理者ログイン",
+        copyright: "© 2026 WILLWI MUSIC. All Rights Reserved.",
+
+        // Intro Step
+        aboutTitle: "2026『摯愛』選抜キャンペーン",
+        aboutIntro: "これは単なる投票ではなく、共同制作です。\n\nここには、近年の創作活動から生まれた40曲のデモが収められています。異なるレコード会社間の調整が必要なため、最終的な曲目リストの決定権をあなたに委ねたいと思います。\n\n感謝のリストとクレジットは、各曲の歌詞の下に記載されています。",
+        warningTitle: "⚠️ 試聴上の注意",
+        warningBody: "すべての楽曲はデモ版です。\n録音、転載、公開共有は固くお断りします。",
+        start: "試聴開始",
+        backToSite: "ホームへ戻る",
+
+        // Voting Step
+        selection: "楽曲選択",
+        votingRule: "お気に入りの10曲を選んでください",
+        confirm: "確認",
+        selectMore: "少なくとも1曲を選んでください",
+
+        // Modal / Detail
+        close: "閉じる",
+        voted: "選択済み",
+        voteForThis: "この曲に投票",
+        tellUsWhy: "この曲を選んだ理由は？（任意）",
+        reasonPlaceholder: "感想を入力...",
+        cancel: "キャンセル",
+        confirmSelection: "投票する",
+        openInApp: "リンクを開く",
+
+        // Auth Step
+        finalInquiryTitle: "最終ステップ",
+        finalInquiryPrompt: "投票の真正性を確保し、リリース時にお知らせするため、お名前と連絡先をご記入ください。",
+        name: "お名前",
+        email: "メールアドレス",
+        submitFinal: "投票を送信",
+
+        // Success Step
+        thankYou: "ご参加ありがとうございます",
+        thankYouDesc: "あなたの選択は記録されました。\n\n一票一票が私にとって大きな意味を持ちます。あなたの参加により、このアルバムはより完全なものになります。\n2026年、『摯愛』の誕生を共に目撃しましょう。",
+    }
 };
 
+// --- DEFAULT SONGS (Initial Placeholder Data) ---
 export const SONGS: Song[] = Array.from({ length: 40 }, (_, i) => ({
   id: i + 1,
-  title: `Studio Session ${String(i + 1).padStart(2, '0')}`,
-  driveId: '',
+  title: `Demo Track ${String(i + 1).padStart(2, '0')}`,
+  driveId: '', 
   youtubeId: '',
   customAudioUrl: '',
-  customImageUrl: '',
-  lyrics: '',
-  credits: ''
+  lyrics: "Lyrics pending...",
+  credits: "Composed by Willwi"
 }));
+
+// --- MASTER DATA OVERRIDES (Hardcoded safeguards) ---
+export const MASTER_SONG_DATA: { [id: number]: Partial<Song> } = {
+    // Example Override if needed
+    // 1: { title: "Opening Prologue" },
+};

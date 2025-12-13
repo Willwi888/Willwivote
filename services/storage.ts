@@ -174,14 +174,19 @@ const mergeSongs = (metadata: Song[]): Song[] => {
     let merged = [...DEFAULT_SONGS];
     merged = merged.filter(s => s.id !== 0);
     
+    // 1. Apply hardcoded master data
     merged = merged.map(s => {
         const master = MASTER_SONG_DATA[s.id];
         return master ? { ...s, ...master } : s;
     });
+
+    // 2. Apply dynamic metadata (from Local Storage or Cloud)
     if (metadata && metadata.length > 0) {
         merged = merged.map(current => {
             const update = metadata.find(m => m.id === current.id);
             if (update) {
+                // FORCE UPDATE logic: Even if local has "Studio Session 01", if the update has a custom URL, take it.
+                // We prioritize the incoming 'metadata' which now usually comes from Supabase
                 return {
                     ...current,
                     title: update.title || current.title,
@@ -239,6 +244,9 @@ export const fetchRemoteSongs = async (): Promise<{ songs: Song[], config?: Part
                 lyrics: row.lyrics,
                 credits: row.credits
             }));
+        
+        // Ensure remote songs completely override local defaults by saving them to local storage as cache
+        saveLocalMetadata(remoteSongs);
             
         const merged = mergeSongs(remoteSongs);
         return { songs: merged, config: remoteConfig };

@@ -262,9 +262,9 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                            </p>
                        </div>
                        
-                       {/* CREDITS */}
-                       <div className="relative pl-4 md:pl-8 border-l border-gold/30 bg-white/[0.02] p-6 rounded-r">
-                           <h4 className="text-[10px] text-gold uppercase tracking-[0.3em] mb-4 font-bold">Credits</h4>
+                       {/* CREDITS & ACKNOWLEDGMENTS - NOW VISUALLY DISTINCT */}
+                       <div className="relative pl-4 md:pl-8 border-l border-gold/30 bg-white/[0.02] p-6 rounded-r mt-8">
+                           <h4 className="text-[10px] text-gold uppercase tracking-[0.3em] mb-4 font-bold">Credits & Acknowledgments</h4>
                            <p className="font-sans text-gray-400 text-xs uppercase tracking-[0.1em] leading-loose whitespace-pre-wrap">
                                {song.credits || "PRODUCED BY WILLWI"}
                            </p>
