@@ -166,7 +166,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       }
   };
 
-  // --- ONE CLICK FIX BUTTON ---
+  // --- ONE CLICK FIX BUTTON (UPDATED) ---
   const handleFixDropboxLinks = () => {
       const current = getSongs();
       let changedCount = 0;
@@ -178,16 +178,18 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               // Skip if it is a folder link
               if (newUrl.includes('/fo/')) return s;
 
-              // 1. Force dl.dropboxusercontent.com (Better for streaming)
-              if (newUrl.includes('www.dropbox.com')) {
-                  newUrl = newUrl.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+              // 1. Force www.dropbox.com (Revert from dl.dropboxusercontent.com if needed for raw=1)
+              if (newUrl.includes('dl.dropboxusercontent.com')) {
+                  newUrl = newUrl.replace('dl.dropboxusercontent.com', 'www.dropbox.com');
               }
               
-              // 2. Force dl=1 (Direct Download)
+              // 2. Force raw=1 (Inline Stream)
               if (newUrl.includes('dl=0')) {
-                  newUrl = newUrl.replace('dl=0', 'dl=1');
-              } else if (!newUrl.includes('dl=1')) {
-                   newUrl = newUrl + (newUrl.includes('?') ? '&dl=1' : '?dl=1');
+                  newUrl = newUrl.replace('dl=0', 'raw=1');
+              } else if (newUrl.includes('dl=1')) {
+                  newUrl = newUrl.replace('dl=1', 'raw=1');
+              } else if (!newUrl.includes('raw=1')) {
+                   newUrl = newUrl + (newUrl.includes('?') ? '&raw=1' : '?raw=1');
               }
               
               if (newUrl !== s.customAudioUrl) {
@@ -201,7 +203,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       if (changedCount > 0) {
           restoreFromBackup(updated);
           setLocalSongs(updated);
-          alert(`✅ Fixed ${changedCount} Dropbox links!\n\n👉 IMPORTANT: Click 'PUBLISH TO CLOUD' now to make these changes live!`);
+          alert(`✅ Fixed ${changedCount} Dropbox links to Stream Mode (raw=1)!\n\n👉 IMPORTANT: Click 'PUBLISH TO CLOUD' now to make these changes live!`);
       } else {
           alert("All Dropbox links are already optimized! (No changes needed)");
       }
@@ -219,16 +221,16 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
            let newUrl = url;
            // robust replacement
-           if (newUrl.includes('www.dropbox.com')) {
-               newUrl = newUrl.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
-           } else if (newUrl.includes('//dropbox.com')) {
-               newUrl = newUrl.replace('//dropbox.com', '//dl.dropboxusercontent.com');
+           if (newUrl.includes('dl.dropboxusercontent.com')) {
+               newUrl = newUrl.replace('dl.dropboxusercontent.com', 'www.dropbox.com');
            }
            
            if (newUrl.includes('dl=0')) {
-               newUrl = newUrl.replace('dl=0', 'dl=1');
-           } else if (!newUrl.includes('dl=1')) {
-               newUrl = newUrl + (newUrl.includes('?') ? '&dl=1' : '?dl=1');
+               newUrl = newUrl.replace('dl=0', 'raw=1');
+           } else if (newUrl.includes('dl=1')) {
+               newUrl = newUrl.replace('dl=1', 'raw=1');
+           } else if (!newUrl.includes('raw=1')) {
+               newUrl = newUrl + (newUrl.includes('?') ? '&raw=1' : '?raw=1');
            }
            
            setEditForm({ ...editForm, customAudioUrl: newUrl });
@@ -638,7 +640,7 @@ create policy "Public Insert Votes" on votes for insert with check (true);
                          <button 
                              onClick={handleFixDropboxLinks}
                              className="text-[10px] uppercase font-bold px-3 py-2 rounded bg-blue-900/50 border border-blue-500/50 text-blue-200 hover:bg-blue-800 transition-colors flex items-center gap-2"
-                             title="Converts www.dropbox.com to dl.dropboxusercontent.com and dl=1"
+                             title="Converts dl=0/1 to raw=1 for better streaming"
                          >
                             ⚡ AUTO-FIX DROPBOX LINKS
                          </button>

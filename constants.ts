@@ -14,17 +14,23 @@ export const getAudioUrl = (source: string) => {
     }
 
     // --- DROPBOX ULTIMATE FIX (2025 Edition) ---
-    // Critical: New Dropbox "scl" links require the 'rlkey' parameter to be public.
+    // Critical: New Dropbox "scl" links require the 'rlkey' parameter.
+    // BEST PRACTICE: Use 'www.dropbox.com' with 'raw=1'. 
+    // This allows Dropbox to handle the auth/redirect to the correct block server (dl.dropboxusercontent.com) with the correct headers.
+    // Using 'dl.dropboxusercontent.com' directly with 'dl=1' often forces a download attachment, breaking <audio> tags.
     if (finalUrl.match(/dropbox\.com/)) {
         
-        // 1. Force the domain to the content server
-        finalUrl = finalUrl.replace(/^(https?:\/\/)?(www\.)?dropbox\.com/, '$1dl.dropboxusercontent.com');
+        // 1. Force the domain to www.dropbox.com (Handle both dl.dropboxusercontent.com and dropbox.com)
+        finalUrl = finalUrl.replace(/^(https?:\/\/)?(dl\.dropboxusercontent\.com|www\.dropbox\.com)/, '$1www.dropbox.com');
         
-        // 2. Ensure dl=1 is active (forces download/stream instead of preview page)
+        // 2. Ensure raw=1 is active (forces inline streaming)
+        // Replace dl=0 or dl=1 with raw=1
         if (finalUrl.includes('dl=0')) {
-            finalUrl = finalUrl.replace('dl=0', 'dl=1');
-        } else if (!finalUrl.includes('dl=')) {
-            finalUrl = finalUrl + (finalUrl.includes('?') ? '&dl=1' : '?dl=1');
+            finalUrl = finalUrl.replace('dl=0', 'raw=1');
+        } else if (finalUrl.includes('dl=1')) {
+            finalUrl = finalUrl.replace('dl=1', 'raw=1');
+        } else if (!finalUrl.includes('raw=')) {
+            finalUrl = finalUrl + (finalUrl.includes('?') ? '&raw=1' : '?raw=1');
         }
         
         return finalUrl;
@@ -63,8 +69,8 @@ export const ARTIST_DATA = {
     },
     featuredSong: {
         title: "Beloved 摯愛 (The 2026 Collection)",
-        // Updated with the user's specific Dropbox MP3 link, formatted for direct streaming
-        url: "https://dl.dropboxusercontent.com/scl/fi/rwcmf3btrk3j6k55r518l/Beloved-The-2026-Collection.mp3?rlkey=v14343143&dl=1"
+        // Auto-fix applied here for safety: using raw=1
+        url: "https://www.dropbox.com/scl/fi/rwcmf3btrk3j6k55r518l/Beloved-The-2026-Collection.mp3?rlkey=v14343143&raw=1"
     },
     bio: {
         zh: `WILLWI 陳威兒，跨語系創作歌手與音樂製作人。

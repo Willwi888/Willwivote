@@ -185,7 +185,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                  <button
                     onClick={handleToggle}
                     className={`w-10 h-10 flex items-center justify-center rounded-full transition-all shrink-0
-                        ${isError ? 'bg-red-900/20 text-white border border-red-500/30' : 'bg-gold text-black hover:scale-105 shadow-[0_0_10px_rgba(197,160,89,0.3)]'}
+                        ${isError ? 'bg-red-900/20 text-white border border-red-500/30 animate-pulse' : 'bg-gold text-black hover:scale-105 shadow-[0_0_10px_rgba(197,160,89,0.3)]'}
                     `}
                  >
                      {isBuffering ? <SpinnerIcon className="w-4 h-4" /> : isError ? <ExternalLinkIcon className="w-4 h-4" /> : isReallyPlaying ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4 translate-x-0.5" />}
@@ -205,7 +205,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                       </div>
                   )}
                   {isError && (
-                      <div className="absolute -top-3 left-0 w-full text-center text-[8px] text-red-400 tracking-[0.1em] uppercase font-bold">
+                      <div className="absolute -top-3 left-0 w-full text-center text-[8px] text-red-400 tracking-[0.1em] uppercase font-bold whitespace-nowrap overflow-visible">
                           Playback Failed. Click button to open file.
                       </div>
                   )}
