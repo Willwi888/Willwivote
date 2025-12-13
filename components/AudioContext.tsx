@@ -137,7 +137,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setError(false);
 
     // CRITICAL FOR MOBILE:
-    // We must set src and call play() synchronously within the event handler (or as close as possible).
+    // We must set src and call play() synchronously within the event handler.
     // The previous async fetch() caused iOS to lose the "user gesture" token.
     audio.src = url;
     audio.load();
