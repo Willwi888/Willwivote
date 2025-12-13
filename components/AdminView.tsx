@@ -137,8 +137,6 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const handlePublishToCloud = async () => {
-      // NOTE: Removed the block that disabled this if table missing. 
-      // We want to try anyway, and let the error show up if it fails.
       if (!confirm("This will overwrite the Live Website with your local data. Are you sure?")) return;
       setIsPublishing(true);
       try {
@@ -150,12 +148,19 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           alert("✅ Success! Your songs AND homepage settings are now live.");
           loadAllData();
       } catch (e: any) {
-          console.error(e);
-          if (e.code === '42P01' || e.message?.includes('does not exist')) {
-             alert("❌ Publish Failed: Database tables are missing. Please check the 'DB SETUP REQUIRED' warning.");
-          } else {
-             alert("❌ Publish Failed. Please check database connection.");
+          console.error("Publish Error:", e);
+          let msg = e.message || "Unknown error";
+          
+          if (e.code === '42P01' || msg.includes('does not exist')) {
+             msg = "Database tables are missing. Please run the SQL commands shown below.";
+             setCloudStatus('missing_both');
+          } else if (e.code === '42501' || msg.includes('permission denied') || msg.includes('policy')) {
+             msg = "Permission Denied. You need to enable RLS Policies (See SQL below).";
+             // Force error status to show the SQL block
+             setCloudStatus('missing_both'); 
           }
+          
+          alert(`❌ Publish Failed: ${msg}\n\nCheck the 'DB SETUP REQUIRED' section below.`);
       } finally {
           setIsPublishing(false);
       }
@@ -219,7 +224,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setManualVoteEmail('');
       setManualVoteIds('');
       setTimeout(() => setManualVoteStatus(''), 2000);
-      loadAllData(); // Refresh list
+      loadAllData(); 
   };
 
   const handleDownloadBackup = () => {
@@ -310,6 +315,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const maxVotesForSingleSong = leaderboard.length > 0 ? leaderboard[0].count : 1;
   const isMissingSongs = cloudStatus === 'missing_table_songs' || cloudStatus === 'missing_both';
   const isMissingVotes = cloudStatus === 'missing_table_votes' || cloudStatus === 'missing_both';
+  const isConnectionError = cloudStatus === 'offline';
 
   return (
     <div className="min-h-screen bg-[#050505] text-gray-200 p-8 font-sans">
@@ -329,302 +335,319 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <div className="flex items-center gap-6">
              <div className="flex bg-white/5 rounded-lg p-1">
                  <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 text-[10px] uppercase tracking-widest rounded transition-colors ${activeTab === 'dashboard' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>Analytics</button>
-                 <button onClick={() => setActiveTab('songs')} className={`px-4 py-2 text-[10px] uppercase tracking-widest rounded transition-colors ${activeTab === 'songs' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>CMS (Songs)</button>
-                 <button onClick={() => setActiveTab('manual_vote')} className={`px-4 py-2 text-[10px] uppercase tracking-widest rounded transition-colors ${activeTab === 'manual_vote' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>+ Manual Vote</button>
+                 <button onClick={() => setActiveTab('songs')} className={`px-4 py-2 text-[10px] uppercase tracking-widest rounded transition-colors ${activeTab === 'songs' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>Manage Songs</button>
+                 <button onClick={() => setActiveTab('manual_vote')} className={`px-4 py-2 text-[10px] uppercase tracking-widest rounded transition-colors ${activeTab === 'manual_vote' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>Manual Vote</button>
              </div>
-             <button onClick={onBack} className="text-xs border border-white/20 hover:bg-white hover:text-black px-4 py-2 rounded transition-all uppercase tracking-widest">Exit</button>
+             <button onClick={onBack} className="text-xs text-gray-500 hover:text-white transition-colors">Exit</button>
           </div>
         </header>
 
-        {activeTab === 'dashboard' ? (
-            <div className="grid lg:grid-cols-2 gap-12">
-            
-            {/* LEFT COLUMN: Data & Backup */}
-            <section className="space-y-8">
-                
-                {/* 1. Global Config / Homepage Audio */}
-                <div className="bg-[#121212] rounded-xl border border-white/10 p-6 space-y-4">
-                     <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gold mb-2">Homepage Audio Settings (Live)</h3>
-                     
+        {/* SQL Setup Instructions */}
+        {(isMissingSongs || isMissingVotes || isConnectionError) && (
+            <div className="mb-8 p-6 bg-red-900/10 border border-red-900/50 rounded-lg animate-fade-in">
+                <h3 className="text-red-500 font-bold mb-4 flex items-center gap-2">
+                    <span className="text-xl">⚠️</span> DATABASE SETUP REQUIRED
+                </h3>
+                <p className="text-sm text-gray-300 mb-4">
+                    Your database is missing the required tables or permissions. 
+                    Please run the SQL below in your <a href="https://supabase.com/dashboard/project/_/sql" target="_blank" className="text-gold hover:underline font-bold">Supabase SQL Editor</a>.
+                </p>
+                <div className="bg-black p-4 rounded text-xs font-mono text-green-400 overflow-x-auto border border-white/10 relative group">
+                    <pre>{`
+-- 1. Create Songs Table
+create table if not exists songs (
+  id bigint primary key,
+  title text,
+  youtube_id text,
+  custom_audio_url text,
+  custom_image_url text,
+  lyrics text,
+  credits text,
+  updated_at timestamptz
+);
+
+-- 2. Create Votes Table
+create table if not exists votes (
+  id bigint generated by default as identity primary key,
+  user_name text,
+  user_email text,
+  vote_ids jsonb,
+  vote_reasons jsonb,
+  created_at timestamptz default now()
+);
+
+-- 3. Enable RLS (Security)
+alter table songs enable row level security;
+alter table votes enable row level security;
+
+-- 4. Create Policies (Allow Public Read/Write for this Event)
+create policy "Public Read Songs" on songs for select using (true);
+create policy "Public Insert Songs" on songs for insert with check (true);
+create policy "Public Update Songs" on songs for update using (true);
+
+create policy "Public Read Votes" on votes for select using (true);
+create policy "Public Insert Votes" on votes for insert with check (true);
+                    `}</pre>
+                    <button 
+                        onClick={() => navigator.clipboard.writeText(`create table if not exists songs ( id bigint primary key, title text, youtube_id text, custom_audio_url text, custom_image_url text, lyrics text, credits text, updated_at timestamptz ); create table if not exists votes ( id bigint generated by default as identity primary key, user_name text, user_email text, vote_ids jsonb, vote_reasons jsonb, created_at timestamptz default now() ); alter table songs enable row level security; alter table votes enable row level security; create policy "Public Read Songs" on songs for select using (true); create policy "Public Insert Songs" on songs for insert with check (true); create policy "Public Update Songs" on songs for update using (true); create policy "Public Read Votes" on votes for select using (true); create policy "Public Insert Votes" on votes for insert with check (true);`)}
+                        className="absolute top-4 right-4 bg-white text-black px-3 py-1 rounded text-[10px] uppercase font-bold opacity-50 group-hover:opacity-100 transition-opacity"
+                    >
+                        Copy SQL
+                    </button>
+                </div>
+            </div>
+        )}
+
+        {activeTab === 'dashboard' && (
+            <div className="space-y-12 animate-slide-up">
+                {/* Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white/5 p-6 rounded border border-white/10">
+                        <div className="text-3xl font-serif text-white mb-2">{users.length}</div>
+                        <div className="text-[10px] uppercase tracking-widest text-gray-500">Total Voters</div>
+                    </div>
+                    <div className="bg-white/5 p-6 rounded border border-white/10">
+                         <div className="text-3xl font-serif text-white mb-2">
+                             {users.reduce((acc, u) => acc + u.votes.length, 0)}
+                         </div>
+                        <div className="text-[10px] uppercase tracking-widest text-gray-500">Total Votes Cast</div>
+                    </div>
+                     <div className="bg-white/5 p-6 rounded border border-white/10">
+                         <div className="text-3xl font-serif text-white mb-2">{localSongs.filter(s => s.customAudioUrl || s.youtubeId).length} / 40</div>
+                        <div className="text-[10px] uppercase tracking-widest text-gray-500">Songs with Audio</div>
+                    </div>
+                     <div className="bg-white/5 p-6 rounded border border-white/10">
+                         <div className="text-3xl font-serif text-white mb-2">{storageCount}</div>
+                        <div className="text-[10px] uppercase tracking-widest text-gray-500">Local Edits</div>
+                    </div>
+                </div>
+
+                {/* Leaderboard */}
+                <div>
+                     <h3 className="text-xl font-serif text-gold mb-6 flex items-center gap-3">
+                         <span className="text-xs uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-1 rounded">Live Results</span>
+                         Leaderboard
+                     </h3>
                      <div className="space-y-3">
-                        <div>
-                            <label className="block text-[9px] uppercase text-gray-500 mb-1">Featured Song Title</label>
-                            <input 
-                                className="w-full bg-[#050505] border border-white/10 p-2 text-white text-xs outline-none focus:border-gold rounded"
+                         {leaderboard.map((item, index) => (
+                             <div key={item.song?.id} className="flex items-center gap-4 group">
+                                 <div className="w-8 text-right text-sm font-mono text-gray-600 group-hover:text-gold">#{index + 1}</div>
+                                 <div className="flex-1 relative h-10 bg-white/5 rounded overflow-hidden">
+                                     <div 
+                                        className="absolute top-0 left-0 h-full bg-gold/20 transition-all duration-1000 group-hover:bg-gold/40"
+                                        style={{ width: `${(item.count / maxVotesForSingleSong) * 100}%` }}
+                                     ></div>
+                                     <div className="absolute inset-0 flex items-center justify-between px-4">
+                                         <span className="text-sm font-medium z-10">{item.song?.title}</span>
+                                         <span className="text-xs font-mono text-gray-400 z-10">{item.count} votes</span>
+                                     </div>
+                                 </div>
+                             </div>
+                         ))}
+                     </div>
+                </div>
+
+                 {/* Recent Comments */}
+                 <div>
+                     <h3 className="text-xl font-serif text-gold mb-6">Recent Stories</h3>
+                     <div className="grid md:grid-cols-2 gap-4">
+                         {users.slice(0, 6).map((u, i) => (
+                             <div key={i} className="bg-white/5 p-4 rounded border border-white/5 hover:border-gold/30 transition-colors">
+                                 <div className="flex justify-between items-start mb-2">
+                                     <div className="font-bold text-sm text-gray-300">{u.name}</div>
+                                     <div className="text-[10px] text-gray-600">{new Date(u.timestamp).toLocaleDateString()}</div>
+                                 </div>
+                                 <div className="text-xs text-gray-400 italic mb-3">
+                                     {Object.values(u.voteReasons || {}).join(' / ')}
+                                 </div>
+                                 <div className="flex gap-2 flex-wrap">
+                                     {u.votes.map(vid => (
+                                         <span key={vid} className="text-[9px] bg-black px-2 py-1 rounded border border-white/10 text-gray-500">
+                                             #{String(vid).padStart(2,'0')}
+                                         </span>
+                                     ))}
+                                 </div>
+                             </div>
+                         ))}
+                     </div>
+                 </div>
+            </div>
+        )}
+
+        {activeTab === 'songs' && (
+            <div className="space-y-8 animate-slide-up">
+                
+                {/* Global Config Section */}
+                <div className="bg-white/5 p-6 rounded border border-white/10">
+                     <h3 className="text-lg font-serif text-white mb-4">Homepage Configuration</h3>
+                     <div className="grid md:grid-cols-2 gap-4 mb-4">
+                         <div>
+                             <label className="text-[10px] uppercase text-gray-500 block mb-1">Homepage Song Title</label>
+                             <input 
+                                className="w-full bg-black border border-white/20 p-2 text-sm text-white focus:border-gold outline-none rounded"
                                 value={homeSongTitle}
                                 onChange={e => setHomeSongTitle(e.target.value)}
-                                placeholder="e.g. Beloved (Official Theme)"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[9px] uppercase text-gray-500 mb-1">Featured Song URL (Mp3/Drive/YouTube)</label>
-                            <input 
-                                className="w-full bg-[#050505] border border-white/10 p-2 text-white text-xs outline-none focus:border-gold rounded font-mono"
+                                placeholder="Default: Beloved 摯愛 (The 2026 Collection)"
+                             />
+                         </div>
+                         <div>
+                             <label className="text-[10px] uppercase text-gray-500 block mb-1">Homepage Song URL (Youtube/Dropbox/MP3)</label>
+                             <input 
+                                className="w-full bg-black border border-white/20 p-2 text-sm text-white focus:border-gold outline-none rounded"
                                 value={homeSongUrl}
                                 onChange={e => setHomeSongUrl(e.target.value)}
                                 placeholder="Paste link here..."
-                            />
-                        </div>
-                        <div className="flex justify-end pt-2">
-                             <button onClick={handleSaveGlobalConfig} className="bg-white/10 text-white px-4 py-2 rounded text-[10px] font-bold uppercase hover:bg-white hover:text-black">Save Draft</button>
-                        </div>
+                             />
+                         </div>
+                     </div>
+                     <div className="flex justify-end gap-4">
+                         <button onClick={handleSaveGlobalConfig} className="text-xs uppercase tracking-widest bg-white/10 px-4 py-2 rounded hover:bg-white/20">Save Settings Locally</button>
                      </div>
                 </div>
 
-                {/* 2. Backup & Restore Card */}
-                <div className="bg-[#121212] rounded-xl border border-white/10 p-6 space-y-4">
-                     <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gold mb-2">Data Backup & Restore</h3>
-                     <p className="text-[10px] text-gray-500 leading-relaxed">
-                        Use this to transfer data from Localhost to Production, or to save a snapshot of your current settings.
-                     </p>
-                     
-                     <div className="grid grid-cols-2 gap-4 pt-2">
-                        <button 
-                            onClick={handleDownloadBackup}
-                            className="bg-white/5 border border-white/10 hover:bg-white/10 text-white py-3 rounded text-[10px] uppercase tracking-widest transition-colors flex flex-col items-center gap-2"
-                        >
-                            <span>📤 Export JSON</span>
-                            <span className="text-[8px] text-gray-500">Save current data to file</span>
-                        </button>
-
-                        <button 
-                            onClick={handleRestoreClick}
-                            className="bg-white/5 border border-white/10 hover:bg-white/10 text-white py-3 rounded text-[10px] uppercase tracking-widest transition-colors flex flex-col items-center gap-2"
-                        >
-                            <span>📥 Import JSON</span>
-                            <span className="text-[8px] text-gray-500">Restore from file</span>
-                        </button>
-                        {/* Hidden Input for Import */}
-                        <input 
+                {/* Bulk Import */}
+                <div className="flex justify-between items-center bg-white/5 p-4 rounded border border-white/10">
+                     <div>
+                         <h3 className="text-sm font-bold text-gray-300">Quick Actions</h3>
+                         <p className="text-[10px] text-gray-500">Sync, backup, or batch update songs.</p>
+                     </div>
+                     <div className="flex gap-3">
+                         <input 
                             type="file" 
                             ref={fileInputRef} 
-                            style={{ display: 'none' }} 
-                            accept=".json" 
                             onChange={handleFileChange} 
+                            accept=".json" 
+                            className="hidden" 
+                         />
+                         <button onClick={handleDownloadBackup} className="text-[10px] uppercase bg-black border border-white/20 px-3 py-2 rounded hover:text-gold">Backup Data</button>
+                         <button onClick={handleRestoreClick} className="text-[10px] uppercase bg-black border border-white/20 px-3 py-2 rounded hover:text-gold">Restore Backup</button>
+                         <button onClick={() => setShowImport(!showImport)} className="text-[10px] uppercase bg-black border border-white/20 px-3 py-2 rounded hover:text-gold">Bulk Import URLs</button>
+                         
+                         <button 
+                            onClick={handlePublishToCloud}
+                            disabled={isPublishing}
+                            className={`text-[10px] uppercase font-bold px-4 py-2 rounded shadow-lg transition-all flex items-center gap-2 ${isPublishing ? 'bg-gray-700 cursor-wait' : 'bg-gold text-black hover:bg-white'}`}
+                         >
+                             {isPublishing ? <SpinnerIcon className="w-3 h-3" /> : '☁️ Publish to Cloud'}
+                         </button>
+                     </div>
+                </div>
+
+                {showImport && (
+                    <div className="bg-black border border-gold/30 p-4 rounded animate-fade-in">
+                        <p className="text-xs text-gray-400 mb-2">Paste URLs line by line. Line 1 = Song 1, Line 2 = Song 2, etc.</p>
+                        <textarea 
+                            className="w-full h-32 bg-gray-900 border border-white/10 p-2 text-xs text-white font-mono mb-2"
+                            value={importText}
+                            onChange={(e) => setImportText(e.target.value)}
+                            placeholder="https://youtu.be/...\nhttps://dropbox.com/..."
                         />
-                     </div>
-                </div>
-
-                {/* 3. Leaderboard */}
-                <div>
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Popularity Ranking</h3>
-                        <div className="text-[10px] text-gray-500">Total Votes: <span className="text-white font-bold">{users.length}</span></div>
+                        <button onClick={handleBulkImport} className="bg-gold text-black text-xs font-bold px-4 py-2 rounded">Process Import</button>
                     </div>
-                    {loadingData ? (
-                        <div className="h-64 flex items-center justify-center text-gray-500 gap-2"><SpinnerIcon className="w-4 h-4" /> Syncing...</div>
-                    ) : (
-                        <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden max-h-[500px] overflow-y-auto no-scrollbar">
-                            <table className="w-full text-left text-xs">
-                                <thead className="sticky top-0 bg-[#1e1e1e] text-gray-500 uppercase tracking-wider z-10">
-                                <tr>
-                                    <th className="p-4 font-medium w-12 text-center">#</th>
-                                    <th className="p-4 font-medium">Song Title</th>
-                                    <th className="p-4 font-medium w-32">Preference</th>
-                                    <th className="p-4 font-medium text-right">Votes</th>
-                                </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                {leaderboard.map((item, index) => {
-                                    const percentage = maxVotesForSingleSong > 0 ? (item.count / maxVotesForSingleSong) * 100 : 0;
-                                    return (
-                                        <tr key={item.song?.id} className="hover:bg-white/5 transition-colors">
-                                            <td className="p-4 text-gray-600 font-mono text-center">{(index + 1)}</td>
-                                            <td className="p-4 font-medium text-gray-300">{item.song?.title}</td>
-                                            <td className="p-4"><div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden"><div className="h-full bg-gold" style={{ width: `${percentage}%` }}/></div></td>
-                                            <td className="p-4 text-right font-bold text-white">{item.count}</td>
-                                        </tr>
-                                    );
-                                })}
-                                </tbody>
-                            </table>
+                )}
+
+                {/* Song List */}
+                <div className="space-y-2">
+                    {localSongs.map(song => (
+                        <div key={song.id} className="bg-white/5 p-4 rounded border border-white/10 hover:border-gold/30 transition-all">
+                             {editingSongId === song.id ? (
+                                 <div className="space-y-4">
+                                     <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                                         <span className="text-gold font-mono">Editing Track #{song.id}</span>
+                                     </div>
+                                     <div className="grid grid-cols-2 gap-4">
+                                         <input 
+                                            className="bg-black border border-white/20 p-2 text-sm text-white rounded"
+                                            value={editForm.title}
+                                            onChange={e => setEditForm({...editForm, title: e.target.value})}
+                                            placeholder="Title"
+                                         />
+                                         <input 
+                                            className="bg-black border border-white/20 p-2 text-sm text-white rounded"
+                                            value={editForm.customAudioUrl}
+                                            onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})}
+                                            placeholder="Audio URL (YouTube/Dropbox/MP3)"
+                                         />
+                                     </div>
+                                     <textarea 
+                                         className="w-full bg-black border border-white/20 p-2 text-sm text-white rounded h-20"
+                                         value={editForm.lyrics}
+                                         onChange={e => setEditForm({...editForm, lyrics: e.target.value})}
+                                         placeholder="Lyrics..."
+                                     />
+                                     <input 
+                                         className="w-full bg-black border border-white/20 p-2 text-sm text-white rounded"
+                                         value={editForm.credits}
+                                         onChange={e => setEditForm({...editForm, credits: e.target.value})}
+                                         placeholder="Credits"
+                                     />
+                                     <div className="flex gap-2 justify-end">
+                                         <button onClick={() => setEditingSongId(null)} className="text-xs uppercase px-3 py-2 text-gray-500">Cancel</button>
+                                         <button onClick={saveEdit} className="text-xs uppercase px-4 py-2 bg-gold text-black rounded font-bold">Save Changes</button>
+                                     </div>
+                                 </div>
+                             ) : (
+                                 <div className="flex items-center justify-between">
+                                     <div className="flex items-center gap-4">
+                                         <span className="text-xs font-mono text-gray-500 w-8">#{String(song.id).padStart(2,'0')}</span>
+                                         <div>
+                                             <div className="font-bold text-gray-200">{song.title}</div>
+                                             <div className="text-[10px] text-gray-500 truncate max-w-xs">{song.youtubeId ? `YouTube: ${song.youtubeId}` : song.customAudioUrl || 'No Audio Source'}</div>
+                                         </div>
+                                     </div>
+                                     <div className="flex items-center gap-3">
+                                         {(song.youtubeId || song.customAudioUrl) && <CheckIcon className="w-4 h-4 text-green-500" />}
+                                         <button onClick={() => startEdit(song)} className="text-[10px] uppercase bg-white/10 px-3 py-1 rounded hover:bg-white/20">Edit</button>
+                                     </div>
+                                 </div>
+                             )}
                         </div>
-                    )}
-                    
-                    {/* CRITICAL WARNING FOR MISSING VOTES TABLE */}
-                    {isMissingVotes && (
-                        <div className="mt-8 bg-red-900/20 border border-red-500/50 p-6 rounded animate-pulse">
-                            <h3 className="text-red-500 font-bold mb-2 uppercase tracking-widest flex items-center gap-2">⚠️ CRITICAL: VOTES ARE NOT BEING SAVED</h3>
-                            <p className="text-sm text-gray-300 mb-4">
-                                The <strong>'votes'</strong> table is missing from your database. Users are voting, but their data is only saved on their local devices. You cannot see it here.
-                            </p>
-                            <p className="text-xs text-gray-400 mb-2">Run this SQL code in Supabase to fix it immediately:</p>
-                            <div className="bg-black p-4 rounded text-xs font-mono text-green-400 overflow-x-auto select-all">
-                                create table if not exists votes (<br/>
-                                &nbsp;&nbsp;id bigint generated by default as identity primary key,<br/>
-                                &nbsp;&nbsp;user_name text,<br/>
-                                &nbsp;&nbsp;user_email text,<br/>
-                                &nbsp;&nbsp;vote_ids jsonb,<br/>
-                                &nbsp;&nbsp;vote_reasons jsonb,<br/>
-                                &nbsp;&nbsp;created_at timestamp with time zone default timezone('utc'::text, now())<br/>
-                                );<br/><br/>
-                                alter table votes enable row level security;<br/>
-                                create policy "Public votes are viewable by everyone" on votes for select using (true);<br/>
-                                create policy "Everyone can insert votes" on votes for insert with check (true);
-                            </div>
-                        </div>
-                    )}
-
+                    ))}
                 </div>
-            </section>
-
-            {/* RIGHT COLUMN: User Feedback */}
-            <section className="space-y-6">
-                <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">User Feedback</h3>
-                <div className="bg-[#121212] rounded-xl border border-white/5 overflow-hidden flex flex-col h-[750px]">
-                <div className="flex-1 overflow-y-auto no-scrollbar">
-                    <table className="w-full text-left text-xs text-gray-400">
-                        <thead className="sticky top-0 bg-[#1e1e1e] text-gray-500 uppercase tracking-wider z-10">
-                        <tr><th className="p-4 font-medium">User & Comments</th><th className="p-4 font-medium text-right">Date</th></tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                        {users.slice().reverse().map((user, idx) => (
-                            <tr key={idx} className="hover:bg-white/5 transition-colors">
-                            <td className="p-4 font-serif text-gray-200">
-                                <div className="mb-1 text-white">{user.name}</div>
-                                <div className="text-[9px] text-gray-600 font-mono mb-2">{user.email}</div>
-                                {user.voteReasons && user.voteReasons[0] && <div className="bg-white/5 p-2 rounded text-[10px] text-gray-300 mb-2 italic border-l-2 border-gold">"{user.voteReasons[0]}"</div>}
-                                {user.voteReasons && Object.keys(user.voteReasons).length > 0 && <div className="space-y-1">{Object.entries(user.voteReasons).map(([songId, reason]) => { if (songId === '0') return null; return (<div key={songId} className="text-[10px] text-gray-500"><span className="text-gold opacity-70">#{songId.toString().padStart(2,'0')}:</span> <span className="italic">"{reason}"</span></div>); })}</div>}
-                            </td>
-                            <td className="p-4 text-right opacity-50 whitespace-nowrap align-top">{new Date(user.timestamp).toLocaleDateString()}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
-                </div>
-            </section>
-            </div>
-        ) : activeTab === 'manual_vote' ? (
-            <div className="max-w-xl mx-auto py-12 animate-fade-in">
-                 <h2 className="text-xl font-serif text-gold mb-6 text-center">Admin Manual Vote Entry</h2>
-                 <div className="bg-[#121212] p-8 rounded-xl border border-white/10 space-y-6">
-                     <p className="text-gray-400 text-xs text-center mb-4">Input a vote on behalf of a user manually.</p>
-                     
-                     <div>
-                         <label className="block text-[10px] uppercase text-gray-500 mb-2">User Name</label>
-                         <input className="w-full bg-[#050505] border border-white/10 p-3 rounded text-white focus:border-gold outline-none" value={manualVoteName} onChange={e => setManualVoteName(e.target.value)} placeholder="Name..." />
-                     </div>
-                     <div>
-                         <label className="block text-[10px] uppercase text-gray-500 mb-2">User Email (or Fake ID)</label>
-                         <input className="w-full bg-[#050505] border border-white/10 p-3 rounded text-white focus:border-gold outline-none" value={manualVoteEmail} onChange={e => setManualVoteEmail(e.target.value)} placeholder="email@example.com" />
-                     </div>
-                     <div>
-                         <label className="block text-[10px] uppercase text-gray-500 mb-2">Song IDs (Comma separated)</label>
-                         <input className="w-full bg-[#050505] border border-white/10 p-3 rounded text-white focus:border-gold outline-none" value={manualVoteIds} onChange={e => setManualVoteIds(e.target.value)} placeholder="e.g. 1, 5, 12, 40" />
-                         <p className="text-[9px] text-gray-600 mt-2">Enter the ID numbers of the songs (1-40).</p>
-                     </div>
-                     
-                     <button onClick={handleManualVoteSubmit} className="w-full bg-gold text-black py-4 rounded font-bold uppercase tracking-widest hover:bg-white transition-colors">
-                         {manualVoteStatus || "Submit Vote"}
-                     </button>
-                 </div>
-            </div>
-        ) : (
-            <div className="space-y-6 animate-fade-in pb-20">
-                 {/* DATABASE MISSING WARNING - SONGS */}
-                 {isMissingSongs && (
-                     <div className="bg-red-900/20 border border-red-500/50 p-6 rounded mb-8">
-                         <h3 className="text-red-500 font-bold mb-2 uppercase tracking-widest">⚠️ Critical: 'Songs' Table Missing</h3>
-                         <p className="text-sm text-gray-300 mb-4">You cannot publish songs to the cloud until you create this table.</p>
-                         <p className="text-xs text-gray-400 mb-2">Run this SQL code in Supabase:</p>
-                         <div className="bg-black p-4 rounded text-xs font-mono text-green-400 overflow-x-auto select-all">
-                             create table if not exists songs (<br/>
-                             &nbsp;&nbsp;id bigint primary key,<br/>
-                             &nbsp;&nbsp;title text,<br/>
-                             &nbsp;&nbsp;youtube_id text,<br/>
-                             &nbsp;&nbsp;custom_audio_url text,<br/>
-                             &nbsp;&nbsp;custom_image_url text,<br/>
-                             &nbsp;&nbsp;lyrics text,<br/>
-                             &nbsp;&nbsp;credits text,<br/>
-                             &nbsp;&nbsp;updated_at timestamp with time zone default timezone('utc'::text, now())<br/>
-                             );<br/><br/>
-                             alter table songs enable row level security;<br/>
-                             create policy "Public songs are viewable by everyone" on songs for select using (true);<br/>
-                             create policy "Everyone can insert/update songs" on songs for insert with check (true);<br/>
-                             create policy "Everyone can update songs" on songs for update using (true);
-                         </div>
-                     </div>
-                 )}
-
-                 <div className="bg-gradient-to-r from-gold/20 to-gold/5 p-6 rounded border border-gold/40 mb-8 flex items-center justify-between">
-                     <div>
-                         <h3 className="text-gold font-serif text-lg mb-1 flex items-center gap-2">🚀 Publish Changes</h3>
-                         <p className="text-[10px] text-gray-400">Push your local song edits AND Homepage Settings to the Cloud.</p>
-                     </div>
-                     <button onClick={handlePublishToCloud} disabled={isPublishing} className="bg-gold text-black px-6 py-3 rounded text-xs font-bold uppercase hover:bg-white transition-colors shadow-[0_0_20px_rgba(197,160,89,0.3)] disabled:opacity-50 disabled:cursor-not-allowed">{isPublishing ? 'Publishing...' : 'Publish to Cloud'}</button>
-                 </div>
-
-                 <div className="flex gap-2 mb-4 justify-end">
-                     <button onClick={() => setShowImport(!showImport)} className="text-gold hover:underline text-xs uppercase tracking-widest">{showImport ? 'Close Bulk Import' : 'Open Bulk Import Tool'}</button>
-                 </div>
-
-                 {showImport && (
-                     <div className="bg-[#1a1a1a] p-6 rounded border border-white/10 mb-8 animate-slide-up">
-                         <h3 className="text-white font-serif mb-2">Bulk Import / Playlist Parser</h3>
-                         <textarea className="w-full h-64 bg-black border border-white/10 rounded p-4 text-xs font-mono text-gray-300 focus:border-gold outline-none" placeholder={"Paste YouTube links here..."} value={importText} onChange={(e) => setImportText(e.target.value)} />
-                         <div className="flex justify-end mt-4">
-                             <button onClick={handleBulkImport} className="bg-white text-black px-6 py-2 rounded text-xs font-bold uppercase hover:bg-gray-200">Update Local List</button>
-                         </div>
-                     </div>
-                 )}
-
-                 {editingSongId !== null ? (
-                     <div className="bg-[#111] p-6 rounded-lg border border-white/20 max-w-2xl mx-auto shadow-2xl">
-                         <h3 className="text-white font-serif text-xl mb-6">Edit Track #{String(editingSongId).padStart(2,'0')}</h3>
-                         <div className="space-y-4">
-                             <div><label className="block text-[10px] uppercase text-gray-500 mb-1">Song Title</label><input className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none" value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})} /></div>
-                             
-                             <div>
-                                <label className="block text-[10px] uppercase text-gray-500 mb-1">Audio Link / YouTube Link</label>
-                                <div className="relative">
-                                    <input 
-                                        className={`w-full bg-black border p-2 text-white rounded outline-none font-mono text-xs transition-colors ${extractYouTubeId(editForm.customAudioUrl || '') ? 'border-green-500 focus:border-green-500' : 'border-white/20 focus:border-white'}`} 
-                                        value={editForm.customAudioUrl} 
-                                        onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})} 
-                                        placeholder="Paste YouTube or MP3 link here..." 
-                                    />
-                                    {extractYouTubeId(editForm.customAudioUrl || '') && (
-                                        <div className="absolute right-2 top-2 text-[9px] text-green-400 font-bold bg-green-900/30 px-2 py-0.5 rounded flex items-center gap-1">
-                                            <CheckIcon className="w-3 h-3" /> YOUTUBE DETECTED
-                                        </div>
-                                    )}
-                                </div>
-                             </div>
-
-                             <div><label className="block text-[10px] uppercase text-gray-500 mb-1">Lyrics</label><textarea className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none h-32" value={editForm.lyrics} onChange={e => setEditForm({...editForm, lyrics: e.target.value})} /></div>
-                             <div><label className="block text-[10px] uppercase text-gray-500 mb-1">Credits</label><textarea className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none h-24" value={editForm.credits} onChange={e => setEditForm({...editForm, credits: e.target.value})} placeholder="Arranger: Willwi..." /></div>
-                         </div>
-                         <div className="flex justify-end gap-3 mt-8">
-                             <button onClick={() => setEditingSongId(null)} className="px-4 py-2 text-xs text-gray-400 hover:text-white">Cancel</button>
-                             <button onClick={saveEdit} className="px-6 py-2 bg-white text-black text-xs font-bold uppercase rounded hover:bg-gray-200">Save Local Changes</button>
-                         </div>
-                     </div>
-                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {localSongs.map(song => {
-                            const isPlaying = playingId === song.id;
-                            const hasYouTube = !!song.youtubeId;
-                            return (
-                                <div key={song.id} className={`p-3 bg-[#111] hover:bg-[#1a1a1a] rounded border border-white/5 hover:border-white/20 transition-all flex flex-col gap-3 group ${isPlaying ? 'border-white/20 bg-[#161616]' : ''}`}>
-                                    <div className="flex justify-between items-start">
-                                        <div className="min-w-0 flex-1">
-                                            <div className="text-[9px] text-gray-500 font-mono mb-1">#{String(song.id).padStart(2,'0')}</div>
-                                            <div className="text-sm font-medium text-gray-300 truncate group-hover:text-white">{song.title}</div>
-                                            <div className="flex gap-2 mt-1">
-                                                {hasYouTube && <span className="text-[8px] bg-red-900/50 px-1 rounded text-red-400">YOUTUBE</span>}
-                                                {!hasYouTube && song.customAudioUrl && <span className="text-[8px] bg-green-900/50 px-1 rounded text-green-400">AUDIO FILE</span>}
-                                            </div>
-                                        </div>
-                                        <button onClick={() => startEdit(song)} className="text-xs text-gray-600 hover:text-white border border-transparent hover:border-white/20 px-2 py-1 rounded transition-colors">Edit</button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                 )}
             </div>
         )}
+
+        {activeTab === 'manual_vote' && (
+             <div className="max-w-xl mx-auto mt-12 bg-white/5 p-8 rounded border border-white/10 animate-fade-in">
+                 <h3 className="text-xl font-serif text-gold mb-6">Manual Vote Entry</h3>
+                 <div className="space-y-4">
+                     <div>
+                         <label className="text-[10px] uppercase text-gray-500 block mb-1">Voter Name</label>
+                         <input 
+                            className="w-full bg-black border border-white/20 p-3 text-white rounded focus:border-gold outline-none"
+                            value={manualVoteName}
+                            onChange={e => setManualVoteName(e.target.value)}
+                         />
+                     </div>
+                     <div>
+                         <label className="text-[10px] uppercase text-gray-500 block mb-1">Voter Email</label>
+                         <input 
+                            className="w-full bg-black border border-white/20 p-3 text-white rounded focus:border-gold outline-none"
+                            value={manualVoteEmail}
+                            onChange={e => setManualVoteEmail(e.target.value)}
+                         />
+                     </div>
+                     <div>
+                         <label className="text-[10px] uppercase text-gray-500 block mb-1">Song IDs (Comma Separated)</label>
+                         <input 
+                            className="w-full bg-black border border-white/20 p-3 text-white rounded focus:border-gold outline-none font-mono"
+                            placeholder="e.g. 1, 5, 12"
+                            value={manualVoteIds}
+                            onChange={e => setManualVoteIds(e.target.value)}
+                         />
+                         <p className="text-[10px] text-gray-500 mt-2">Enter numbers between 1 and 40.</p>
+                     </div>
+                     <button 
+                        onClick={handleManualVoteSubmit}
+                        disabled={manualVoteStatus === 'Saving...'}
+                        className="w-full bg-gold text-black font-bold uppercase tracking-widest py-4 rounded mt-4 hover:bg-white transition-colors disabled:opacity-50"
+                     >
+                         {manualVoteStatus || 'Record Vote'}
+                     </button>
+                 </div>
+             </div>
+        )}
+
       </div>
     </div>
   );

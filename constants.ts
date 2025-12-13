@@ -30,7 +30,7 @@ export const ARTIST_DATA = {
     },
     featuredSong: {
         title: "Beloved 摯愛 (The 2026 Collection)",
-        url: "https://www.youtube.com/playlist?list=PLNXUTdsHGB-ylxLTlhASHNbYQ4VT0CRIA" 
+        url: "https://www.dropbox.com/scl/fo/wu6ap45w972t0ca9bawez/AKi0puc4wh_mgzWZO5Zz0sM?rlkey=74hdf08gv7q417r2icrhux18j&st=dx6kl76m&dl=0" 
     },
     bio: {
         zh: `來自台灣的 Willwi 陳威兒，是一位跨語系創作歌手與音樂製作人。\n作品多次獲得 Spotify 等國際串流平台編輯精選與推薦。\n\n「語言對我而言是承載情緒的器皿。」\n此理念貫穿其創作方向，並推動他持續探索多語系流行音樂的可能性。`,

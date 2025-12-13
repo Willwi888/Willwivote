@@ -84,16 +84,19 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   };
 
   let finalYoutubeId = song.youtubeId;
-  // Fallback extraction if ID missing but URL exists (Redundant if storage.ts works, but safe)
+  // Fallback extraction if ID missing but URL exists
   if (!finalYoutubeId && song.customAudioUrl) {
       finalYoutubeId = extractYouTubeId(song.customAudioUrl);
   }
   
   const isYouTubeSource = !!finalYoutubeId;
+  const isDropboxFolder = song.customAudioUrl?.includes('/fo/') || false;
   
   // Logic to determine if we should show AudioPlayer
+  // If it's a Dropbox FOLDER, we do NOT show the player, only the button.
   const hasAudioSource = Boolean(
       !isYouTubeSource && 
+      !isDropboxFolder &&
       ((song.customAudioUrl && song.customAudioUrl.trim() !== '') || 
       (song.driveId && song.driveId.trim() !== ''))
   );
@@ -151,8 +154,25 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent"></div>
                       <div className="absolute inset-0 bg-black/20"></div>
                       
-                      {hasAudioSource ? (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center p-12 gap-6">
+                      {isDropboxFolder ? (
+                           <div className="absolute inset-0 flex flex-col items-center justify-center p-12 gap-6 z-20">
+                                <p className="text-gold text-xs uppercase tracking-widest mb-2 font-bold bg-black/50 px-4 py-2 rounded">
+                                    Album Folder
+                                </p>
+                                <a 
+                                    href={song.customAudioUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="bg-gold text-black px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,215,0,0.4)] flex items-center gap-3"
+                                >
+                                    <PlayIcon className="w-4 h-4" /> Open Dropbox
+                                </a>
+                                <p className="text-gray-400 text-[10px] text-center max-w-xs">
+                                    This link opens a folder. Please listen in the App.
+                                </p>
+                           </div>
+                      ) : hasAudioSource ? (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-12 gap-6 z-20">
                                 <div className="bg-black/30 backdrop-blur-md p-6 rounded-full border border-white/10 shadow-2xl">
                                     <AudioPlayer 
                                         id={song.id} 
@@ -163,7 +183,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                                         showControls={true} 
                                     />
                                 </div>
-                                {/* Fallback Link for Dropbox/Files */}
+                                {/* Fallback Link for Audio Files */}
                                 {song.customAudioUrl && (
                                     <a 
                                         href={song.customAudioUrl} 
@@ -176,7 +196,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                                 )}
                           </div>
                       ) : (
-                          <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="absolute inset-0 flex items-center justify-center z-20">
                               <p className="text-gray-500 text-xs tracking-widest uppercase">No Audio Source</p>
                           </div>
                       )}

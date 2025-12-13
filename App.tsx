@@ -54,6 +54,7 @@ const ArtistHomeView: React.FC<{
 
     const youtubeId = extractYouTubeId(featuredSong.url);
     const playlistId = featuredSong.url.match(/[?&]list=([^&]+)/)?.[1];
+    const isDropboxFolder = featuredSong.url.includes('/fo/');
 
     return (
         <div className="min-h-screen bg-[#020202] text-white font-serif selection:bg-gold selection:text-black">
@@ -163,9 +164,26 @@ const ArtistHomeView: React.FC<{
                                     </span>
                                 </button>
                             )}
+                            
+                            {/* Dropbox Folder Handling */}
+                            {!youtubeId && !playlistId && isDropboxFolder && (
+                                <a 
+                                    href={featuredSong.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-4 group cursor-pointer"
+                                >
+                                    <div className="w-16 h-16 rounded-full border border-gold/50 flex items-center justify-center bg-black/50 backdrop-blur-md group-hover:bg-gold group-hover:border-white group-hover:text-black transition-all duration-500 shadow-[0_0_20px_rgba(255,215,0,0.2)]">
+                                        <PlayIcon className="w-6 h-6 text-gold group-hover:text-black ml-1 transition-colors" />
+                                    </div>
+                                    <span className="text-xs uppercase tracking-[0.2em] text-gold font-bold drop-shadow-md">
+                                        Open Album
+                                    </span>
+                                </a>
+                            )}
 
-                             {/* Audio Player Fallback if no Video */}
-                            {!youtubeId && !playlistId && featuredSong.url && (
+                             {/* Audio Player Fallback if no Video and no Folder */}
+                            {!youtubeId && !playlistId && !isDropboxFolder && featuredSong.url && (
                                 <div className="mt-4 w-full max-w-xs">
                                     <AudioPlayer 
                                         id="homepage-featured"

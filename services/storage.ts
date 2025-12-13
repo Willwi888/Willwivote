@@ -56,6 +56,9 @@ export const clearUserSession = () => {
 export const extractYouTubeId = (text: string): string | null => {
     if (!text || typeof text !== 'string') return null;
     
+    // Skip extraction if it's explicitly a Dropbox folder or file link
+    if (text.includes('dropbox.com')) return null;
+
     const rawMatch = text.trim().match(/^([a-zA-Z0-9_-]{11})$/);
     if (rawMatch) return rawMatch[1];
 
@@ -270,7 +273,7 @@ export const publishSongsToCloud = async (songs: Song[], config: GlobalConfig) =
     if (error) throw error;
 };
 
-// --- FIX: INTELLIGENT UPDATE ---
+// --- FIX: INTELLIGENT UPDATE & FORCE CLEANUP ---
 export const updateSong = (id: number, updates: Partial<Song>) => {
     const current = getSongs();
     
@@ -280,16 +283,16 @@ export const updateSong = (id: number, updates: Partial<Song>) => {
         const yId = extractYouTubeId(url);
         
         if (yId) {
-            // It IS a YouTube link
+            // Case A: It IS a YouTube link
             updates.youtubeId = yId; 
             updates.customAudioUrl = ''; // Clear custom URL so logic prefers YouTube ID
         } else {
-            // It is NOT a YouTube link (e.g. Dropbox, MP3, or empty)
-            // CRITICAL FIX: We must EXPLICITLY clear the youtubeId
+            // Case B: It is NOT a YouTube link (e.g. Dropbox, MP3, or empty)
+            // CRITICAL FIX: We must EXPLICITLY clear the youtubeId so the old video doesn't persist
             updates.youtubeId = ''; 
             
-            // Auto-convert Dropbox links for better playback
-            if (url.includes('dropbox.com') && !url.includes('dl=1')) {
+            // Auto-convert Dropbox File links (not folders) for better playback
+            if (url.includes('dropbox.com') && !url.includes('/fo/') && !url.includes('dl=1')) {
                 // Replace dl=0 with dl=1
                 updates.customAudioUrl = url.replace('dl=0', 'dl=1');
                 if (!updates.customAudioUrl.includes('dl=1')) {
@@ -313,8 +316,13 @@ export const updateSongsBulk = (lines: string[]) => {
         if (i < lines.length) {
             const line = lines[i].trim();
             const yId = extractYouTubeId(line);
-            if (yId) return { ...s, youtubeId: yId, customAudioUrl: '' }; 
-            if (line.startsWith('http')) return { ...s, customAudioUrl: line, youtubeId: '' };
+            if (yId) {
+                return { ...s, youtubeId: yId, customAudioUrl: '' }; 
+            }
+            if (line.startsWith('http')) {
+                // Explicitly clear youtubeId
+                return { ...s, customAudioUrl: line, youtubeId: '' };
+            }
         }
         return s;
     });
