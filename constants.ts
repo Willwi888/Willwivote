@@ -55,56 +55,9 @@ export const ARTIST_DATA = {
 };
 
 // --- MASTER DATA: PRE-FILLED CONTENT ---
+// CLEARED TO PREVENT DEFAULT VIDEO OVERRIDING ADMIN INPUT
 export const MASTER_SONG_DATA: Record<number, Partial<Song>> = {
-  1: {
-      title: "Midnight Tokyo (Official Video)",
-      youtubeId: "M7FIvfx5J10", 
-      lyrics: "Walking through the neon lights...\n(This is a demo track for the Official Artist Channel)",
-      credits: "Director: Willwi"
-  },
-  2: {
-      title: "Taipei Rain 台北的雨 (Live)",
-      youtubeId: "M7FIvfx5J10", 
-      lyrics: "The rain falls on the city...",
-      credits: "Piano: Willwi"
-  },
-  3: {
-      title: "Parisian Dreams (Visualizer)",
-      youtubeId: "M7FIvfx5J10",
-      lyrics: "Sous le ciel de Paris...",
-      credits: "Arrangement: Willwi"
-  },
-  4: {
-      title: "Seoul Memories (Studio)",
-      youtubeId: "M7FIvfx5J10",
-      credits: "Producer: Will Chen"
-  },
-  5: {
-      title: "New York Jazz",
-      youtubeId: "M7FIvfx5J10",
-      credits: "Bass: Willwi"
-  },
-  6: {
-      title: "The Silent Ocean",
-      customAudioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-      credits: "Ambient Design: Willwi"
-  },
-  7: {
-      title: "Golden Hour (Acoustic)",
-      youtubeId: "M7FIvfx5J10",
-  },
-  8: {
-      title: "Lost in Translation",
-      youtubeId: "M7FIvfx5J10", 
-  },
-  9: {
-      title: "Echoes of Time",
-      customAudioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3"
-  },
-  10: {
-      title: "Beloved 摯愛 (Final Chapter)",
-      youtubeId: "M7FIvfx5J10"
-  },
+  // All slots are now clean slates waiting for Admin input.
 };
 
 // --- TRANSLATIONS ---

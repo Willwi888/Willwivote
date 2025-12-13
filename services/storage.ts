@@ -297,8 +297,25 @@ export const publishSongsToCloud = async (songs: Song[], config: GlobalConfig) =
     if (error) throw error;
 };
 
+// INTELLIGENT UPDATE: EXTRACT YOUTUBE ID AUTOMATICALLY
 export const updateSong = (id: number, updates: Partial<Song>) => {
     const current = getSongs();
+    
+    // Check if we are updating the audio URL
+    if (updates.customAudioUrl) {
+        const yId = extractYouTubeId(updates.customAudioUrl);
+        if (yId) {
+            updates.youtubeId = yId; // Force the YouTube ID to update
+        } else {
+            // If user explicitly clears it or changes to non-youtube, we might want to clear youtubeId
+            // But let's be safe: if input doesn't look like YouTube, we assume it's a file.
+            // However, to fix the "Stuck on default" bug, we must ensure new data takes precedence.
+            if (updates.customAudioUrl === '') {
+                 updates.youtubeId = '';
+            }
+        }
+    }
+
     const updated = current.map(s => s.id === id ? { ...s, ...updates } : s);
     saveLocalMetadata(updated);
     return updated;
