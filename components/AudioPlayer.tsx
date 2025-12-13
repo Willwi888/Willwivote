@@ -129,7 +129,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               className={`
                   group/btn flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 outline-none
                   ${isReallyPlaying ? 'bg-gold text-black shadow-[0_0_15px_rgba(197,160,89,0.5)]' : 'border border-gold/30 text-gold hover:bg-gold hover:text-black'}
-                  ${isError ? '!border-white/50 !text-white !bg-white/10 shadow-none' : ''}
+                  ${isError ? '!border-red-500/50 !text-white !bg-red-500/20 shadow-none' : ''}
               `}
               title={isError ? "Open File Externally" : title}
               >
@@ -153,7 +153,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                       ? 'bg-gold text-black shadow-[0_0_50px_rgba(197,160,89,0.4)] border-gold scale-105' 
                       : 'bg-black/40 text-white border-white/20 hover:border-gold hover:text-gold hover:scale-105'
                   }
-                  ${isError ? '!border-white/50 !text-white !bg-white/10 shadow-none' : ''}
+                  ${isError ? '!border-red-500/50 !text-white !bg-red-900/40 shadow-none' : ''}
                   ${isBuffering ? 'cursor-wait border-gold/50' : ''}
               `}
               >
@@ -178,14 +178,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
       {/* Expanded Controls (Audio Only) */}
       {showControls && (
-          <div className={`flex items-center gap-4 w-full bg-[#0a0a0a] rounded-lg p-4 animate-fade-in border transition-colors duration-500 ${isError ? 'border-white/20' : 'border-gold/20 shadow-[0_0_20px_rgba(197,160,89,0.05)]'}`}>
+          <div className={`flex items-center gap-4 w-full bg-[#0a0a0a] rounded-lg p-4 animate-fade-in border transition-colors duration-500 ${isError ? 'border-red-900/30' : 'border-gold/20 shadow-[0_0_20px_rgba(197,160,89,0.05)]'}`}>
               
               <div className="flex items-center gap-4 w-full sm:w-auto">
                  {/* Play/Pause Mini Control */}
                  <button
                     onClick={handleToggle}
                     className={`w-10 h-10 flex items-center justify-center rounded-full transition-all shrink-0
-                        ${isError ? 'bg-white/10 text-white border border-white/30' : 'bg-gold text-black hover:scale-105 shadow-[0_0_10px_rgba(197,160,89,0.3)]'}
+                        ${isError ? 'bg-red-900/20 text-white border border-red-500/30' : 'bg-gold text-black hover:scale-105 shadow-[0_0_10px_rgba(197,160,89,0.3)]'}
                     `}
                  >
                      {isBuffering ? <SpinnerIcon className="w-4 h-4" /> : isError ? <ExternalLinkIcon className="w-4 h-4" /> : isReallyPlaying ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4 translate-x-0.5" />}
@@ -205,7 +205,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                       </div>
                   )}
                   {isError && (
-                      <div className="absolute -top-3 left-0 w-full text-center text-[8px] text-gray-400 tracking-[0.2em] uppercase font-bold">
+                      <div className="absolute -top-3 left-0 w-full text-center text-[8px] text-red-400 tracking-[0.1em] uppercase font-bold">
                           Playback Failed. Click button to open file.
                       </div>
                   )}
@@ -222,7 +222,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   />
                   {/* Progress Glow */}
                   <div 
-                    className={`absolute h-1 rounded-full pointer-events-none z-10 transition-all duration-100 ${isError ? 'bg-gray-600' : 'bg-gold shadow-[0_0_10px_#C5A059]'}`}
+                    className={`absolute h-1 rounded-full pointer-events-none z-10 transition-all duration-100 ${isError ? 'bg-red-900/50' : 'bg-gold shadow-[0_0_10px_#C5A059]'}`}
                     style={{ width: `${isCurrent ? (currentTime / (duration || 1)) * 100 : 0}%` }} 
                   />
               </div>

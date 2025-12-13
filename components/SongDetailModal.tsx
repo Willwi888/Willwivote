@@ -91,13 +91,16 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   }
   
   const isYouTubeSource = !!finalYoutubeId;
-  const isDropboxFolder = song.customAudioUrl?.includes('/fo/') || false;
+  
+  // Detect if the link is a Folder (Dropbox or Drive)
+  const rawUrl = song.customAudioUrl || '';
+  const isFolderLink = rawUrl.includes('/folders/') || rawUrl.includes('/drive/folders/') || rawUrl.includes('/fo/') || rawUrl.includes('/sh/');
   
   // Logic to determine if we should show AudioPlayer
-  // If it's a Dropbox FOLDER, we do NOT show the player, only the button.
+  // If it's a FOLDER, we do NOT show the player, only the button.
   const hasAudioSource = Boolean(
       !isYouTubeSource && 
-      !isDropboxFolder &&
+      !isFolderLink &&
       ((song.customAudioUrl && song.customAudioUrl.trim() !== '') || 
       (song.driveId && song.driveId.trim() !== ''))
   );
@@ -155,10 +158,10 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent"></div>
                       <div className="absolute inset-0 bg-black/20"></div>
                       
-                      {isDropboxFolder ? (
-                           <div className="absolute inset-0 flex flex-col items-center justify-center p-12 gap-6 z-20">
-                                <p className="text-gold text-xs uppercase tracking-widest mb-2 font-bold bg-black/50 px-4 py-2 rounded">
-                                    Album Folder
+                      {isFolderLink ? (
+                           <div className="absolute inset-0 flex flex-col items-center justify-center p-12 gap-6 z-20 text-center animate-fade-in">
+                                <p className="text-gold text-xs uppercase tracking-widest mb-2 font-bold bg-black/50 px-4 py-2 rounded border border-gold/30">
+                                    📁 Folder Link Detected
                                 </p>
                                 <a 
                                     href={song.customAudioUrl} 
@@ -166,10 +169,11 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                                     rel="noopener noreferrer"
                                     className="bg-gold text-black px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,215,0,0.4)] flex items-center gap-3"
                                 >
-                                    <PlayIcon className="w-4 h-4" /> Open Dropbox
+                                    <PlayIcon className="w-4 h-4" /> Open External Folder
                                 </a>
-                                <p className="text-gray-400 text-[10px] text-center max-w-xs">
-                                    This link opens a folder. Please listen in the App.
+                                <p className="text-gray-400 text-[10px] max-w-xs leading-loose bg-black/60 p-4 rounded">
+                                    This link points to a <strong>folder</strong>, not a song file.<br/>
+                                    Please open it to find the music.
                                 </p>
                            </div>
                       ) : hasAudioSource ? (

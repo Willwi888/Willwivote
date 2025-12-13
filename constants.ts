@@ -6,20 +6,24 @@ export const getAudioUrl = (source: string) => {
     
     let finalUrl = source.trim();
 
-    // --- DROPBOX ULTIMATE FIX ---
-    // Handle: www.dropbox.com, dropbox.com, mobile links
+    // --- FOLDER LINK DETECTION ---
+    // If the user pasted a folder link (Dropbox or Drive), we cannot stream it.
+    // Return original URL so the UI can show an "Open Folder" button instead of a broken player.
+    if (finalUrl.includes('/folders/') || finalUrl.includes('/drive/folders/') || finalUrl.includes('/fo/') || finalUrl.includes('/sh/')) {
+        return finalUrl;
+    }
+
+    // --- DROPBOX ULTIMATE FIX (2025 Edition) ---
+    // Critical: New Dropbox "scl" links require the 'rlkey' parameter to be public.
     if (finalUrl.match(/dropbox\.com/)) {
-        // If it's a folder link, we can't play it directly.
-        if (finalUrl.includes('/fo/') || finalUrl.includes('/sh/')) return finalUrl; 
         
-        // Force the domain to the content server
-        // This regex replaces "www.dropbox.com" or just "dropbox.com" with "dl.dropboxusercontent.com"
+        // 1. Force the domain to the content server
         finalUrl = finalUrl.replace(/^(https?:\/\/)?(www\.)?dropbox\.com/, '$1dl.dropboxusercontent.com');
         
-        // Ensure dl=1 (Direct Download) is active for streaming
+        // 2. Ensure dl=1 is active (forces download/stream instead of preview page)
         if (finalUrl.includes('dl=0')) {
             finalUrl = finalUrl.replace('dl=0', 'dl=1');
-        } else if (!finalUrl.includes('dl=1')) {
+        } else if (!finalUrl.includes('dl=')) {
             finalUrl = finalUrl + (finalUrl.includes('?') ? '&dl=1' : '?dl=1');
         }
         
@@ -140,9 +144,9 @@ export const TRANSLATIONS = {
         reasonPlaceholder: "寫下你的感覺...",
         cancel: "取消",
         confirmSelection: "確認投票",
-        openInApp: "開啟連結",
+        openInApp: "無法播放？點此開啟原檔", // More direct instruction
         openLink: "開啟連結",
-        playbackError: "無法播放，請點此開啟原檔",
+        playbackError: "播放失敗。請檢查權限或點此開啟原檔",
 
         // Auth Step
         finalInquiryTitle: "最後一步",
@@ -184,9 +188,9 @@ export const TRANSLATIONS = {
         reasonPlaceholder: "Share your thoughts...",
         cancel: "CANCEL",
         confirmSelection: "CONFIRM VOTE",
-        openInApp: "OPEN LINK",
+        openInApp: "Can't play? Open File",
         openLink: "OPEN LINK",
-        playbackError: "Error. Click to open file.",
+        playbackError: "Playback Error. Click to open.",
 
         // Auth Step
         finalInquiryTitle: "Final Step",
@@ -228,9 +232,9 @@ export const TRANSLATIONS = {
         reasonPlaceholder: "感想を入力...",
         cancel: "キャンセル",
         confirmSelection: "投票する",
-        openInApp: "リンクを開く",
+        openInApp: "再生できない場合はこちら",
         openLink: "リンクを開く",
-        playbackError: "エラー。ファイルを開く",
+        playbackError: "エラー。元ファイルを開く",
 
         // Auth Step
         finalInquiryTitle: "最終ステップ",

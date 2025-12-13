@@ -237,6 +237,30 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       }
   };
 
+  // --- DIAGNOSTIC HELPER ---
+  const getLinkStatus = (url?: string) => {
+      if (!url) return { status: 'empty', label: 'No Link', color: 'text-gray-500' };
+      
+      const isYoutube = extractYouTubeId(url);
+      if (isYoutube) return { status: 'ok', label: 'YouTube (OK)', color: 'text-green-500' };
+
+      if (url.includes('drive.google.com')) {
+          if (url.includes('/folders/') || url.includes('/drive/folders/')) {
+              return { status: 'error', label: '❌ FOLDER LINK (Must link to MP3 File)', color: 'text-red-500 font-bold' };
+          }
+          return { status: 'warning', label: 'Google Drive (Check "Anyone with Link")', color: 'text-yellow-500' };
+      }
+
+      if (url.includes('dropbox.com')) {
+          if (url.includes('/fo/') || url.includes('/sh/')) {
+              return { status: 'error', label: '❌ FOLDER LINK (Must link to MP3 File)', color: 'text-red-500 font-bold' };
+          }
+          return { status: 'ok', label: 'Dropbox (Auto-Optimized)', color: 'text-green-500' };
+      }
+      
+      return { status: 'unknown', label: 'Direct URL', color: 'text-blue-400' };
+  };
+
   const startEdit = (song: Song) => {
       setEditingSongId(song.id);
       setEditForm({
@@ -412,6 +436,25 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
              <button onClick={onBack} className="text-xs text-gray-500 hover:text-white transition-colors">Exit</button>
           </div>
         </header>
+        
+        {/* PERMISSION CHECKER / REMINDER */}
+        <div className="bg-red-900/20 border border-red-700/50 p-6 rounded-lg mb-8 animate-fade-in flex flex-col gap-4">
+             <div className="flex items-start gap-4">
+                <div className="text-red-500 text-3xl">⚠️</div>
+                <div>
+                    <h3 className="text-red-500 font-bold mb-2 text-lg">CRITICAL FIX REQUIRED (For Public Access)</h3>
+                    <p className="text-sm text-gray-300 mb-2">
+                        You MUST change your Google Drive folder permissions, otherwise <strong>ONLY YOU</strong> can hear the music.
+                    </p>
+                    <ol className="list-decimal list-inside text-xs text-white space-y-1 bg-black/40 p-4 rounded border border-white/10">
+                        <li>Go to your Google Drive.</li>
+                        <li>Right click the <strong>MP3 file</strong> (or the folder).</li>
+                        <li>Select <strong>Share</strong> (共用).</li>
+                        <li>Under "General Access" (一般存取權), change "Restricted" (僅限您) to <span className="text-gold font-bold underline">"Anyone with the link" (知道連結的任何人)</span>.</li>
+                    </ol>
+                </div>
+             </div>
+        </div>
 
         {/* SQL Setup Instructions */}
         {(isMissingSongs || isMissingVotes || isConnectionError) && (
@@ -629,7 +672,10 @@ create policy "Public Insert Votes" on votes for insert with check (true);
 
                 {/* Song List */}
                 <div className="space-y-2">
-                    {localSongs.map(song => (
+                    {localSongs.map(song => {
+                        const status = getLinkStatus(song.customAudioUrl || (song.youtubeId ? `https://youtu.be/${song.youtubeId}` : ''));
+                        
+                        return (
                         <div key={song.id} className="bg-white/5 p-4 rounded border border-white/10 hover:border-gold/30 transition-all">
                              {editingSongId === song.id ? (
                                  <div className="space-y-4">
@@ -681,7 +727,11 @@ create policy "Public Insert Votes" on votes for insert with check (true);
                                      <div className="flex items-center gap-4">
                                          <span className="text-xs font-mono text-gray-500 w-8">#{String(song.id).padStart(2,'0')}</span>
                                          <div>
-                                             <div className="font-bold text-gray-200">{song.title}</div>
+                                             <div className="font-bold text-gray-200 flex items-center gap-2">
+                                                 {song.title}
+                                                 {/* Status Indicator */}
+                                                 <span className={`text-[9px] uppercase border px-1 rounded ${status.color} border-current opacity-70`}>{status.label}</span>
+                                             </div>
                                              <div className="text-[10px] text-gray-500 truncate max-w-xs">{song.youtubeId ? `YouTube: ${song.youtubeId}` : song.customAudioUrl || 'No Audio Source'}</div>
                                          </div>
                                      </div>
@@ -692,7 +742,7 @@ create policy "Public Insert Votes" on votes for insert with check (true);
                                  </div>
                              )}
                         </div>
-                    ))}
+                    )}})}
                 </div>
             </div>
         )}
