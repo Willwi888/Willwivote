@@ -63,7 +63,8 @@ const ArtistHomeView: React.FC<{
             <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-black/90 backdrop-blur-md py-4 border-b border-gold/30' : 'py-8'}`}>
                 <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
                     <div className="flex items-center gap-10">
-                        <div className="text-lg md:text-xl font-serif font-bold text-metallic tracking-widest drop-shadow-[0_0_20px_rgba(255,215,0,0.6)] animate-pulse-slow">WILLWI</div>
+                        {/* INCREASED LOGO SIZE: text-lg -> text-3xl */}
+                        <div className="text-2xl md:text-3xl lg:text-4xl font-serif font-bold text-metallic tracking-widest drop-shadow-[0_0_20px_rgba(255,215,0,0.6)] animate-pulse-slow">WILLWI</div>
                         <div className="w-[1px] h-4 bg-gold/50 hidden md:block"></div>
                         <LangSwitcher lang={lang} setLang={setLang} className="hidden md:flex" />
                     </div>
@@ -100,9 +101,9 @@ const ArtistHomeView: React.FC<{
                      </div>
                  )}
 
-                 {/* Content Layer (RIGHT Aligned) - MOVED TO RIGHT SIDE */}
+                 {/* Content Layer (RIGHT Aligned) - MOVED TO RIGHT SIDE with MORE PADDING */}
                  {!playHeroVideo && (
-                     <div className="relative z-10 w-full md:w-[55%] h-full flex flex-col justify-center items-end ml-auto px-8 md:px-16 animate-slide-up text-right">
+                     <div className="relative z-10 w-full md:w-[65%] h-full flex flex-col justify-center items-end ml-auto px-8 md:px-16 lg:pr-40 animate-slide-up text-right">
                         <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold pb-4 inline-block mb-8 drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]">
                             The 2026 Collection
                         </h2>
@@ -113,9 +114,9 @@ const ArtistHomeView: React.FC<{
                         </h1>
                         <div className="text-3xl md:text-5xl lg:text-6xl italic text-metallic font-serif mb-8 drop-shadow-[0_0_25px_rgba(255,215,0,0.8)]">摯愛</div>
 
-                        {/* Description - Switched Border to RIGHT */}
-                        <div className="border-r-4 border-gold pr-6 mb-12 w-full bg-black/40 backdrop-blur-md p-6 rounded-l-lg shadow-[0_0_50px_rgba(255,215,0,0.1)] border border-white/5">
-                            <p className="text-white text-sm md:text-lg font-serif leading-9 whitespace-pre-wrap tracking-wide text-right drop-shadow-md">
+                        {/* Description - Removed Rigid Box, Added Soft Gradient Fade */}
+                        <div className="mb-12 w-full md:max-w-xl bg-gradient-to-l from-black/90 via-black/40 to-transparent p-8 md:pr-0 rounded-xl backdrop-blur-sm border-r border-gold/30 shadow-none md:shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
+                            <p className="text-white text-sm md:text-lg font-serif leading-9 whitespace-pre-wrap tracking-wide text-right drop-shadow-md pr-4">
                                 {t.homeBody}
                             </p>
                         </div>
