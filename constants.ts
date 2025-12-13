@@ -4,16 +4,18 @@ import { Song, Language, SocialLink } from './types';
 export const getAudioUrl = (source: string) => {
     if (!source) return '';
     
-    // Dropbox Direct Link Conversion
-    if (source.includes('dropbox.com') || source.includes('dropboxusercontent.com')) {
+    let finalUrl = source.trim();
+
+    // --- DROPBOX OPTIMIZATION ---
+    if (finalUrl.includes('dropbox.com') || finalUrl.includes('dropboxusercontent.com')) {
         // If it's a folder link, we can't play it directly, but return as is for "Open Link" button
-        if (source.includes('/fo/')) return source; 
-        
-        let finalUrl = source;
+        if (finalUrl.includes('/fo/')) return finalUrl; 
         
         // 1. Convert domain to dl.dropboxusercontent.com for better streaming support (avoids 302 redirect issues)
         if (finalUrl.includes('www.dropbox.com')) {
             finalUrl = finalUrl.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+        } else if (finalUrl.includes('//dropbox.com')) {
+             finalUrl = finalUrl.replace('//dropbox.com', '//dl.dropboxusercontent.com');
         }
         
         // 2. Ensure dl=1 (Direct Download) is active
@@ -23,13 +25,33 @@ export const getAudioUrl = (source: string) => {
             // Append dl=1 if missing
             finalUrl = finalUrl + (finalUrl.includes('?') ? '&dl=1' : '?dl=1');
         }
+        
+        // 3. Cache Buster (Optional, helps if file changed recently)
+        // finalUrl = finalUrl + '&t=' + Date.now(); 
 
         return finalUrl;
     }
 
-    if (source.startsWith('http') || source.startsWith('blob:')) return source;
-    // Assume Google Drive ID
-    return `https://docs.google.com/uc?export=download&id=${source}`;
+    // --- GOOGLE DRIVE OPTIMIZATION ---
+    // Detect typical Google Drive ID format or full URL
+    if (finalUrl.includes('drive.google.com') || (finalUrl.match(/^[a-zA-Z0-9_-]{20,}$/) && !finalUrl.startsWith('http'))) {
+        
+        let id = finalUrl;
+        if (finalUrl.startsWith('http')) {
+             // Try to extract ID from URL
+             const match = finalUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || finalUrl.match(/id=([a-zA-Z0-9_-]+)/);
+             if (match) id = match[1];
+        }
+
+        // Use the official download endpoint with confirmation to bypass "Virus Scan" warnings for large files
+        // which often break audio tags on mobile
+        return `https://docs.google.com/uc?export=download&id=${id}&confirm=t`;
+    }
+
+    if (finalUrl.startsWith('http') || finalUrl.startsWith('blob:')) return finalUrl;
+    
+    // Default fallback (Assume ID)
+    return `https://docs.google.com/uc?export=download&id=${finalUrl}&confirm=t`;
 };
 
 // --- ARTIST PROFILE DATA ---

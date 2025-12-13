@@ -42,8 +42,15 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // 1. Initialize Audio Object ONCE
   useEffect(() => {
     const audio = new Audio();
+    // CRITICAL FIX: Do NOT set crossOrigin to "anonymous" for Dropbox/Drive links.
+    // Mobile Safari blocks redirects from these services if CORS is strictly requested but headers are missing.
+    audio.removeAttribute('crossorigin'); 
+    
+    // CRITICAL FIX: Add playsinline to prevent iOS from forcing fullscreen video player
+    audio.setAttribute('playsinline', 'true');
+    audio.setAttribute('webkit-playsinline', 'true');
+    
     audio.preload = "none"; 
-    audio.crossOrigin = "anonymous"; 
     audioRef.current = audio;
 
     // --- EVENT LISTENERS ---
@@ -59,14 +66,17 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Ignore empty src errors
         if (!target.src || target.src === window.location.href) return;
         
-        console.error("Audio Error:", target.error);
+        console.error("Audio Error:", target.error, target.src);
         setIsLoading(false);
         setIsPlaying(false);
         setError(true);
     };
     const handleCanPlay = () => {
-        setIsLoading(false);
-        setError(false);
+        // Only set loading to false if we are actually ready
+        if (audio.readyState >= 3) {
+            setIsLoading(false);
+            setError(false);
+        }
         if (audio.duration) setDuration(audio.duration);
     };
     const handleWaiting = () => setIsLoading(true);
@@ -76,12 +86,16 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setError(false);
     };
     const handlePause = () => setIsPlaying(false);
+    const handleLoadedMetadata = () => {
+        if (audio.duration && !isNaN(audio.duration)) setDuration(audio.duration);
+    };
 
     // Attach
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('error', handleError);
     audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata); // Added metadata handler
     audio.addEventListener('waiting', handleWaiting);
     audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('pause', handlePause);
@@ -94,6 +108,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         audio.removeEventListener('timeupdate', handleTimeUpdate);
         audio.removeEventListener('error', handleError);
         audio.removeEventListener('canplay', handleCanPlay);
+        audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
         audio.removeEventListener('waiting', handleWaiting);
         audio.removeEventListener('playing', handlePlaying);
         audio.removeEventListener('pause', handlePause);
@@ -103,7 +118,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // 2. Mobile Unlock (Optional, for "Enter" button)
   const initializeAudio = () => {
       const audio = audioRef.current;
-      if (audio && audio.paused) {
+      if (audio) {
+          // Subtle unlock for iOS
           audio.load();
       }
   };
@@ -126,21 +142,23 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     // New Song
-    // Update State
     setPlayingId(id);
     setCurrentTitle(title);
     setIsLoading(true);
     setError(false);
     
-    // EXECUTE IMMEDIATELY (Do not wait for re-render)
+    // Reset Playback
+    audio.currentTime = 0;
     audio.src = url;
     audio.load();
+    
     const playPromise = audio.play();
     
     if (playPromise !== undefined) {
         playPromise
             .then(() => {
                 // Success
+                setError(false);
             })
             .catch(e => {
                 console.error("Play start error:", e);
