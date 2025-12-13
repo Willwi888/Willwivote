@@ -17,7 +17,7 @@ const LangSwitcher: React.FC<{ lang: Language; setLang: (l: Language) => void; c
             <button 
                 key={l}
                 onClick={() => setLang(l)}
-                className={`text-[9px] uppercase tracking-[0.25em] transition-all duration-500 font-sans ${lang === l ? 'text-gold font-bold scale-125 drop-shadow-[0_0_8px_rgba(255,215,0,0.8)]' : 'text-gray-500 hover:text-white'}`}
+                className={`text-[9px] uppercase tracking-[0.25em] transition-all duration-500 font-sans ${lang === l ? 'text-gold font-bold scale-125 drop-shadow-[0_0_15px_rgba(255,215,0,0.8)]' : 'text-gray-500 hover:text-white'}`}
             >
                 {l}
             </button>
@@ -57,10 +57,10 @@ const ArtistHomeView: React.FC<{
     return (
         <div className="min-h-screen bg-[#020202] text-white font-serif selection:bg-gold selection:text-black">
              {/* Navigation */}
-            <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-black/80 backdrop-blur-md py-4 border-b border-gold/20' : 'py-8'}`}>
+            <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-black/90 backdrop-blur-md py-4 border-b border-gold/30' : 'py-8'}`}>
                 <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
                     <div className="flex items-center gap-10">
-                        <div className="text-lg md:text-xl font-serif font-bold text-metallic tracking-widest drop-shadow-[0_0_10px_rgba(255,215,0,0.5)]">WILLWI</div>
+                        <div className="text-lg md:text-xl font-serif font-bold text-metallic tracking-widest drop-shadow-[0_0_20px_rgba(255,215,0,0.6)] animate-pulse-slow">WILLWI</div>
                         <div className="w-[1px] h-4 bg-gold/50 hidden md:block"></div>
                         <LangSwitcher lang={lang} setLang={setLang} className="hidden md:flex" />
                     </div>
@@ -78,9 +78,10 @@ const ArtistHomeView: React.FC<{
                                 src={ARTIST_DATA.images.hero}
                                 className="w-full h-full object-cover object-top opacity-100 transition-transform duration-[20s] hover:scale-105" 
                                 alt="Willwi Main Portrait" 
+                                crossOrigin="anonymous"
                             />
                             {/* Gradients moved to BOTTOM/SIDES only, leaving face clear */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/20 to-transparent"></div>
                             <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-black to-transparent opacity-90"></div>
                          </>
                      ) : (
@@ -109,24 +110,24 @@ const ArtistHomeView: React.FC<{
                  {/* Content Layer (Left Aligned) - Added STRONG GLOW */}
                  {!playHeroVideo && (
                      <div className="relative z-10 w-full max-w-4xl px-8 md:px-16 pt-20 flex flex-col items-start animate-slide-up">
-                        <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold pb-4 inline-block mb-8 drop-shadow-[0_0_5px_rgba(255,215,0,0.8)]">
+                        <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold pb-4 inline-block mb-8 drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]">
                             The 2026 Collection
                         </h2>
                         
-                        {/* SACHIKO GLOW TITLE */}
-                        <h1 className="text-6xl md:text-9xl font-serif text-white tracking-wide leading-none mb-4 animate-sachiko-glow">
+                        {/* SACHIKO GLOW TITLE - INTENSE */}
+                        <h1 className="text-6xl md:text-9xl font-serif text-white tracking-wide leading-none mb-4 animate-sachiko-glow drop-shadow-[0_0_30px_rgba(255,215,0,0.5)]">
                             BELOVED
                         </h1>
-                        <div className="text-3xl md:text-6xl italic text-metallic font-serif mb-8 drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]">摯愛</div>
+                        <div className="text-3xl md:text-6xl italic text-metallic font-serif mb-8 drop-shadow-[0_0_25px_rgba(255,215,0,0.8)]">摯愛</div>
 
-                        <div className="border-l-4 border-gold pl-6 mb-12 max-w-xl bg-black/30 backdrop-blur-sm p-4 rounded-r-lg shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                        <div className="border-l-4 border-gold pl-6 mb-12 max-w-xl bg-black/40 backdrop-blur-md p-6 rounded-r-lg shadow-[0_0_50px_rgba(255,215,0,0.1)] border border-white/5">
                             <p className="text-white text-sm md:text-lg font-serif leading-9 whitespace-pre-wrap tracking-wide text-justify drop-shadow-md">
                                 {t.homeBody}
                             </p>
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center">
-                             <button onClick={onEnterEvent} className="group relative px-12 py-5 bg-gold text-black overflow-hidden shadow-[0_0_50px_rgba(255,215,0,0.5)] hover:shadow-[0_0_80px_rgba(255,215,0,0.8)] hover:scale-105 transition-all duration-500 border-2 border-white/20">
+                             <button onClick={onEnterEvent} className="group relative px-12 py-5 bg-gold text-black overflow-hidden shadow-[0_0_60px_rgba(255,215,0,0.6)] hover:shadow-[0_0_100px_rgba(255,215,0,1)] hover:scale-105 transition-all duration-500 border-2 border-white/20">
                                 <span className="relative z-10 text-sm font-bold uppercase tracking-[0.3em] flex items-center gap-3">
                                     {t.enter} <ArrowLeftIcon className="rotate-180 w-5 h-5" />
                                 </span>
@@ -163,12 +164,12 @@ const ArtistHomeView: React.FC<{
                  )}
             </header>
 
-            <section className="relative w-full py-20 md:py-32 px-6 md:px-12 max-w-7xl mx-auto border-t border-gold/10 bg-[#020202] z-10">
+            <section className="relative w-full py-20 md:py-32 px-6 md:px-12 max-w-7xl mx-auto border-t border-gold/20 bg-[#020202] z-10">
                  <div className="grid md:grid-cols-2 gap-16 items-center">
                       <div className="order-2 md:order-1 space-y-12 animate-slide-up">
                           <div>
-                              <h3 className="text-4xl font-serif text-metallic mb-8 drop-shadow-[0_0_15px_rgba(255,215,0,0.3)]">{t.profile}</h3>
-                              <p className="text-gold font-sans tracking-[0.2em] uppercase leading-relaxed max-w-md mb-8 font-bold">
+                              <h3 className="text-4xl font-serif text-metallic mb-8 drop-shadow-[0_0_15px_rgba(255,215,0,0.4)]">{t.profile}</h3>
+                              <p className="text-gold font-sans tracking-[0.2em] uppercase leading-relaxed max-w-md mb-8 font-bold text-shadow-glow">
                                   {ARTIST_DATA.title}
                               </p>
                               <div className="flex flex-col gap-6">
@@ -190,22 +191,28 @@ const ArtistHomeView: React.FC<{
                           </div>
                       </div>
 
-                      {/* PROFILE IMAGE - SACHIKO GLOW FRAME */}
-                      <div className="order-1 md:order-2 relative h-[600px] w-full overflow-hidden rounded-lg group">
-                           {/* Glow Container */}
-                          <div className="absolute -inset-1 bg-gradient-to-r from-gold via-white to-gold opacity-30 blur-lg animate-pulse-slow"></div>
+                      {/* PROFILE IMAGE - SACHIKO GLOW FRAME - MAX INTENSITY */}
+                      <div className="order-1 md:order-2 relative h-[600px] w-full group">
+                           {/* 1. Massive Background Glow */}
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-radial-gold blur-3xl animate-pulse-slow"></div>
                           
-                          <div className="relative h-full w-full bg-gray-900 rounded-lg overflow-hidden border border-gold/30">
+                          {/* 2. Rotating Gold Ring */}
+                          <div className="absolute -inset-4 border border-gold/20 rounded-lg animate-spin-slow"></div>
+                          
+                          {/* 3. The Image Container */}
+                          <div className="relative h-full w-full bg-gray-900 rounded-lg overflow-hidden sachiko-halo transition-transform duration-500 hover:scale-[1.02]">
                               <img 
                                 src={ARTIST_DATA.images.profile}
                                 onError={(e) => {
-                                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                    // Fallback if Proxy fails (Rare)
+                                    console.error("Image Failed", e);
                                 }}
-                                className="w-full h-full object-cover transition-transform duration-[5s] ease-in-out hover:scale-105" 
+                                className="w-full h-full object-cover" 
                                 alt="Artist Profile"
+                                crossOrigin="anonymous"
                               />
-                              {/* Subtle vignette only */}
-                              <div className="absolute inset-0 ring-1 ring-inset ring-gold/20"></div>
+                              {/* 4. Inner Breathing Border */}
+                              <div className="absolute inset-0 border-4 border-gold/0 animate-breathe-gold pointer-events-none"></div>
                           </div>
                       </div>
                  </div>

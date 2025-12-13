@@ -1,17 +1,26 @@
 
 import { Song, Language, SocialLink } from './types';
 
+export const getAudioUrl = (source: string) => {
+    if (!source) return '';
+    if (source.startsWith('http') || source.startsWith('blob:')) return source;
+    // Assume Google Drive ID
+    return `https://docs.google.com/uc?export=download&id=${source}`;
+};
+
 // --- ARTIST PROFILE DATA ---
 export const ARTIST_DATA = {
     name: "Willwi 陳威兒",
     englishName: "WILLWI", 
     title: "Singer-Songwriter & Producer",
     images: {
-        // Main Visual / Album Cover (Man in Suit) - Used for both Background & Profile
-        hero: "https://drive.google.com/uc?export=view&id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9", 
+        // Main Visual / Album Cover (Man in Suit)
+        // 使用 wsrv.nl 代理伺服器來強制讀取並快取 Google Drive 圖片，解決破圖問題。
+        // q=100 (最高畫質), output=jpg (確保格式)
+        hero: "https://wsrv.nl/?url=drive.google.com/uc?id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9&output=jpg&w=1200&q=100", 
         
-        // Secondary Profile Image (Now using the same Main Visual per request)
-        profile: "https://drive.google.com/uc?export=view&id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9" 
+        // Secondary Profile Image (Same image for consistency as per user input)
+        profile: "https://wsrv.nl/?url=drive.google.com/uc?id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9&output=jpg&w=1200&q=100" 
     },
     // MAIN FEATURED VIDEO -> FULL ALBUM PLAYLIST
     featuredSong: {
@@ -289,30 +298,8 @@ export const SONGS: Song[] = Array.from({ length: 40 }, (_, i) => ({
   title: `Studio Session ${String(i + 1).padStart(2, '0')}`,
   driveId: '',
   youtubeId: '',
+  customAudioUrl: '',
+  customImageUrl: '',
   lyrics: '',
   credits: ''
 }));
-
-export const getAudioUrl = (input: string) => {
-    if (!input) return '';
-    const url = input.trim();
-    if (url.startsWith('http')) {
-        if (url.match(/dropbox\.com/)) {
-            let dlUrl = url.replace(/https?:\/\/(www\.)?dropbox\.com/, 'https://dl.dropboxusercontent.com');
-            dlUrl = dlUrl.replace(/[?&]dl=0/, '');
-            return dlUrl;
-        }
-        return url;
-    }
-    
-    if (url.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(url)) {
-        return '';
-    }
-
-    // Default to Drive for other IDs
-    return `https://drive.google.com/uc?export=download&confirm=t&id=${url}`;
-};
-
-export const getYouTubeThumbnail = (id: string) => {
-  return `https://img.youtube.com/vi/${id}/mqdefault.jpg`; 
-};
