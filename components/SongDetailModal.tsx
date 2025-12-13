@@ -125,7 +125,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                     <iframe 
                         key={song.id} 
                         className="w-full h-full object-cover" 
-                        src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=1&playsinline=1&rel=0&controls=1&modestbranding=1&loop=1`}
+                        src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=1&playsinline=1&rel=0&controls=1&modestbranding=1&loop=1&origin=${encodeURIComponent(window.location.origin)}`}
                         title={song.title}
                         frameBorder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

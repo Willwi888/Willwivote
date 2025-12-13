@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { getSongs, getGlobalConfig, saveUserSession, getUserSession, fetchRemoteSongs, extractYouTubeId, saveVote } from './services/storage';
 import { Song, User, AppStep, MAX_VOTES, Language } from './types';
 import { TRANSLATIONS, ARTIST_DATA } from './constants';
 import { AudioProvider, useAudio } from './components/AudioContext';
-import { HeartIcon, ArrowLeftIcon, CheckIcon, PlayIcon, PauseIcon, SpinnerIcon, RetryIcon } from './components/Icons';
+import { HeartIcon, ArrowLeftIcon, CheckIcon, PlayIcon, PauseIcon, SpinnerIcon, RetryIcon, XIcon } from './components/Icons';
 import { AdminView } from './components/AdminView';
 import { SongDetailModal } from './components/SongDetailModal';
 import AudioPlayer from './components/AudioPlayer';
@@ -89,20 +90,36 @@ const ArtistHomeView: React.FC<{
                              <iframe 
                                 className="w-full h-full object-cover" 
                                 src={playlistId 
-                                    ? `https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1&mute=0&loop=1&controls=1&rel=0&modestbranding=1&playsinline=1`
-                                    : `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0&loop=1&playlist=${youtubeId}&controls=1&rel=0&modestbranding=1&playsinline=1`
+                                    ? `https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1&mute=0&loop=1&controls=1&rel=0&modestbranding=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`
+                                    : `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0&loop=1&playlist=${youtubeId}&controls=1&rel=0&modestbranding=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`
                                 }
                                 title="Hero Video"
                                 frameBorder="0"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 allowFullScreen
                             ></iframe>
-                             <button 
-                                onClick={() => setPlayHeroVideo(false)}
-                                className="absolute top-6 right-6 z-50 text-white/70 hover:text-white uppercase text-[10px] tracking-widest border border-white/20 hover:border-white px-6 py-2 rounded-full bg-black/50 backdrop-blur transition-all"
-                             >
-                                Close Player
-                             </button>
+                            
+                             {/* UX IMPROVEMENT: High Visibility Close Button */}
+                             <div className="absolute top-6 right-6 z-50">
+                                <button 
+                                    onClick={() => setPlayHeroVideo(false)}
+                                    className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/20 text-white pl-3 pr-4 py-2 rounded-full hover:bg-gold hover:text-black hover:border-gold transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] group"
+                                >
+                                    <XIcon className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+                                    <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Close</span>
+                                </button>
+                             </div>
+
+                             {/* UX IMPROVEMENT: Direct Entry from Video */}
+                             <div className="absolute bottom-12 left-0 w-full flex justify-center z-50 pointer-events-none">
+                                <button 
+                                    onClick={onEnterEvent} 
+                                    className="pointer-events-auto px-8 py-3 bg-gold text-black rounded-full shadow-[0_0_30px_rgba(255,215,0,0.6)] hover:shadow-[0_0_50px_rgba(255,215,0,1)] hover:scale-105 transition-all duration-500 border border-white/20 flex items-center gap-3 group/enter"
+                                >
+                                    <span className="text-xs font-bold uppercase tracking-[0.25em]">{t.enter}</span>
+                                    <ArrowLeftIcon className="rotate-180 w-4 h-4 group-hover/enter:translate-x-1 transition-transform" />
+                                </button>
+                             </div>
                          </div>
                      )}
                  </div>

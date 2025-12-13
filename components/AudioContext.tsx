@@ -29,7 +29,6 @@ export const useAudio = () => {
 
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const blobUrlRef = useRef<string | null>(null); // Keep track of blob URLs to revoke them
 
   const [playingId, setPlayingId] = useState<number | string | null>(null);
   const [currentSrc, setCurrentSrc] = useState<string>('');
@@ -44,8 +43,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Setup Audio Object
   useEffect(() => {
     const audio = new Audio();
-    audio.preload = "none"; // Security: Don't load until requested
-    // Security: Anonymous cross-origin to prevent sending credentials
+    audio.preload = "none"; 
+    // Security: Anonymous cross-origin
     audio.crossOrigin = "anonymous"; 
     
     audioRef.current = audio;
@@ -61,7 +60,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const handleError = (e: Event) => {
         const target = e.target as HTMLAudioElement;
-        // Don't report error if it's just the initial state
+        // Don't report error if it's just the initial state or empty
         if (!target.src || target.src === window.location.href) return;
         
         console.error("Audio Playback Error Occurred:");
@@ -70,11 +69,13 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         setIsLoading(false);
         setIsPlaying(false);
-        setError(true);
+        // Only set error if we were actually trying to play
+        if (playingId) setError(true);
     };
 
     const handleCanPlay = () => {
         setIsLoading(false);
+        setError(false);
         if (audio.duration) setDuration(audio.duration);
     };
     
@@ -83,21 +84,21 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('error', handleError);
     audio.addEventListener('canplay', handleCanPlay);
+    // Sync state with actual audio events
     audio.addEventListener('pause', () => setIsPlaying(false));
     audio.addEventListener('play', () => setIsPlaying(true));
+    audio.addEventListener('waiting', () => setIsLoading(true));
+    audio.addEventListener('playing', () => setIsLoading(false));
 
     return () => {
         audio.pause();
         audio.src = '';
-        if (blobUrlRef.current) {
-            URL.revokeObjectURL(blobUrlRef.current);
-        }
         audio.removeEventListener('ended', handleEnded);
         audio.removeEventListener('timeupdate', handleTimeUpdate);
         audio.removeEventListener('error', handleError);
         audio.removeEventListener('canplay', handleCanPlay);
     };
-  }, []);
+  }, [playingId]);
 
   // MOBILE UNLOCK FUNCTION
   // Must be called inside a click event handler (e.g. "Enter Studio")
@@ -107,11 +108,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       // We play a silent buffer or just play/pause to unlock the AudioContext
       if (audio.paused && !playingId) {
-          audio.play().then(() => {
-              audio.pause();
-          }).catch(e => {
-              console.log("Audio unlock attempt (silent):", e);
-          });
+          audio.load(); // Force load
       }
   };
 
@@ -119,59 +116,52 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const audio = audioRef.current;
     if (!audio || !url) return;
 
-    // If same song, toggle
+    // Toggle logic
     if (playingId === id) {
         if (isPlaying) {
             audio.pause();
         } else {
-            audio.play().catch(e => console.error("Resume failed", e));
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => console.error("Resume failed", e));
+            }
         }
         return;
     }
 
-    // New song
+    // New song setup
     setPlayingId(id);
     setCurrentTitle(title);
     setCurrentSrc(url);
     setIsLoading(true);
     setError(false);
 
-    // CLEANUP PREVIOUS BLOB
-    if (blobUrlRef.current) {
-        URL.revokeObjectURL(blobUrlRef.current);
-        blobUrlRef.current = null;
-    }
-
-    try {
-        // SECURITY ATTEMPT: Try to fetch as Blob first (Hides URL)
-        // Note: This relies on the source allowing CORS. 
-        // If it fails (like Google Drive often does for XHR), we fallback to direct src.
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Fetch failed");
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            blobUrlRef.current = blobUrl;
-            audio.src = blobUrl;
-        } catch (fetchErr) {
-            // Fallback: Direct source (Protected by UI overlay)
-            // console.warn("Blob masking failed (CORS), falling back to direct stream.", fetchErr);
-            audio.src = url;
-        }
-
-        audio.load();
-        await audio.play();
-    } catch (e) {
-        console.error("Play failed for URL:", url, e);
-        setIsLoading(false);
-        setError(true);
+    // CRITICAL FOR MOBILE:
+    // We must set src and call play() synchronously within the event handler (or as close as possible).
+    // The previous async fetch() caused iOS to lose the "user gesture" token.
+    audio.src = url;
+    audio.load();
+    
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+        playPromise
+            .then(() => {
+                // Playback started successfully
+                setIsLoading(false);
+            })
+            .catch(e => {
+                console.error("Play failed:", e);
+                setIsLoading(false);
+                if (e.name !== 'AbortError') {
+                    setError(true);
+                }
+            });
     }
   };
 
   const pause = () => {
     if (audioRef.current) {
         audioRef.current.pause();
-        setIsPlaying(false);
     }
   };
 
