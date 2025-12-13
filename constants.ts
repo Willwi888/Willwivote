@@ -69,7 +69,20 @@ The legendary Sachiko Kobayashi once said:
 "The stage is earned through singing, not given. I hope to be remembered as a singer, not a topic."
 This quote stands as my highest guiding principle.
 
-With this in mind—listen, and choose your beloved.`
+With this in mind—listen, and choose your beloved.`,
+
+        jp: `WILLWI（ウィルウィ）、マルチリンガル・シンガーソングライター兼音楽プロデューサー。
+
+本イベントは、2026年第2四半期リリース予定のアルバム『摯愛 BELOVED』のプレ・キャンペーンです。様々なジャンルを網羅した40曲の未発表デモ音源を公開します。
+複数のレーベルとの権利関係やリリース計画が複雑に絡み合うため、今回は従来の常識を覆し、最終的な収録曲の決定権をリスナーの皆様に託すことにしました。
+
+これは単なるアルバム制作ではなく、「選択」という名の音楽実験です。
+
+演歌の女王・小林幸子先生の言葉を、私の音楽人生の指針としています。
+「舞台は誰かに与えられるものではなく、自分で歌って掴み取るもの。話題としてではなく、歌手として記憶されたい。」
+
+この信念を胸に。
+どうか試聴して、あなたの心に響く「摯愛」を選んでください。`
     },
     copyright: {
         text: "© 2026 Willwi Music Production. All Rights Reserved.",

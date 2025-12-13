@@ -57,6 +57,12 @@ const ArtistHomeView: React.FC<{
     const playlistId = featuredSong.url.match(/[?&]list=([^&]+)/)?.[1];
     const isDropboxFolder = featuredSong.url.includes('/fo/');
 
+    // Helper to get correct bio language with fallback
+    const getBioContent = () => {
+        // @ts-ignore - Accessing bio dynamic property based on language
+        return ARTIST_DATA.bio[lang] || ARTIST_DATA.bio.zh;
+    };
+
     return (
         <div className="min-h-screen font-serif selection:bg-gold selection:text-black">
              {/* Navigation */}
@@ -194,7 +200,7 @@ const ArtistHomeView: React.FC<{
                               <div className="flex flex-col gap-6">
                                   {/* Changed text-justify to text-left for mobile to improve readability */}
                                   <p className="text-gray-200 text-sm md:text-lg font-serif leading-9 whitespace-pre-wrap tracking-wide text-left md:text-justify">
-                                      {lang === 'en' ? ARTIST_DATA.bio.en : ARTIST_DATA.bio.zh}
+                                      {getBioContent()}
                                   </p>
                               </div>
                           </div>
