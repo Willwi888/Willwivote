@@ -50,6 +50,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     audio.setAttribute('playsinline', 'true');
     audio.setAttribute('webkit-playsinline', 'true');
     
+    // Set explicit type hint where possible, though browser detection is usually fine
     audio.preload = "none"; 
     audioRef.current = audio;
 
@@ -63,7 +64,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     const handleError = (e: Event) => {
         const target = e.target as HTMLAudioElement;
-        // Ignore empty src errors
+        // Ignore empty src errors or resets
         if (!target.src || target.src === window.location.href) return;
         
         console.error("Audio Error:", target.error, target.src);
@@ -80,6 +81,12 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (audio.duration) setDuration(audio.duration);
     };
     const handleWaiting = () => setIsLoading(true);
+    const handleStalled = () => {
+        // If data is unavailable, we might want to flag loading
+        console.warn("Audio Stalled");
+        // Don't set error immediately, just keep loading state
+        setIsLoading(true);
+    };
     const handlePlaying = () => {
         setIsLoading(false);
         setIsPlaying(true);
@@ -95,8 +102,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('error', handleError);
     audio.addEventListener('canplay', handleCanPlay);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata); // Added metadata handler
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata); 
     audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('stalled', handleStalled); // Added Stalled Listener
     audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('pause', handlePause);
 
@@ -110,6 +118,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         audio.removeEventListener('canplay', handleCanPlay);
         audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
         audio.removeEventListener('waiting', handleWaiting);
+        audio.removeEventListener('stalled', handleStalled);
         audio.removeEventListener('playing', handlePlaying);
         audio.removeEventListener('pause', handlePause);
     };
@@ -148,9 +157,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setError(false);
     
     // Reset Playback
+    audio.pause();
     audio.currentTime = 0;
     audio.src = url;
-    audio.load();
+    audio.load(); // CRITICAL: Call load() before play() on new source
     
     const playPromise = audio.play();
     

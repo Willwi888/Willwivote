@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { getAudioUrl } from '../constants';
+import { getAudioUrl, TRANSLATIONS } from '../constants';
 import { PlayIcon, PauseIcon, SpinnerIcon, VolumeIcon, RetryIcon } from './Icons';
 import { useAudio } from './AudioContext';
 import { extractYouTubeId } from '../services/storage';
@@ -14,6 +14,14 @@ interface AudioPlayerProps {
   showControls?: boolean;
   onToggleExternal?: () => void; // Optional callback when toggled
 }
+
+const ExternalLinkIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+    <polyline points="15 3 21 3 21 9"></polyline>
+    <line x1="10" y1="14" x2="21" y2="3"></line>
+  </svg>
+);
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({ 
   id,
@@ -48,13 +56,19 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   // Check if this is actually a YouTube link masquerading as audio
   const youtubeId = extractYouTubeId(rawUrl);
   const isYouTube = !!youtubeId;
+  const finalAudioUrl = getAudioUrl(rawUrl);
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // CASE 1: It's a YouTube link (Most of your songs)
-    // NUCLEAR FIX: Absolutely NO AudioContext logic here.
-    // Just execute the modal callback callback.
+    // CASE 1: Error State - Emergency Hatch
+    // If we already tried to play and it failed, clicking again should open the file externally
+    if (isError) {
+        window.open(finalAudioUrl, '_blank');
+        return;
+    }
+
+    // CASE 2: It's a YouTube link (Most of your songs)
     if (isYouTube) {
         if (onToggleExternal) {
             onToggleExternal();
@@ -64,17 +78,16 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         return; 
     }
 
-    // CASE 2: It's a real Audio file (MP3/Drive)
+    // CASE 3: It's a real Audio file (MP3/Drive)
     // We play it using the Audio engine.
     if (onToggleExternal) onToggleExternal(); // Still open modal if needed (for visuals)
 
-    const url = getAudioUrl(rawUrl);
-    if (!url) {
+    if (!finalAudioUrl) {
         console.warn("AudioPlayer: No valid URL for track", id);
         return;
     }
 
-    playSong(id, url, title);
+    playSong(id, finalAudioUrl, title);
   };
 
   // Format time helper
@@ -116,16 +129,16 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               className={`
                   group/btn flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 outline-none
                   ${isReallyPlaying ? 'bg-gold text-black shadow-[0_0_15px_rgba(197,160,89,0.5)]' : 'border border-gold/30 text-gold hover:bg-gold hover:text-black'}
-                  ${isError ? '!border-red-500 !text-red-500 !bg-transparent shadow-[0_0_15px_rgba(220,38,38,0.3)]' : ''}
+                  ${isError ? '!border-white/50 !text-white !bg-white/10 shadow-none' : ''}
               `}
-              title={isError ? "Playback Error - Click to Retry" : title}
+              title={isError ? "Open File Externally" : title}
               >
               {isBuffering ? (
                   <SpinnerIcon className="w-4 h-4" />
               ) : isReallyPlaying ? (
                   <PauseIcon className="w-4 h-4" />
               ) : isError ? (
-                  <RetryIcon className="w-4 h-4" />
+                  <ExternalLinkIcon className="w-4 h-4" />
               ) : (
                   <PlayIcon className="w-4 h-4 translate-x-0.5" />
               )}
@@ -140,7 +153,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                       ? 'bg-gold text-black shadow-[0_0_50px_rgba(197,160,89,0.4)] border-gold scale-105' 
                       : 'bg-black/40 text-white border-white/20 hover:border-gold hover:text-gold hover:scale-105'
                   }
-                  ${isError ? '!border-red-500 !text-red-500 !bg-red-900/10 shadow-[0_0_30px_rgba(220,38,38,0.4)]' : ''}
+                  ${isError ? '!border-white/50 !text-white !bg-white/10 shadow-none' : ''}
                   ${isBuffering ? 'cursor-wait border-gold/50' : ''}
               `}
               >
@@ -150,8 +163,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   </div>
               ) : isError ? (
                    <div className="flex flex-col items-center justify-center animate-fade-in">
-                      <RetryIcon className="w-8 h-8 mb-1" />
-                      <span className="text-[8px] uppercase tracking-widest font-bold">Retry</span>
+                      <ExternalLinkIcon className="w-8 h-8 mb-1" />
+                      <span className="text-[8px] uppercase tracking-widest font-bold">Open</span>
                   </div>
               ) : isReallyPlaying ? (
                       <PauseIcon className="w-8 h-8" />
@@ -165,21 +178,21 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
       {/* Expanded Controls (Audio Only) */}
       {showControls && (
-          <div className={`flex items-center gap-4 w-full bg-[#0a0a0a] rounded-lg p-4 animate-fade-in border transition-colors duration-500 ${isError ? 'border-red-900 shadow-[0_0_20px_rgba(220,38,38,0.1)]' : 'border-gold/20 shadow-[0_0_20px_rgba(197,160,89,0.05)]'}`}>
+          <div className={`flex items-center gap-4 w-full bg-[#0a0a0a] rounded-lg p-4 animate-fade-in border transition-colors duration-500 ${isError ? 'border-white/20' : 'border-gold/20 shadow-[0_0_20px_rgba(197,160,89,0.05)]'}`}>
               
               <div className="flex items-center gap-4 w-full sm:w-auto">
                  {/* Play/Pause Mini Control */}
                  <button
                     onClick={handleToggle}
                     className={`w-10 h-10 flex items-center justify-center rounded-full transition-all shrink-0
-                        ${isError ? 'bg-red-900/20 text-red-500 border border-red-500/50' : 'bg-gold text-black hover:scale-105 shadow-[0_0_10px_rgba(197,160,89,0.3)]'}
+                        ${isError ? 'bg-white/10 text-white border border-white/30' : 'bg-gold text-black hover:scale-105 shadow-[0_0_10px_rgba(197,160,89,0.3)]'}
                     `}
                  >
-                     {isBuffering ? <SpinnerIcon className="w-4 h-4" /> : isError ? <RetryIcon className="w-4 h-4" /> : isReallyPlaying ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4 translate-x-0.5" />}
+                     {isBuffering ? <SpinnerIcon className="w-4 h-4" /> : isError ? <ExternalLinkIcon className="w-4 h-4" /> : isReallyPlaying ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4 translate-x-0.5" />}
                  </button>
 
                 {/* Progress Time */}
-                <span className={`text-[10px] font-serif tracking-widest w-10 text-right tabular-nums ${isError ? 'text-red-400' : 'text-gold'}`}>
+                <span className={`text-[10px] font-serif tracking-widest w-10 text-right tabular-nums ${isError ? 'text-gray-500' : 'text-gold'}`}>
                     {isCurrent ? formatTime(currentTime) : "0:00"}
                 </span>
               </div>
@@ -192,8 +205,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                       </div>
                   )}
                   {isError && (
-                      <div className="absolute -top-3 left-0 w-full text-center text-[8px] text-red-500 tracking-[0.2em] uppercase font-bold animate-pulse">
-                          Unable to Play
+                      <div className="absolute -top-3 left-0 w-full text-center text-[8px] text-gray-400 tracking-[0.2em] uppercase font-bold">
+                          Playback Failed. Click button to open file.
                       </div>
                   )}
                   
@@ -209,7 +222,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   />
                   {/* Progress Glow */}
                   <div 
-                    className={`absolute h-1 rounded-full pointer-events-none z-10 transition-all duration-100 ${isError ? 'bg-red-500 shadow-[0_0_10px_red]' : 'bg-gold shadow-[0_0_10px_#C5A059]'}`}
+                    className={`absolute h-1 rounded-full pointer-events-none z-10 transition-all duration-100 ${isError ? 'bg-gray-600' : 'bg-gold shadow-[0_0_10px_#C5A059]'}`}
                     style={{ width: `${isCurrent ? (currentTime / (duration || 1)) * 100 : 0}%` }} 
                   />
               </div>

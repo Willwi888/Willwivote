@@ -6,29 +6,23 @@ export const getAudioUrl = (source: string) => {
     
     let finalUrl = source.trim();
 
-    // --- DROPBOX OPTIMIZATION ---
-    if (finalUrl.includes('dropbox.com') || finalUrl.includes('dropboxusercontent.com')) {
-        // If it's a folder link, we can't play it directly, but return as is for "Open Link" button
-        if (finalUrl.includes('/fo/')) return finalUrl; 
+    // --- DROPBOX ULTIMATE FIX ---
+    // Handle: www.dropbox.com, dropbox.com, mobile links
+    if (finalUrl.match(/dropbox\.com/)) {
+        // If it's a folder link, we can't play it directly.
+        if (finalUrl.includes('/fo/') || finalUrl.includes('/sh/')) return finalUrl; 
         
-        // 1. Convert domain to dl.dropboxusercontent.com for better streaming support (avoids 302 redirect issues)
-        if (finalUrl.includes('www.dropbox.com')) {
-            finalUrl = finalUrl.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
-        } else if (finalUrl.includes('//dropbox.com')) {
-             finalUrl = finalUrl.replace('//dropbox.com', '//dl.dropboxusercontent.com');
-        }
+        // Force the domain to the content server
+        // This regex replaces "www.dropbox.com" or just "dropbox.com" with "dl.dropboxusercontent.com"
+        finalUrl = finalUrl.replace(/^(https?:\/\/)?(www\.)?dropbox\.com/, '$1dl.dropboxusercontent.com');
         
-        // 2. Ensure dl=1 (Direct Download) is active
+        // Ensure dl=1 (Direct Download) is active for streaming
         if (finalUrl.includes('dl=0')) {
             finalUrl = finalUrl.replace('dl=0', 'dl=1');
         } else if (!finalUrl.includes('dl=1')) {
-            // Append dl=1 if missing
             finalUrl = finalUrl + (finalUrl.includes('?') ? '&dl=1' : '?dl=1');
         }
         
-        // 3. Cache Buster (Optional, helps if file changed recently)
-        // finalUrl = finalUrl + '&t=' + Date.now(); 
-
         return finalUrl;
     }
 
@@ -38,14 +32,14 @@ export const getAudioUrl = (source: string) => {
         
         let id = finalUrl;
         if (finalUrl.startsWith('http')) {
-             // Try to extract ID from URL
+             // Try to extract ID from URL (d/ID or id=ID)
              const match = finalUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || finalUrl.match(/id=([a-zA-Z0-9_-]+)/);
              if (match) id = match[1];
         }
 
-        // Use the official download endpoint with confirmation to bypass "Virus Scan" warnings for large files
-        // which often break audio tags on mobile
-        return `https://docs.google.com/uc?export=download&id=${id}&confirm=t`;
+        // Use export=download & confirm=t to bypass virus scan warning for large files
+        // Add a random cache buster to prevent iOS Safari from serving a stale broken 302 redirect
+        return `https://docs.google.com/uc?export=download&id=${id}&confirm=t&cb=${Math.random().toString(36).substring(7)}`;
     }
 
     if (finalUrl.startsWith('http') || finalUrl.startsWith('blob:')) return finalUrl;
@@ -147,6 +141,8 @@ export const TRANSLATIONS = {
         cancel: "取消",
         confirmSelection: "確認投票",
         openInApp: "開啟連結",
+        openLink: "開啟連結",
+        playbackError: "無法播放，請點此開啟原檔",
 
         // Auth Step
         finalInquiryTitle: "最後一步",
@@ -189,6 +185,8 @@ export const TRANSLATIONS = {
         cancel: "CANCEL",
         confirmSelection: "CONFIRM VOTE",
         openInApp: "OPEN LINK",
+        openLink: "OPEN LINK",
+        playbackError: "Error. Click to open file.",
 
         // Auth Step
         finalInquiryTitle: "Final Step",
@@ -231,6 +229,8 @@ export const TRANSLATIONS = {
         cancel: "キャンセル",
         confirmSelection: "投票する",
         openInApp: "リンクを開く",
+        openLink: "リンクを開く",
+        playbackError: "エラー。ファイルを開く",
 
         // Auth Step
         finalInquiryTitle: "最終ステップ",
