@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getVotes, getLeaderboard, getSongs, updateSong, updateSongsBulk, getGlobalConfig, saveGlobalConfig, restoreFromBackup, publishSongsToCloud } from '../services/storage';
+import { getVotes, getLeaderboard, getSongs, updateSong, updateSongsBulk, getGlobalConfig, saveGlobalConfig, restoreFromBackup, publishSongsToCloud, fetchRemoteSongs } from '../services/storage';
 import { Song, User } from '../types';
 import { Layout, FadeIn } from './Layout';
 import { PlayIcon, SpinnerIcon, CheckIcon } from './Icons';
@@ -65,6 +65,15 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setIntroUrl(config.introAudioUrl || '');
       setHomeSongTitle(config.homepageSongTitle || '');
       setHomeSongUrl(config.homepageSongUrl || '');
+      
+      // Attempt to load remote config to populate fields if available
+      try {
+          const remoteData = await fetchRemoteSongs();
+          if (remoteData?.config) {
+             if (remoteData.config.homepageSongTitle) setHomeSongTitle(remoteData.config.homepageSongTitle);
+             if (remoteData.config.homepageSongUrl) setHomeSongUrl(remoteData.config.homepageSongUrl);
+          }
+      } catch (e) {}
 
       try {
         const fetchedVotes = await getVotes();
@@ -110,7 +119,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           homepageSongTitle: homeSongTitle,
           homepageSongUrl: homeSongUrl
       });
-      alert("✅ Homepage Settings Updated!");
+      alert("✅ Settings Saved locally. \n\nIMPORTANT: Click 'Publish to Cloud' to make these live on the website!");
   };
 
   const handlePublishToCloud = async () => {
@@ -118,11 +127,16 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           alert("Database setup required. Please see instructions.");
           return;
       }
-      if (!confirm("This will overwrite the Cloud song list with your local data. Are you sure?")) return;
+      if (!confirm("This will overwrite the Live Website with your local data (including Homepage Song). Are you sure?")) return;
       setIsPublishing(true);
       try {
-          await publishSongsToCloud(localSongs);
-          alert("✅ Success! Your songs are now live.");
+          // Pass the current config inputs to be saved as ID 0
+          await publishSongsToCloud(localSongs, {
+              introAudioUrl: introUrl,
+              homepageSongTitle: homeSongTitle,
+              homepageSongUrl: homeSongUrl
+          });
+          alert("✅ Success! Your songs AND homepage settings are now live.");
           loadAllData(); // Refresh status
       } catch (e) {
           console.error(e);
@@ -280,7 +294,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 
                 {/* 1. Global Config / Homepage Audio */}
                 <div className="bg-[#121212] rounded-xl border border-white/10 p-6 space-y-4">
-                     <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gold mb-2">Homepage Audio Settings</h3>
+                     <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gold mb-2">Homepage Audio Settings (Live)</h3>
                      
                      <div className="space-y-3">
                         <div>
@@ -301,17 +315,8 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 placeholder="Paste link here..."
                             />
                         </div>
-                        <div>
-                            <label className="block text-[9px] uppercase text-gray-500 mb-1">Intro Audio (Voting Page)</label>
-                            <input 
-                                className="w-full bg-[#050505] border border-white/10 p-2 text-white text-xs outline-none focus:border-gold rounded font-mono"
-                                value={introUrl}
-                                onChange={e => setIntroUrl(e.target.value)}
-                                placeholder="Optional Intro Audio URL"
-                            />
-                        </div>
                         <div className="flex justify-end pt-2">
-                             <button onClick={handleSaveGlobalConfig} className="bg-gold text-black px-4 py-2 rounded text-[10px] font-bold uppercase hover:bg-white">Save Settings</button>
+                             <button onClick={handleSaveGlobalConfig} className="bg-white/10 text-white px-4 py-2 rounded text-[10px] font-bold uppercase hover:bg-white hover:text-black">Save Draft</button>
                         </div>
                      </div>
                 </div>
@@ -445,7 +450,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                  <div className="bg-gradient-to-r from-gold/20 to-gold/5 p-6 rounded border border-gold/40 mb-8 flex items-center justify-between">
                      <div>
                          <h3 className="text-gold font-serif text-lg mb-1 flex items-center gap-2">🚀 Publish Changes</h3>
-                         <p className="text-[10px] text-gray-400">Push your local song edits to the Cloud so everyone can see them.</p>
+                         <p className="text-[10px] text-gray-400">Push your local song edits AND Homepage Settings to the Cloud.</p>
                      </div>
                      <button onClick={handlePublishToCloud} disabled={isPublishing || cloudStatus === 'missing_table'} className="bg-gold text-black px-6 py-3 rounded text-xs font-bold uppercase hover:bg-white transition-colors shadow-[0_0_20px_rgba(197,160,89,0.3)] disabled:opacity-50 disabled:cursor-not-allowed">{isPublishing ? 'Publishing...' : (cloudStatus === 'missing_table' ? 'Setup Required' : 'Publish to Cloud')}</button>
                  </div>

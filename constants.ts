@@ -7,11 +7,11 @@ export const ARTIST_DATA = {
     englishName: "WILLWI", 
     title: "Singer-Songwriter & Producer",
     images: {
-        // Main Artist Portrait
+        // Main Visual / Album Cover (Man in Suit) - Used for both Background & Profile
         hero: "https://drive.google.com/uc?export=view&id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9", 
         
-        // Secondary Profile Image
-        profile: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1287&auto=format&fit=crop" 
+        // Secondary Profile Image (Now using the same Main Visual per request)
+        profile: "https://drive.google.com/uc?export=view&id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9" 
     },
     // MAIN FEATURED VIDEO -> FULL ALBUM PLAYLIST
     featuredSong: {

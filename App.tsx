@@ -17,7 +17,7 @@ const LangSwitcher: React.FC<{ lang: Language; setLang: (l: Language) => void; c
             <button 
                 key={l}
                 onClick={() => setLang(l)}
-                className={`text-[9px] uppercase tracking-[0.25em] transition-all duration-500 font-sans ${lang === l ? 'text-gold font-bold scale-110' : 'text-gray-500 hover:text-white'}`}
+                className={`text-[9px] uppercase tracking-[0.25em] transition-all duration-500 font-sans ${lang === l ? 'text-gold font-bold scale-125 drop-shadow-[0_0_8px_rgba(255,215,0,0.8)]' : 'text-gray-500 hover:text-white'}`}
             >
                 {l}
             </button>
@@ -57,44 +57,34 @@ const ArtistHomeView: React.FC<{
     return (
         <div className="min-h-screen bg-[#020202] text-white font-serif selection:bg-gold selection:text-black">
              {/* Navigation */}
-            <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-black/90 backdrop-blur-md py-4 border-b border-white/5' : 'py-8'}`}>
+            <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-black/80 backdrop-blur-md py-4 border-b border-gold/20' : 'py-8'}`}>
                 <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
                     <div className="flex items-center gap-10">
-                        <div className="text-lg md:text-xl font-serif font-bold text-metallic tracking-widest">WILLWI</div>
-                        <div className="w-[1px] h-4 bg-white/20 hidden md:block"></div>
+                        <div className="text-lg md:text-xl font-serif font-bold text-metallic tracking-widest drop-shadow-[0_0_10px_rgba(255,215,0,0.5)]">WILLWI</div>
+                        <div className="w-[1px] h-4 bg-gold/50 hidden md:block"></div>
                         <LangSwitcher lang={lang} setLang={setLang} className="hidden md:flex" />
                     </div>
                 </div>
             </nav>
 
-            {/* Hero Section */}
-            <header className="relative w-full min-h-screen flex flex-col md:flex-row pt-20 md:pt-0">
-                 <div className="w-full md:w-[60%] h-[50vh] md:h-screen relative overflow-hidden bg-black group">
+            {/* Hero Section - Full Screen Background Design */}
+            <header className="relative w-full h-screen flex items-center overflow-hidden">
+                 {/* Background Layer */}
+                 <div className="absolute inset-0 z-0">
                      {!playHeroVideo ? (
                          <>
+                            {/* Main Background Image - OPAQUE for Clarity */}
                             <img 
                                 src={ARTIST_DATA.images.hero}
-                                className="absolute inset-0 w-full h-full object-cover object-top opacity-90 transition-transform duration-[10s] hover:scale-105" 
+                                className="w-full h-full object-cover object-top opacity-100 transition-transform duration-[20s] hover:scale-105" 
                                 alt="Willwi Main Portrait" 
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent"></div>
-                            
-                            {(youtubeId || playlistId) && (
-                                <button 
-                                    onClick={() => setPlayHeroVideo(true)}
-                                    className="absolute inset-0 w-full h-full flex items-center justify-center bg-black/10 hover:bg-black/30 transition-all duration-500 group/play cursor-pointer z-20"
-                                >
-                                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border border-white/30 bg-white/10 backdrop-blur-sm flex items-center justify-center group-hover/play:scale-110 group-hover/play:bg-gold group-hover/play:border-gold transition-all duration-500 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                                        <PlayIcon className="w-8 h-8 md:w-10 md:h-10 text-white group-hover/play:text-black ml-1 transition-colors" />
-                                    </div>
-                                    <div className="absolute bottom-12 md:bottom-20 left-1/2 -translate-x-1/2 text-white/80 text-[10px] uppercase tracking-[0.3em] font-sans group-hover/play:text-gold transition-colors">
-                                        {playlistId ? "Play Album" : "Watch Music Video"}
-                                    </div>
-                                </button>
-                            )}
+                            {/* Gradients moved to BOTTOM/SIDES only, leaving face clear */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent"></div>
+                            <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-black to-transparent opacity-90"></div>
                          </>
                      ) : (
-                         <div className="absolute inset-0 w-full h-full bg-black">
+                         <div className="absolute inset-0 w-full h-full bg-black z-20 animate-fade-in">
                              <iframe 
                                 className="w-full h-full object-cover" 
                                 src={playlistId 
@@ -108,76 +98,91 @@ const ArtistHomeView: React.FC<{
                             ></iframe>
                              <button 
                                 onClick={() => setPlayHeroVideo(false)}
-                                className="absolute top-4 right-4 z-50 text-white/50 hover:text-white uppercase text-[9px] tracking-widest border border-white/20 px-4 py-2 rounded bg-black/50"
+                                className="absolute top-6 right-6 z-50 text-white/70 hover:text-white uppercase text-[10px] tracking-widest border border-white/20 hover:border-white px-6 py-2 rounded-full bg-black/50 backdrop-blur transition-all"
                              >
-                                Close Video
+                                Close Player
                              </button>
                          </div>
                      )}
                  </div>
 
-                 <div className="w-full md:w-[40%] min-h-[50vh] md:h-screen flex flex-col justify-center items-start px-8 md:px-16 py-12 relative z-10 bg-[#020202] border-l border-white/5">
-                     <div className="animate-slide-up space-y-8 relative z-20 w-full">
-                        <div>
-                            <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold/30 pb-4 inline-block mb-6">
-                                The 2026 Collection
-                            </h2>
-                            <h1 className="text-5xl md:text-7xl font-serif text-white tracking-wide leading-none mb-2 text-glow">
-                                BELOVED
-                            </h1>
-                            <div className="text-3xl md:text-4xl italic text-metallic font-serif">摯愛</div>
-                        </div>
+                 {/* Content Layer (Left Aligned) - Added STRONG GLOW */}
+                 {!playHeroVideo && (
+                     <div className="relative z-10 w-full max-w-4xl px-8 md:px-16 pt-20 flex flex-col items-start animate-slide-up">
+                        <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold pb-4 inline-block mb-8 drop-shadow-[0_0_5px_rgba(255,215,0,0.8)]">
+                            The 2026 Collection
+                        </h2>
+                        
+                        {/* SACHIKO GLOW TITLE */}
+                        <h1 className="text-6xl md:text-9xl font-serif text-white tracking-wide leading-none mb-4 animate-sachiko-glow">
+                            BELOVED
+                        </h1>
+                        <div className="text-3xl md:text-6xl italic text-metallic font-serif mb-8 drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]">摯愛</div>
 
-                        <div className="relative border-l-2 border-white/10 pl-6">
-                            <p className="text-gray-400 text-sm font-serif leading-8 whitespace-pre-wrap tracking-wide text-justify">
+                        <div className="border-l-4 border-gold pl-6 mb-12 max-w-xl bg-black/30 backdrop-blur-sm p-4 rounded-r-lg shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                            <p className="text-white text-sm md:text-lg font-serif leading-9 whitespace-pre-wrap tracking-wide text-justify drop-shadow-md">
                                 {t.homeBody}
                             </p>
                         </div>
 
-                        <div className="pt-8">
-                             <button onClick={onEnterEvent} className="group relative w-full md:w-auto px-12 py-5 border border-white/20 hover:border-gold transition-all duration-500 overflow-hidden bg-white/[0.03]">
-                                <div className="absolute inset-0 bg-gold translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out"></div>
-                                <span className="relative z-10 text-xs font-bold text-white group-hover:text-black uppercase tracking-[0.4em] transition-colors flex items-center justify-center gap-4">
-                                    {t.enter} <ArrowLeftIcon className="rotate-180 w-4 h-4" />
+                        <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center">
+                             <button onClick={onEnterEvent} className="group relative px-12 py-5 bg-gold text-black overflow-hidden shadow-[0_0_50px_rgba(255,215,0,0.5)] hover:shadow-[0_0_80px_rgba(255,215,0,0.8)] hover:scale-105 transition-all duration-500 border-2 border-white/20">
+                                <span className="relative z-10 text-sm font-bold uppercase tracking-[0.3em] flex items-center gap-3">
+                                    {t.enter} <ArrowLeftIcon className="rotate-180 w-5 h-5" />
                                 </span>
                             </button>
-                        </div>
 
-                        {!youtubeId && !playlistId && featuredSong.url && (
-                             <div className="pt-6 w-full">
-                                <AudioPlayer 
-                                    id="homepage-featured"
-                                    src={featuredSong.url}
-                                    title={featuredSong.title}
-                                    variant="minimal"
-                                    showControls={true}
-                                />
-                             </div>
-                        )}
+                            {(youtubeId || playlistId) && (
+                                <button 
+                                    onClick={() => setPlayHeroVideo(true)}
+                                    className="flex items-center gap-4 group cursor-pointer"
+                                >
+                                    <div className="w-16 h-16 rounded-full border border-gold/50 flex items-center justify-center bg-black/50 backdrop-blur-md group-hover:bg-gold group-hover:border-white group-hover:text-black transition-all duration-500 shadow-[0_0_20px_rgba(255,215,0,0.2)]">
+                                        <PlayIcon className="w-6 h-6 text-gold group-hover:text-black ml-1 transition-colors" />
+                                    </div>
+                                    <span className="text-xs uppercase tracking-[0.2em] text-gold font-bold drop-shadow-md">
+                                        {playlistId ? "Play Album" : "Watch Video"}
+                                    </span>
+                                </button>
+                            )}
+
+                             {/* Audio Player Fallback if no Video */}
+                            {!youtubeId && !playlistId && featuredSong.url && (
+                                <div className="mt-4 w-full max-w-xs">
+                                    <AudioPlayer 
+                                        id="homepage-featured"
+                                        src={featuredSong.url}
+                                        title={featuredSong.title}
+                                        variant="minimal"
+                                        showControls={true}
+                                    />
+                                </div>
+                            )}
+                        </div>
                      </div>
-                 </div>
+                 )}
             </header>
 
-            <section className="relative w-full py-20 md:py-32 px-6 md:px-12 max-w-7xl mx-auto border-t border-white/5">
+            <section className="relative w-full py-20 md:py-32 px-6 md:px-12 max-w-7xl mx-auto border-t border-gold/10 bg-[#020202] z-10">
                  <div className="grid md:grid-cols-2 gap-16 items-center">
                       <div className="order-2 md:order-1 space-y-12 animate-slide-up">
                           <div>
-                              <h3 className="text-2xl font-serif text-metallic mb-8">{t.profile}</h3>
-                              <p className="text-gray-400 font-sans tracking-[0.2em] uppercase leading-relaxed max-w-md mb-8">
+                              <h3 className="text-4xl font-serif text-metallic mb-8 drop-shadow-[0_0_15px_rgba(255,215,0,0.3)]">{t.profile}</h3>
+                              <p className="text-gold font-sans tracking-[0.2em] uppercase leading-relaxed max-w-md mb-8 font-bold">
                                   {ARTIST_DATA.title}
                               </p>
                               <div className="flex flex-col gap-6">
-                                  <p className="text-gray-300 text-sm md:text-base font-serif leading-8 whitespace-pre-wrap tracking-wide text-justify">
+                                  <p className="text-gray-200 text-sm md:text-lg font-serif leading-9 whitespace-pre-wrap tracking-wide text-justify">
                                       {lang === 'en' ? ARTIST_DATA.bio.en : ARTIST_DATA.bio.zh}
                                   </p>
                               </div>
                           </div>
 
                           <div className="pt-6">
-                              <h4 className="text-gold text-xs tracking-[0.2em] uppercase mb-4">Production Credits</h4>
+                              <h4 className="text-gold text-xs tracking-[0.2em] uppercase mb-4 font-bold border-b border-gold/20 pb-2 inline-block">Production Credits</h4>
                               <ul className="space-y-2">
                                   {ARTIST_DATA.copyright.credits.map((credit, i) => (
-                                      <li key={i} className="text-[10px] md:text-xs text-gray-500 font-mono tracking-wider uppercase">
+                                      <li key={i} className="text-[10px] md:text-xs text-gray-400 font-mono tracking-wider uppercase">
                                           {credit}
                                       </li>
                                   ))}
@@ -185,22 +190,29 @@ const ArtistHomeView: React.FC<{
                           </div>
                       </div>
 
-                      <div className="order-1 md:order-2 relative h-[600px] w-full overflow-hidden rounded-sm group bg-gray-900">
-                          <div className="absolute inset-0 bg-neutral-900"></div>
-                          <img 
-                            src={ARTIST_DATA.images.profile}
-                            onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).style.display = 'none';
-                            }}
-                            className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-[5s] ease-in-out" 
-                            alt="Artist Profile"
-                          />
+                      {/* PROFILE IMAGE - SACHIKO GLOW FRAME */}
+                      <div className="order-1 md:order-2 relative h-[600px] w-full overflow-hidden rounded-lg group">
+                           {/* Glow Container */}
+                          <div className="absolute -inset-1 bg-gradient-to-r from-gold via-white to-gold opacity-30 blur-lg animate-pulse-slow"></div>
+                          
+                          <div className="relative h-full w-full bg-gray-900 rounded-lg overflow-hidden border border-gold/30">
+                              <img 
+                                src={ARTIST_DATA.images.profile}
+                                onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                }}
+                                className="w-full h-full object-cover transition-transform duration-[5s] ease-in-out hover:scale-105" 
+                                alt="Artist Profile"
+                              />
+                              {/* Subtle vignette only */}
+                              <div className="absolute inset-0 ring-1 ring-inset ring-gold/20"></div>
+                          </div>
                       </div>
                  </div>
             </section>
             
-             <footer className="py-12 border-t border-white/5 text-center">
-                 <button onClick={onAdmin} className="text-[9px] text-gray-800 hover:text-gray-600 uppercase tracking-widest mb-4">
+             <footer className="py-12 border-t border-gold/10 text-center bg-[#020202] z-10 relative">
+                 <button onClick={onAdmin} className="text-[9px] text-gray-800 hover:text-gold uppercase tracking-widest mb-4 transition-colors">
                      {t.managerLogin}
                  </button>
                  <div className="text-[10px] text-gray-600 font-serif tracking-widest">
@@ -228,10 +240,22 @@ const App: React.FC = () => {
           const loadedSongs = getSongs();
           setSongs(loadedSongs);
           const config = getGlobalConfig();
-          setGlobalConfig(config);
+          setGlobalConfig({
+            homepageSongTitle: config.homepageSongTitle || '',
+            homepageSongUrl: config.homepageSongUrl || ''
+          });
           
           const remote = await fetchRemoteSongs();
-          if (remote) setSongs(remote);
+          if (remote) {
+              setSongs(remote.songs);
+              if (remote.config) {
+                  const newConfig = {
+                      homepageSongTitle: remote.config.homepageSongTitle || config.homepageSongTitle || '',
+                      homepageSongUrl: remote.config.homepageSongUrl || config.homepageSongUrl || ''
+                  };
+                  setGlobalConfig(newConfig);
+              }
+          }
       };
       load();
 
@@ -292,7 +316,7 @@ const App: React.FC = () => {
                 <AdminView onBack={() => setStep(AppStep.ARTIST_HOME)} />
             )}
 
-            {(step === AppStep.INTRO || step === AppStep.AUTH || step === AppStep.VOTING || step === AppStep.SUCCESS) && step !== AppStep.ADMIN && (
+            {(step === AppStep.INTRO || step === AppStep.AUTH || step === AppStep.VOTING || step === AppStep.SUCCESS) && (
                  <div className="min-h-screen bg-[#050505] text-white">
                     <nav className="p-6 flex justify-between items-center border-b border-white/10 sticky top-0 bg-[#050505]/90 backdrop-blur z-40">
                         <button onClick={() => setStep(AppStep.ARTIST_HOME)} className="text-xs uppercase tracking-widest text-gray-500 hover:text-white">

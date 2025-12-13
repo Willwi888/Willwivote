@@ -140,6 +140,9 @@ export const getLeaderboard = (songs: Song[], votes: User[]) => {
 
 const mergeSongs = (metadata: Song[]): Song[] => {
     let merged = [...DEFAULT_SONGS];
+    // Filter out ID 0 from defaults if it exists (it shouldn't, but safety first)
+    merged = merged.filter(s => s.id !== 0);
+    
     merged = merged.map(s => {
         const master = MASTER_SONG_DATA[s.id];
         return master ? { ...s, ...master } : s;
@@ -176,32 +179,50 @@ export const getSongs = (): Song[] => {
   return mergeSongs([]);
 };
 
-export const fetchRemoteSongs = async (): Promise<Song[] | null> => {
+// Fetch Remote Songs now returns { songs, config }
+export const fetchRemoteSongs = async (): Promise<{ songs: Song[], config?: Partial<GlobalConfig> } | null> => {
     if (!supabase) return null;
     try {
         const { data, error } = await supabase.from('songs').select('*');
         if (error || !data) return null;
         
-        const remoteSongs: Song[] = data.map((row: any) => ({
-            id: Number(row.id),
-            title: row.title,
-            driveId: '', 
-            youtubeId: row.youtube_id,
-            customAudioUrl: row.custom_audio_url,
-            customImageUrl: row.custom_image_url,
-            lyrics: row.lyrics,
-            credits: row.credits
-        }));
+        // Check for Config Row (ID 0)
+        const configRow = data.find((r: any) => Number(r.id) === 0);
+        let remoteConfig: Partial<GlobalConfig> | undefined = undefined;
         
-        return mergeSongs(remoteSongs);
+        if (configRow) {
+            remoteConfig = {
+                homepageSongTitle: configRow.title,
+                homepageSongUrl: configRow.youtube_id || configRow.custom_audio_url, // Use youtube_id column for URL storage primarily
+                introAudioUrl: configRow.custom_image_url // Overloading a column for intro url if needed, or just skip
+            };
+        }
+
+        // Standard Songs
+        const remoteSongs: Song[] = data
+            .filter((r: any) => Number(r.id) !== 0)
+            .map((row: any) => ({
+                id: Number(row.id),
+                title: row.title,
+                driveId: '', 
+                youtubeId: row.youtube_id,
+                customAudioUrl: row.custom_audio_url,
+                customImageUrl: row.custom_image_url,
+                lyrics: row.lyrics,
+                credits: row.credits
+            }));
+        
+        return { songs: mergeSongs(remoteSongs), config: remoteConfig };
     } catch (e) {
         console.error("Fetch remote songs failed", e);
         return null;
     }
 };
 
-export const publishSongsToCloud = async (songs: Song[]) => {
+export const publishSongsToCloud = async (songs: Song[], config?: GlobalConfig) => {
     if (!supabase) throw new Error("Supabase not configured");
+    
+    // Prepare regular songs
     const rows = songs.map(s => ({
         id: s.id,
         title: s.title,
@@ -212,6 +233,21 @@ export const publishSongsToCloud = async (songs: Song[]) => {
         credits: s.credits || null,
         updated_at: new Date().toISOString()
     }));
+
+    // Inject Config as ID 0 if provided
+    if (config) {
+        rows.push({
+            id: 0,
+            title: config.homepageSongTitle || "Beloved",
+            youtube_id: config.homepageSongUrl || null, // Store URL in youtube_id for generic usage
+            custom_audio_url: config.homepageSongUrl || null, // Redundant backup
+            custom_image_url: config.introAudioUrl || null,
+            lyrics: "SYSTEM_CONFIG",
+            credits: "SYSTEM",
+            updated_at: new Date().toISOString()
+        });
+    }
+
     const { error } = await supabase.from('songs').upsert(rows);
     if (error) throw error;
 };
@@ -220,7 +256,6 @@ export const updateSong = (id: number, updates: Partial<Song>) => {
   const currentSongs = getSongs();
   let finalUpdates = { ...updates };
   
-  // Auto-extract YouTube ID if user pastes link into customAudioUrl
   if (updates.customAudioUrl && !updates.youtubeId) {
       const extractedId = extractYouTubeId(updates.customAudioUrl);
       if (extractedId) finalUpdates.youtubeId = extractedId;
@@ -258,7 +293,7 @@ export const updateSongsBulk = (lines: string[]) => {
       const ytId = extractYouTubeId(line);
       if (ytId) {
           newYoutubeId = ytId;
-          newCustomAudioUrl = ''; // Clear audio URL if YouTube is found to avoid conflict
+          newCustomAudioUrl = ''; 
           const textWithoutUrl = line.replace(/https?:\/\/\S+/g, '').trim();
           const cleanRawTitle = textWithoutUrl.replace(/^[-|]\s+/, '').replace(/\s+[-|]$/, '').trim();
           if (cleanRawTitle.length > 1) newTitle = cleanTitleText(cleanRawTitle);
