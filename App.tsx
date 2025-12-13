@@ -42,9 +42,10 @@ const ArtistHomeView: React.FC<{
     onEnterEvent: () => void;
     onAdmin: () => void;
     featuredSong: { title: string; url: string };
-}> = ({ t, lang, setLang, onEnterEvent, onAdmin, featuredSong }) => {
+    playHeroVideo: boolean;
+    setPlayHeroVideo: (b: boolean) => void;
+}> = ({ t, lang, setLang, onEnterEvent, onAdmin, featuredSong, playHeroVideo, setPlayHeroVideo }) => {
     const [scrolled, setScrolled] = useState(false);
-    const [playHeroVideo, setPlayHeroVideo] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -57,7 +58,7 @@ const ArtistHomeView: React.FC<{
     const isDropboxFolder = featuredSong.url.includes('/fo/');
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white font-serif selection:bg-gold selection:text-black">
+        <div className="min-h-screen font-serif selection:bg-gold selection:text-black">
              {/* Navigation */}
             <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-black/90 backdrop-blur-md py-4 border-b border-gold/30' : 'py-8'}`}>
                 <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
@@ -69,92 +70,72 @@ const ArtistHomeView: React.FC<{
                 </div>
             </nav>
 
-            {/* Hero Section - Full Screen Background Design */}
+            {/* Hero Section */}
             <header className="relative w-full h-screen flex items-center overflow-hidden">
-                 {/* Background Layer */}
-                 <div className="absolute inset-0 z-0">
-                     {!playHeroVideo ? (
-                         <>
-                            {/* Main Background Image - OPAQUE for Clarity */}
-                            <img 
-                                src={ARTIST_DATA.images.hero}
-                                className="w-full h-full object-cover object-right-top transition-transform duration-[20s] hover:scale-105" 
-                                alt="Willwi Main Portrait" 
-                                crossOrigin="anonymous"
-                            />
-                            {/* Gradients: Adjusted to be less intrusive on the face - Dark on Left 35% */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent sm:via-35%"></div>
-                            <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-black to-transparent opacity-90"></div>
-                         </>
-                     ) : (
-                         <div className="absolute inset-0 w-full h-full bg-black z-20 animate-fade-in">
-                             <iframe 
-                                className="w-full h-full object-cover" 
-                                src={playlistId 
-                                    ? `https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1&mute=0&loop=1&controls=1&rel=0&modestbranding=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`
-                                    : `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0&loop=1&playlist=${youtubeId}&controls=1&rel=0&modestbranding=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`
-                                }
-                                title="Hero Video"
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                            ></iframe>
-                            
-                             {/* UX IMPROVEMENT: High Visibility Close Button */}
-                             <div className="absolute top-6 right-6 z-50">
-                                <button 
-                                    onClick={() => setPlayHeroVideo(false)}
-                                    className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/20 text-white pl-3 pr-4 py-2 rounded-full hover:bg-gold hover:text-black hover:border-gold transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] group"
-                                >
-                                    <XIcon className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-                                    <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Close</span>
-                                </button>
-                             </div>
-
-                             {/* UX IMPROVEMENT: Direct Entry from Video */}
-                             <div className="absolute bottom-12 left-0 w-full flex justify-center z-50 pointer-events-none">
-                                <button 
-                                    onClick={onEnterEvent} 
-                                    className="pointer-events-auto px-8 py-3 bg-gold text-black rounded-full shadow-[0_0_30px_rgba(255,215,0,0.6)] hover:shadow-[0_0_50px_rgba(255,215,0,1)] hover:scale-105 transition-all duration-500 border border-white/20 flex items-center gap-3 group/enter"
-                                >
-                                    <span className="text-xs font-bold uppercase tracking-[0.25em]">{t.enter}</span>
-                                    <ArrowLeftIcon className="rotate-180 w-4 h-4 group-hover/enter:translate-x-1 transition-transform" />
-                                </button>
-                             </div>
+                 
+                 {/* Video Overlay */}
+                 {playHeroVideo && (
+                     <div className="absolute inset-0 w-full h-full bg-black z-20 animate-fade-in">
+                         <iframe 
+                            className="w-full h-full object-cover" 
+                            src={playlistId 
+                                ? `https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1&mute=0&loop=1&controls=1&rel=0&modestbranding=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`
+                                : `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0&loop=1&playlist=${youtubeId}&controls=1&rel=0&modestbranding=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`
+                            }
+                            title="Hero Video"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                        ></iframe>
+                        
+                         <div className="absolute top-6 right-6 z-50">
+                            <button 
+                                onClick={() => setPlayHeroVideo(false)}
+                                className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/20 text-white pl-3 pr-4 py-2 rounded-full hover:bg-gold hover:text-black hover:border-gold transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] group"
+                            >
+                                <XIcon className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+                                <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Close</span>
+                            </button>
                          </div>
-                     )}
-                 </div>
+                     </div>
+                 )}
 
-                 {/* Content Layer (Left Aligned) - STRICT 50% WIDTH & CENTERED */}
+                 {/* Content Layer (RIGHT Aligned) - MOVED TO RIGHT SIDE */}
                  {!playHeroVideo && (
-                     <div className="relative z-10 w-full md:w-1/2 h-full flex flex-col justify-center items-start px-8 md:px-16 animate-slide-up">
+                     <div className="relative z-10 w-full md:w-[55%] h-full flex flex-col justify-center items-end ml-auto px-8 md:px-16 animate-slide-up text-right">
                         <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold pb-4 inline-block mb-8 drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]">
                             The 2026 Collection
                         </h2>
                         
-                        {/* SACHIKO GLOW TITLE - INTENSE */}
+                        {/* SACHIKO GLOW TITLE */}
                         <h1 className="text-6xl md:text-8xl lg:text-9xl font-serif text-white tracking-wide leading-none mb-4 animate-sachiko-glow drop-shadow-[0_0_30px_rgba(255,215,0,0.5)]">
                             BELOVED
                         </h1>
                         <div className="text-3xl md:text-5xl lg:text-6xl italic text-metallic font-serif mb-8 drop-shadow-[0_0_25px_rgba(255,215,0,0.8)]">摯愛</div>
 
-                        <div className="border-l-4 border-gold pl-6 mb-12 w-full bg-black/40 backdrop-blur-md p-6 rounded-r-lg shadow-[0_0_50px_rgba(255,215,0,0.1)] border border-white/5">
-                            <p className="text-white text-sm md:text-lg font-serif leading-9 whitespace-pre-wrap tracking-wide text-justify drop-shadow-md">
+                        {/* Description - Switched Border to RIGHT */}
+                        <div className="border-r-4 border-gold pr-6 mb-12 w-full bg-black/40 backdrop-blur-md p-6 rounded-l-lg shadow-[0_0_50px_rgba(255,215,0,0.1)] border border-white/5">
+                            <p className="text-white text-sm md:text-lg font-serif leading-9 whitespace-pre-wrap tracking-wide text-right drop-shadow-md">
                                 {t.homeBody}
                             </p>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center">
-                             <button onClick={onEnterEvent} className="group relative px-12 py-5 bg-gold text-black overflow-hidden shadow-[0_0_60px_rgba(255,215,0,0.6)] hover:shadow-[0_0_100px_rgba(255,215,0,1)] hover:scale-105 transition-all duration-500 border-2 border-white/20">
-                                <span className="relative z-10 text-sm font-bold uppercase tracking-[0.3em] flex items-center gap-3">
-                                    {t.enter} <ArrowLeftIcon className="rotate-180 w-5 h-5" />
+                        {/* BUTTONS CONTAINER - Aligned Right */}
+                        <div className="flex flex-col sm:flex-row w-full items-end sm:items-center justify-end gap-8 relative">
+                             {/* Primary Action Button - LARGER */}
+                             <button 
+                                onClick={onEnterEvent} 
+                                className="group relative px-16 py-6 bg-gold text-black overflow-hidden shadow-[0_0_60px_rgba(255,215,0,0.6)] hover:shadow-[0_0_100px_rgba(255,215,0,1)] hover:scale-105 transition-all duration-500 border-2 border-white/20 sm:ml-auto md:ml-0 md:self-end"
+                            >
+                                <span className="relative z-10 text-lg md:text-xl font-bold uppercase tracking-[0.3em] flex items-center gap-4">
+                                    {t.enter} <ArrowLeftIcon className="rotate-180 w-6 h-6" />
                                 </span>
                             </button>
 
                             {(youtubeId || playlistId) && (
                                 <button 
                                     onClick={() => setPlayHeroVideo(true)}
-                                    className="flex items-center gap-4 group cursor-pointer"
+                                    className="flex items-center gap-4 group cursor-pointer flex-row-reverse"
                                 >
                                     <div className="w-16 h-16 rounded-full border border-gold/50 flex items-center justify-center bg-black/50 backdrop-blur-md group-hover:bg-gold group-hover:border-white group-hover:text-black transition-all duration-500 shadow-[0_0_20px_rgba(255,215,0,0.2)]">
                                         <PlayIcon className="w-6 h-6 text-gold group-hover:text-black ml-1 transition-colors" />
@@ -165,13 +146,12 @@ const ArtistHomeView: React.FC<{
                                 </button>
                             )}
                             
-                            {/* Dropbox Folder Handling */}
                             {!youtubeId && !playlistId && isDropboxFolder && (
                                 <a 
                                     href={featuredSong.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-4 group cursor-pointer"
+                                    className="flex items-center gap-4 group cursor-pointer flex-row-reverse"
                                 >
                                     <div className="w-16 h-16 rounded-full border border-gold/50 flex items-center justify-center bg-black/50 backdrop-blur-md group-hover:bg-gold group-hover:border-white group-hover:text-black transition-all duration-500 shadow-[0_0_20px_rgba(255,215,0,0.2)]">
                                         <PlayIcon className="w-6 h-6 text-gold group-hover:text-black ml-1 transition-colors" />
@@ -182,9 +162,9 @@ const ArtistHomeView: React.FC<{
                                 </a>
                             )}
 
-                             {/* Audio Player Fallback if no Video and no Folder */}
+                             {/* Audio Player Fallback */}
                             {!youtubeId && !playlistId && !isDropboxFolder && featuredSong.url && (
-                                <div className="mt-4 w-full max-w-xs">
+                                <div className="mt-4 w-full max-w-xs self-end">
                                     <AudioPlayer 
                                         id="homepage-featured"
                                         src={featuredSong.url}
@@ -276,6 +256,9 @@ const App: React.FC = () => {
   
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Controls hero video on home page
+  const [playHeroVideo, setPlayHeroVideo] = useState(false);
 
   // Define data loading as a memoized function so we can call it whenever steps change
   const loadData = useCallback(async () => {
@@ -354,159 +337,205 @@ const App: React.FC = () => {
   return (
     <AudioProvider>
         <Layout>
-            {step === AppStep.ARTIST_HOME && (
-                <ArtistHomeView 
-                    t={t} 
-                    lang={lang} 
-                    setLang={setLang} 
-                    onEnterEvent={handleEnterEvent} 
-                    onAdmin={() => setStep(AppStep.ADMIN)}
-                    featuredSong={{ title: globalConfig.homepageSongTitle || ARTIST_DATA.featuredSong.title, url: globalConfig.homepageSongUrl || ARTIST_DATA.featuredSong.url }}
-                />
-            )}
-            
-            {step === AppStep.ADMIN && (
-                <AdminView onBack={() => setStep(AppStep.ARTIST_HOME)} />
-            )}
+            {/* 
+                --- GLOBAL CINEMATIC BACKGROUND LAYER ---
+                This image now persists across the entire app. 
+                - On Home: Full opacity, Left alignment (Balance for Right Text).
+                - On Other Steps: Low opacity, blur, breathing effect.
+            */}
+            <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+                 {!playHeroVideo && (
+                    <img 
+                        src={ARTIST_DATA.images.hero}
+                        className={`
+                            absolute inset-0 w-full h-full object-cover transition-all duration-[1500ms]
+                            ${step === AppStep.ARTIST_HOME 
+                                ? 'opacity-100 object-[35%_20%] hover:scale-105' 
+                                : 'opacity-20 blur-sm object-center scale-105 animate-pulse-slow'
+                            }
+                        `} 
+                        alt="Background" 
+                        crossOrigin="anonymous"
+                    />
+                 )}
+                 {/* 
+                    Gradient Overlays:
+                    - Home: Darker on RIGHT to support Right-Aligned Text.
+                    - Others: Evenly dark to support centered content.
+                 */}
+                 <div className={`
+                    absolute inset-0 bg-gradient-to-l transition-all duration-[1500ms]
+                    ${step === AppStep.ARTIST_HOME 
+                        ? 'from-black via-black/50 to-transparent sm:via-40%' 
+                        : 'from-[#050505] to-[#050505]/80'
+                    }
+                 `}></div>
+            </div>
 
-            {(step === AppStep.INTRO || step === AppStep.AUTH || step === AppStep.VOTING || step === AppStep.SUCCESS) && (
-                 <div className="min-h-screen bg-[#050505] text-white">
-                    <nav className="p-6 flex justify-between items-center border-b border-white/10 sticky top-0 bg-[#050505]/90 backdrop-blur z-40">
-                        <button onClick={() => setStep(AppStep.ARTIST_HOME)} className="text-xs uppercase tracking-widest text-gray-500 hover:text-white">
-                             <ArrowLeftIcon className="w-4 h-4 inline mr-2" /> {t.backToSite}
-                        </button>
-                        <LangSwitcher lang={lang} setLang={setLang} />
-                    </nav>
+            {/* CONTENT LAYERS */}
+            <div className="relative z-10">
+                {step === AppStep.ARTIST_HOME && (
+                    <ArtistHomeView 
+                        t={t} 
+                        lang={lang} 
+                        setLang={setLang} 
+                        onEnterEvent={handleEnterEvent} 
+                        onAdmin={() => setStep(AppStep.ADMIN)}
+                        featuredSong={{ title: globalConfig.homepageSongTitle || ARTIST_DATA.featuredSong.title, url: globalConfig.homepageSongUrl || ARTIST_DATA.featuredSong.url }}
+                        playHeroVideo={playHeroVideo}
+                        setPlayHeroVideo={setPlayHeroVideo}
+                    />
+                )}
+                
+                {step === AppStep.ADMIN && (
+                    <AdminView onBack={() => setStep(AppStep.ARTIST_HOME)} />
+                )}
 
-                    {step === AppStep.INTRO && (
-                        <div className="max-w-2xl mx-auto p-12 text-center space-y-8 pt-20 animate-fade-in">
-                            <h2 className="text-3xl font-serif text-metallic">{t.aboutTitle}</h2>
-                            <p className="text-gray-400 whitespace-pre-wrap leading-loose">{t.aboutIntro}</p>
-                            <div className="border border-gold/20 bg-gold/5 p-6 rounded">
-                                <h3 className="text-gold text-xs uppercase tracking-widest mb-2">{t.warningTitle}</h3>
-                                <p className="text-gray-500 text-sm">{t.warningBody}</p>
-                            </div>
-                            <button onClick={() => setStep(AppStep.VOTING)} className="bg-white text-black px-8 py-3 rounded text-xs uppercase tracking-widest font-bold hover:bg-gold transition-colors">
-                                {t.start}
+                {(step === AppStep.INTRO || step === AppStep.AUTH || step === AppStep.VOTING || step === AppStep.SUCCESS) && (
+                     <div className="min-h-screen text-white relative">
+                        <nav className="p-6 flex justify-between items-center border-b border-white/10 sticky top-0 bg-[#050505]/80 backdrop-blur-md z-40">
+                            <button onClick={() => setStep(AppStep.ARTIST_HOME)} className="text-xs uppercase tracking-widest text-gray-500 hover:text-white">
+                                 <ArrowLeftIcon className="w-4 h-4 inline mr-2" /> {t.backToSite}
                             </button>
-                        </div>
-                    )}
+                            <LangSwitcher lang={lang} setLang={setLang} />
+                        </nav>
 
-                    {step === AppStep.VOTING && (
-                        <div className="p-6 md:p-12 max-w-7xl mx-auto animate-fade-in">
-                            <header className="mb-12 flex justify-between items-end">
-                                <div>
-                                    <h2 className="text-3xl font-serif mb-2">{t.selection}</h2>
-                                    <p className="text-gray-500 text-xs uppercase tracking-widest">{t.votingRule} ({user.votes.length}/{MAX_VOTES})</p>
+                        {step === AppStep.INTRO && (
+                            <div className="max-w-2xl mx-auto p-12 text-center space-y-8 pt-20 animate-fade-in relative z-10">
+                                <h2 className="text-3xl font-serif text-metallic">{t.aboutTitle}</h2>
+                                <p className="text-gray-300 whitespace-pre-wrap leading-loose">{t.aboutIntro}</p>
+                                <div className="border border-gold/20 bg-black/40 backdrop-blur p-8 rounded shadow-[0_0_30px_rgba(255,215,0,0.1)]">
+                                    <h3 className="text-gold text-sm uppercase tracking-[0.2em] mb-4 font-bold">{t.warningTitle}</h3>
+                                    <p className="text-gray-400 text-sm font-serif leading-loose tracking-wide">{t.warningBody}</p>
                                 </div>
-                                <button 
-                                    onClick={() => user.votes.length > 0 ? setStep(AppStep.AUTH) : alert(t.selectMore)}
-                                    className={`px-8 py-3 rounded text-xs uppercase tracking-widest font-bold transition-colors ${user.votes.length > 0 ? 'bg-gold text-black hover:bg-white' : 'bg-white/10 text-gray-500 cursor-not-allowed'}`}
-                                >
-                                    {t.confirm}
+                                <button onClick={() => setStep(AppStep.VOTING)} className="bg-gold text-black px-12 py-4 rounded text-sm uppercase tracking-[0.2em] font-bold hover:bg-white transition-colors shadow-lg shadow-gold/20">
+                                    {t.start}
                                 </button>
-                            </header>
+                            </div>
+                        )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {songs.map(song => (
-                                    <div key={song.id} 
-                                        onClick={() => { setSelectedSong(song); setIsModalOpen(true); }}
-                                        className={`group p-4 rounded border transition-all cursor-pointer flex items-center gap-4 hover:bg-white/5 ${user.votes.includes(song.id) ? 'border-gold bg-gold/5' : 'border-white/10'}`}
-                                    >
-                                        <div className="w-12 h-12 flex items-center justify-center bg-black rounded-full border border-white/10 group-hover:border-gold/50 transition-colors">
-                                            {user.votes.includes(song.id) ? <CheckIcon className="w-5 h-5 text-gold" /> : <PlayIcon className="w-4 h-4 text-gray-500 group-hover:text-white" />}
-                                        </div>
-                                        <div>
-                                            <div className="text-[10px] text-gray-500 font-mono mb-1">#{String(song.id).padStart(2,'0')}</div>
-                                            <div className="text-sm font-medium text-gray-200 group-hover:text-white">{song.title}</div>
-                                        </div>
+                        {step === AppStep.VOTING && (
+                            <div className="p-6 md:p-12 max-w-7xl mx-auto animate-fade-in relative z-10">
+                                <header className="mb-12 flex justify-between items-end">
+                                    <div>
+                                        <h2 className="text-3xl font-serif mb-2">{t.selection}</h2>
+                                        <p className="text-gray-400 text-xs uppercase tracking-widest">{t.votingRule} ({user.votes.length}/{MAX_VOTES})</p>
                                     </div>
-                                ))}
+                                    <button 
+                                        onClick={() => user.votes.length > 0 ? setStep(AppStep.AUTH) : alert(t.selectMore)}
+                                        className={`px-8 py-3 rounded text-xs uppercase tracking-widest font-bold transition-colors shadow-lg ${user.votes.length > 0 ? 'bg-gold text-black hover:bg-white' : 'bg-white/10 text-gray-500 cursor-not-allowed'}`}
+                                    >
+                                        {t.confirm}
+                                    </button>
+                                </header>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {songs.map(song => (
+                                        <div key={song.id} 
+                                            onClick={() => { setSelectedSong(song); setIsModalOpen(true); }}
+                                            className={`group p-4 rounded border backdrop-blur-sm transition-all cursor-pointer flex items-center gap-4 hover:bg-white/10 ${user.votes.includes(song.id) ? 'border-gold bg-gold/10' : 'border-white/10 bg-black/40'}`}
+                                        >
+                                            <div className="w-12 h-12 flex items-center justify-center bg-black/60 rounded-full border border-white/10 group-hover:border-gold/50 transition-colors">
+                                                {user.votes.includes(song.id) ? <CheckIcon className="w-5 h-5 text-gold" /> : <PlayIcon className="w-4 h-4 text-gray-500 group-hover:text-white" />}
+                                            </div>
+                                            <div>
+                                                <div className="text-[10px] text-gray-500 font-mono mb-1">#{String(song.id).padStart(2,'0')}</div>
+                                                <div className="text-sm font-medium text-gray-200 group-hover:text-white">{song.title}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {step === AppStep.AUTH && (
-                         <div className="max-w-md mx-auto p-12 pt-20 space-y-8 animate-slide-up">
-                             <div className="text-center">
-                                 <h2 className="text-2xl font-serif mb-4">{t.finalInquiryTitle}</h2>
-                                 <p className="text-gray-400 text-sm whitespace-pre-wrap">{t.finalInquiryPrompt}</p>
+                        {step === AppStep.AUTH && (
+                             <div className="max-w-md mx-auto p-12 pt-20 space-y-8 animate-slide-up relative z-10">
+                                 <div className="text-center">
+                                     <h2 className="text-2xl font-serif mb-4">{t.finalInquiryTitle}</h2>
+                                     <p className="text-gray-400 text-sm whitespace-pre-wrap">{t.finalInquiryPrompt}</p>
+                                 </div>
+                                 
+                                 <div className="space-y-4 bg-black/40 backdrop-blur p-8 rounded border border-white/10">
+                                     <div>
+                                         <label className="text-[10px] uppercase text-gray-500 block mb-2">{t.name}</label>
+                                         <input 
+                                             className="w-full bg-black/60 border border-white/20 p-3 text-white focus:border-gold outline-none rounded"
+                                             value={user.name}
+                                             onChange={e => setUser({...user, name: e.target.value})}
+                                         />
+                                     </div>
+                                     <div>
+                                         <label className="text-[10px] uppercase text-gray-500 block mb-2">{t.email}</label>
+                                         <input 
+                                             className="w-full bg-black/60 border border-white/20 p-3 text-white focus:border-gold outline-none rounded"
+                                             value={user.email}
+                                             onChange={e => setUser({...user, email: e.target.value})}
+                                         />
+                                     </div>
+                                     <div>
+                                         <label className="text-[10px] uppercase text-gray-500 block mb-2">{t.tellUsWhy}</label>
+                                         <textarea 
+                                             className="w-full bg-black/60 border border-white/20 p-3 text-white focus:border-gold outline-none rounded h-32"
+                                             placeholder={t.finalInquiryPlaceholder}
+                                             value={user.voteReasons?.[0] || ''}
+                                             onChange={e => setUser({...user, voteReasons: { ...user.voteReasons, 0: e.target.value }})}
+                                         />
+                                     </div>
+                                 </div>
+
+                                 <button 
+                                    onClick={submitFinal}
+                                    disabled={!user.name || !user.email}
+                                    className="w-full bg-gold text-black py-4 rounded font-bold uppercase tracking-widest hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,215,0,0.3)]"
+                                 >
+                                     {t.submitFinal}
+                                 </button>
                              </div>
-                             
-                             <div className="space-y-4">
-                                 <div>
-                                     <label className="text-[10px] uppercase text-gray-500 block mb-2">{t.name}</label>
-                                     <input 
-                                         className="w-full bg-black border border-white/20 p-3 text-white focus:border-gold outline-none rounded"
-                                         value={user.name}
-                                         onChange={e => setUser({...user, name: e.target.value})}
-                                     />
-                                 </div>
-                                 <div>
-                                     <label className="text-[10px] uppercase text-gray-500 block mb-2">{t.email}</label>
-                                     <input 
-                                         className="w-full bg-black border border-white/20 p-3 text-white focus:border-gold outline-none rounded"
-                                         value={user.email}
-                                         onChange={e => setUser({...user, email: e.target.value})}
-                                     />
-                                 </div>
-                                 <div>
-                                     <label className="text-[10px] uppercase text-gray-500 block mb-2">{t.tellUsWhy}</label>
-                                     <textarea 
-                                         className="w-full bg-black border border-white/20 p-3 text-white focus:border-gold outline-none rounded h-32"
-                                         placeholder={t.finalInquiryPlaceholder}
-                                         value={user.voteReasons?.[0] || ''}
-                                         onChange={e => setUser({...user, voteReasons: { ...user.voteReasons, 0: e.target.value }})}
-                                     />
-                                 </div>
-                             </div>
+                        )}
 
-                             <button 
-                                onClick={submitFinal}
-                                disabled={!user.name || !user.email}
-                                className="w-full bg-gold text-black py-4 rounded font-bold uppercase tracking-widest hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                             >
-                                 {t.submitFinal}
-                             </button>
-                         </div>
-                    )}
-
-                    {step === AppStep.SUCCESS && (
-                        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 animate-fade-in">
-                            <div className="w-20 h-20 bg-gold/20 rounded-full flex items-center justify-center mb-8 text-gold animate-bounce">
-                                <CheckIcon className="w-8 h-8" />
+                        {step === AppStep.SUCCESS && (
+                            <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-8 animate-fade-in relative z-10">
+                                <div className="w-24 h-24 bg-gold/10 backdrop-blur rounded-full flex items-center justify-center mb-10 text-gold border border-gold/30 shadow-[0_0_50px_rgba(255,215,0,0.2)]">
+                                    <CheckIcon className="w-10 h-10" />
+                                </div>
+                                <h2 className="text-3xl md:text-5xl font-serif text-white mb-8 tracking-wide drop-shadow-lg">{t.thankYou}</h2>
+                                <div className="max-w-2xl bg-black/30 backdrop-blur-md p-8 md:p-12 rounded-lg border border-white/5 shadow-2xl">
+                                    <p className="text-gray-300 text-base md:text-lg leading-[2.2] tracking-wide text-justify font-serif">
+                                        {t.thankYouDesc}
+                                    </p>
+                                </div>
+                                <div className="mt-12">
+                                    <button onClick={() => setStep(AppStep.ARTIST_HOME)} className="text-xs uppercase tracking-[0.2em] text-gray-500 border-b border-transparent pb-1 hover:text-gold hover:border-gold transition-all duration-500">
+                                        {t.backToSite}
+                                    </button>
+                                </div>
                             </div>
-                            <h2 className="text-3xl font-serif text-white mb-4">{t.thankYou}</h2>
-                            <p className="text-gray-400 max-w-md whitespace-pre-wrap leading-loose mb-8">{t.thankYouDesc}</p>
-                            <button onClick={() => setStep(AppStep.ARTIST_HOME)} className="text-xs uppercase tracking-widest text-white border-b border-white pb-1 hover:text-gold hover:border-gold transition-colors">
-                                {t.backToSite}
-                            </button>
-                        </div>
-                    )}
-                 </div>
-            )}
+                        )}
+                     </div>
+                )}
 
-            <SongDetailModal 
-                song={selectedSong}
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                lang={lang}
-                onVote={handleVote}
-                isVoted={selectedSong ? user.votes.includes(selectedSong.id) : false}
-                canVote={user.votes.length < MAX_VOTES}
-                defaultCover={ARTIST_DATA.images.profile}
-                savedReason={selectedSong && user.voteReasons ? user.voteReasons[selectedSong.id] : ''}
-                onNext={() => {
-                    if (!selectedSong) return;
-                    const idx = songs.findIndex(s => s.id === selectedSong.id);
-                    if (idx < songs.length - 1) setSelectedSong(songs[idx + 1]);
-                }}
-                onPrev={() => {
-                    if (!selectedSong) return;
-                    const idx = songs.findIndex(s => s.id === selectedSong.id);
-                    if (idx > 0) setSelectedSong(songs[idx - 1]);
-                }}
-            />
+                <SongDetailModal 
+                    song={selectedSong}
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    lang={lang}
+                    onVote={handleVote}
+                    isVoted={selectedSong ? user.votes.includes(selectedSong.id) : false}
+                    canVote={user.votes.length < MAX_VOTES}
+                    defaultCover={ARTIST_DATA.images.profile}
+                    savedReason={selectedSong && user.voteReasons ? user.voteReasons[selectedSong.id] : ''}
+                    onNext={() => {
+                        if (!selectedSong) return;
+                        const idx = songs.findIndex(s => s.id === selectedSong.id);
+                        if (idx < songs.length - 1) setSelectedSong(songs[idx + 1]);
+                    }}
+                    onPrev={() => {
+                        if (!selectedSong) return;
+                        const idx = songs.findIndex(s => s.id === selectedSong.id);
+                        if (idx > 0) setSelectedSong(songs[idx - 1]);
+                    }}
+                />
+            </div>
         </Layout>
     </AudioProvider>
   );
