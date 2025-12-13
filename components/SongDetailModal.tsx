@@ -105,8 +105,8 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   return (
     <div className="fixed inset-0 z-[100] bg-[#020202] w-full h-full flex flex-col md:flex-row animate-fade-in font-serif">
       
-      {/* CLOSE BUTTON */}
-      <div className="absolute top-6 left-6 z-[120]">
+      {/* CLOSE BUTTON - MOVED TO TOP RIGHT (Black Area) */}
+      <div className="absolute top-6 right-6 z-[120]">
            <button 
                 onClick={onClose}
                 className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/20 text-white pl-3 pr-4 py-2 rounded-full hover:bg-gold hover:text-black hover:border-gold transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] group"
