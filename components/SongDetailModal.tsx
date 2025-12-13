@@ -105,8 +105,8 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   return (
     <div className="fixed inset-0 z-[100] bg-[#020202] w-full h-full flex flex-col md:flex-row animate-fade-in font-serif">
       
-      {/* CLOSE BUTTON - MOVED TO TOP RIGHT (Black Area) */}
-      <div className="absolute top-6 right-6 z-[120]">
+      {/* CLOSE BUTTON - Responsive Positioning (Top Right) */}
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-[120]">
            <button 
                 onClick={onClose}
                 className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/20 text-white pl-3 pr-4 py-2 rounded-full hover:bg-gold hover:text-black hover:border-gold transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] group"
@@ -219,6 +219,14 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   <div className="mb-12 space-y-6 animate-slide-up pt-12 md:pt-0">
                       <div className="flex items-center justify-between border-b border-white/10 pb-4">
                          <div className="flex items-center gap-3">
+                            {/* MOBILE BACK BUTTON: Added to solve "Missing Return Button" issue on mobile */}
+                            <button 
+                                onClick={onClose}
+                                className="md:hidden p-2 -ml-2 text-gray-400 hover:text-white transition-colors"
+                            >
+                                <ArrowLeftIcon className="w-5 h-5" />
+                            </button>
+
                             <span className="text-gold text-lg">✦</span>
                             <div className="text-xs text-gold/80 uppercase tracking-[0.3em] font-sans font-bold">
                                 Track {String(song.id).padStart(2,'0')}
