@@ -11,7 +11,6 @@ const USER_SESSION_KEY = 'beloved_2026_user_session';
 export interface GlobalConfig {
   introAudioUrl: string;
   googleSheetUrl?: string;
-  // NEW: Homepage Featured Song Config
   homepageSongTitle?: string;
   homepageSongUrl?: string;
 }
@@ -57,18 +56,9 @@ export const clearUserSession = () => {
 export const extractYouTubeId = (text: string): string | null => {
     if (!text || typeof text !== 'string') return null;
     
-    // 1. Direct 11 char ID check
     const rawMatch = text.trim().match(/^([a-zA-Z0-9_-]{11})$/);
     if (rawMatch) return rawMatch[1];
 
-    // 2. Comprehensive URL regex
-    // Covers:
-    // - youtube.com/watch?v=
-    // - m.youtube.com/watch?v=
-    // - music.youtube.com/watch?v=
-    // - youtu.be/
-    // - youtube.com/shorts/
-    // - youtube.com/embed/
     const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/|live\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
     const match = text.match(regExp);
     
@@ -76,7 +66,6 @@ export const extractYouTubeId = (text: string): string | null => {
         return match[1];
     }
     
-    // 3. Fallback for dirty URLs
     if (text.includes('youtube') || text.includes('youtu.be')) {
         const vParam = text.split('v=')[1];
         if (vParam) {
@@ -91,7 +80,6 @@ export const extractYouTubeId = (text: string): string | null => {
 // --- VOTING LOGIC ---
 export const saveVote = async (user: User) => {
   const currentData = getLocalVotes();
-  // Prevent duplicate local save
   if (!currentData.find(u => u.email === user.email)) {
       const newData = [...currentData, user];
       try {
@@ -114,15 +102,11 @@ export const saveVote = async (user: User) => {
   }
 };
 
-// NEW: Auto-Sync Function (For recovering votes when DB was down)
 export const syncOfflineVotes = async () => {
     if (!supabase) return;
-
-    // Try to sync the current user's session if they voted
     const session = getUserSession();
     if (session && session.votes.length > 0) {
         try {
-            // Check if this vote already exists
              const { data: existing } = await supabase
                 .from('votes')
                 .select('id')
@@ -137,11 +121,8 @@ export const syncOfflineVotes = async () => {
                     vote_reasons: session.voteReasons,
                     created_at: session.timestamp || new Date().toISOString()
                 }]);
-                console.log("Synced offline vote for", session.email);
             }
-        } catch (e) {
-            // Silently fail if table still missing
-        }
+        } catch (e) {}
     }
 };
 
@@ -188,7 +169,6 @@ export const getLeaderboard = (songs: Song[], votes: User[]) => {
 
 const mergeSongs = (metadata: Song[]): Song[] => {
     let merged = [...DEFAULT_SONGS];
-    // Filter out ID 0 from defaults if it exists
     merged = merged.filter(s => s.id !== 0);
     
     merged = merged.map(s => {
@@ -227,14 +207,12 @@ export const getSongs = (): Song[] => {
   return mergeSongs([]);
 };
 
-// Fetch Remote Songs now returns { songs, config }
 export const fetchRemoteSongs = async (): Promise<{ songs: Song[], config?: Partial<GlobalConfig> } | null> => {
     if (!supabase) return null;
     try {
         const { data, error } = await supabase.from('songs').select('*');
         if (error || !data) return null;
         
-        // Check for Config Row (ID 0)
         const configRow = data.find((r: any) => Number(r.id) === 0);
         let remoteConfig: Partial<GlobalConfig> | undefined = undefined;
         
@@ -246,7 +224,6 @@ export const fetchRemoteSongs = async (): Promise<{ songs: Song[], config?: Part
             };
         }
 
-        // Standard Songs
         const remoteSongs: Song[] = data
             .filter((r: any) => Number(r.id) !== 0)
             .map((row: any) => ({
@@ -260,7 +237,6 @@ export const fetchRemoteSongs = async (): Promise<{ songs: Song[], config?: Part
                 credits: row.credits
             }));
             
-        // Merge with local overrides to ensure we have 40 slots if DB has fewer
         const merged = mergeSongs(remoteSongs);
         return { songs: merged, config: remoteConfig };
     } catch (e) {
@@ -271,7 +247,6 @@ export const fetchRemoteSongs = async (): Promise<{ songs: Song[], config?: Part
 export const publishSongsToCloud = async (songs: Song[], config: GlobalConfig) => {
     if (!supabase) return;
     
-    // 1. Prepare Songs Data
     const songsData = songs.map(s => ({
         id: s.id,
         title: s.title,
@@ -283,35 +258,46 @@ export const publishSongsToCloud = async (songs: Song[], config: GlobalConfig) =
         updated_at: new Date().toISOString()
     }));
 
-    // 2. Prepare Config Data (Stored as ID 0)
     const configData = {
         id: 0,
         title: config.homepageSongTitle || 'Homepage Featured',
-        youtube_id: config.homepageSongUrl || null, // Storing URL in youtube_id column for convenience
+        youtube_id: config.homepageSongUrl || null,
         custom_image_url: config.introAudioUrl || null,
         updated_at: new Date().toISOString()
     };
 
-    // 3. Upsert All
     const { error } = await supabase.from('songs').upsert([configData, ...songsData]);
     if (error) throw error;
 };
 
-// INTELLIGENT UPDATE: EXTRACT YOUTUBE ID AUTOMATICALLY
+// --- FIX: INTELLIGENT UPDATE ---
 export const updateSong = (id: number, updates: Partial<Song>) => {
     const current = getSongs();
     
     // Check if we are updating the audio URL
-    if (updates.customAudioUrl) {
-        const yId = extractYouTubeId(updates.customAudioUrl);
+    if (updates.customAudioUrl !== undefined) {
+        const url = updates.customAudioUrl.trim();
+        const yId = extractYouTubeId(url);
+        
         if (yId) {
-            updates.youtubeId = yId; // Force the YouTube ID to update
+            // It IS a YouTube link
+            updates.youtubeId = yId; 
+            updates.customAudioUrl = ''; // Clear custom URL so logic prefers YouTube ID
         } else {
-            // If user explicitly clears it or changes to non-youtube, we might want to clear youtubeId
-            // But let's be safe: if input doesn't look like YouTube, we assume it's a file.
-            // However, to fix the "Stuck on default" bug, we must ensure new data takes precedence.
-            if (updates.customAudioUrl === '') {
-                 updates.youtubeId = '';
+            // It is NOT a YouTube link (e.g. Dropbox, MP3, or empty)
+            // CRITICAL FIX: We must EXPLICITLY clear the youtubeId
+            updates.youtubeId = ''; 
+            
+            // Auto-convert Dropbox links for better playback
+            if (url.includes('dropbox.com') && !url.includes('dl=1')) {
+                // Replace dl=0 with dl=1
+                updates.customAudioUrl = url.replace('dl=0', 'dl=1');
+                if (!updates.customAudioUrl.includes('dl=1')) {
+                     // Handle cases without dl=0, append it
+                     updates.customAudioUrl = updates.customAudioUrl + (updates.customAudioUrl.includes('?') ? '&dl=1' : '?dl=1');
+                }
+            } else {
+                updates.customAudioUrl = url;
             }
         }
     }
@@ -327,7 +313,7 @@ export const updateSongsBulk = (lines: string[]) => {
         if (i < lines.length) {
             const line = lines[i].trim();
             const yId = extractYouTubeId(line);
-            if (yId) return { ...s, youtubeId: yId, customAudioUrl: '' }; // Prefer ID
+            if (yId) return { ...s, youtubeId: yId, customAudioUrl: '' }; 
             if (line.startsWith('http')) return { ...s, customAudioUrl: line, youtubeId: '' };
         }
         return s;
@@ -337,7 +323,6 @@ export const updateSongsBulk = (lines: string[]) => {
 };
 
 const saveLocalMetadata = (songs: Song[]) => {
-    // Only save what's different from master/default to save space, or just save all fields that are editable
     const metadata = songs.map(s => ({
         id: s.id,
         title: s.title,

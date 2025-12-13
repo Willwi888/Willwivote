@@ -84,12 +84,14 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   };
 
   let finalYoutubeId = song.youtubeId;
+  // Fallback extraction if ID missing but URL exists (Redundant if storage.ts works, but safe)
   if (!finalYoutubeId && song.customAudioUrl) {
       finalYoutubeId = extractYouTubeId(song.customAudioUrl);
   }
   
   const isYouTubeSource = !!finalYoutubeId;
   
+  // Logic to determine if we should show AudioPlayer
   const hasAudioSource = Boolean(
       !isYouTubeSource && 
       ((song.customAudioUrl && song.customAudioUrl.trim() !== '') || 
@@ -149,8 +151,8 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent"></div>
                       <div className="absolute inset-0 bg-black/20"></div>
                       
-                      {hasAudioSource && (
-                          <div className="absolute inset-0 flex items-center justify-center p-12">
+                      {hasAudioSource ? (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-12 gap-6">
                                 <div className="bg-black/30 backdrop-blur-md p-6 rounded-full border border-white/10 shadow-2xl">
                                     <AudioPlayer 
                                         id={song.id} 
@@ -161,6 +163,21 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                                         showControls={true} 
                                     />
                                 </div>
+                                {/* Fallback Link for Dropbox/Files */}
+                                {song.customAudioUrl && (
+                                    <a 
+                                        href={song.customAudioUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full text-[10px] uppercase tracking-widest backdrop-blur transition-colors flex items-center gap-2"
+                                    >
+                                        <PlayIcon className="w-3 h-3" /> {t.openInApp || "Open in Browser"}
+                                    </a>
+                                )}
+                          </div>
+                      ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                              <p className="text-gray-500 text-xs tracking-widest uppercase">No Audio Source</p>
                           </div>
                       )}
                   </>
@@ -178,7 +195,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
               <div className="min-h-full flex flex-col p-8 md:p-20">
                   
                   {/* Header */}
-                  <div className="mb-12 space-y-6 animate-slide-up pt-12 md:pt-0"> {/* Padding top on mobile to avoid overlap if header is high */}
+                  <div className="mb-12 space-y-6 animate-slide-up pt-12 md:pt-0">
                       <div className="flex items-center justify-between border-b border-white/10 pb-4">
                          <div className="flex items-center gap-3">
                             <span className="text-gold text-lg">✦</span>
@@ -205,7 +222,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       </h2>
                   </div>
 
-                  {/* Lyrics & Credits Area - Enhanced Visibility */}
+                  {/* Lyrics & Credits Area */}
                   <div className="space-y-12 animate-slide-up flex-grow" style={{ animationDelay: '150ms' }}>
                        
                        {/* LYRICS */}
@@ -216,7 +233,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                            </p>
                        </div>
                        
-                       {/* CREDITS - Prominently Displayed */}
+                       {/* CREDITS */}
                        <div className="relative pl-4 md:pl-8 border-l border-gold/30 bg-white/[0.02] p-6 rounded-r">
                            <h4 className="text-[10px] text-gold uppercase tracking-[0.3em] mb-4 font-bold">Credits</h4>
                            <p className="font-sans text-gray-400 text-xs uppercase tracking-[0.1em] leading-loose whitespace-pre-wrap">

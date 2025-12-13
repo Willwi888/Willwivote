@@ -3,6 +3,17 @@ import { Song, Language, SocialLink } from './types';
 
 export const getAudioUrl = (source: string) => {
     if (!source) return '';
+    
+    // Dropbox Direct Link Conversion
+    if (source.includes('dropbox.com')) {
+        // If it's a folder link, we can't play it directly, but return as is for "Open Link" button
+        if (source.includes('/fo/')) return source; 
+        
+        // Convert www.dropbox.com to dl.dropboxusercontent.com OR force dl=1
+        if (source.includes('dl=0')) return source.replace('dl=0', 'dl=1');
+        if (!source.includes('dl=1')) return source + (source.includes('?') ? '&dl=1' : '?dl=1');
+    }
+
     if (source.startsWith('http') || source.startsWith('blob:')) return source;
     // Assume Google Drive ID
     return `https://docs.google.com/uc?export=download&id=${source}`;
@@ -14,18 +25,11 @@ export const ARTIST_DATA = {
     englishName: "WILLWI", 
     title: "Singer-Songwriter & Producer",
     images: {
-        // Main Visual / Album Cover (Man in Suit)
-        // 使用 wsrv.nl 代理伺服器來強制讀取並快取 Google Drive 圖片，解決破圖問題。
-        // q=100 (最高畫質), output=jpg (確保格式)
         hero: "https://wsrv.nl/?url=drive.google.com/uc?id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9&output=jpg&w=1200&q=100", 
-        
-        // Secondary Profile Image (Same image for consistency as per user input)
         profile: "https://wsrv.nl/?url=drive.google.com/uc?id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9&output=jpg&w=1200&q=100" 
     },
-    // MAIN FEATURED VIDEO -> FULL ALBUM PLAYLIST
     featuredSong: {
         title: "Beloved 摯愛 (The 2026 Collection)",
-        // The YouTube Playlist containing the 40 songs
         url: "https://www.youtube.com/playlist?list=PLNXUTdsHGB-ylxLTlhASHNbYQ4VT0CRIA" 
     },
     bio: {
@@ -55,41 +59,29 @@ export const ARTIST_DATA = {
 };
 
 // --- MASTER DATA: PRE-FILLED CONTENT ---
-// CLEARED TO PREVENT DEFAULT VIDEO OVERRIDING ADMIN INPUT
 export const MASTER_SONG_DATA: Record<number, Partial<Song>> = {
-  // All slots are now clean slates waiting for Admin input.
+  // Empty to ensure Admin inputs take precedence
 };
 
 // --- TRANSLATIONS ---
 export const TRANSLATIONS = {
   zh: {
-    // Artist Site
     profile: "個人檔案",
     music: "音樂作品",
     contact: "聯絡資訊",
     enterEvent: "開始投票",
     backToSite: "返回首頁",
-
-    // I. Home
     title: "摯愛",
     subtitle: "2026 大碟票選活動",
     homeBody: "《摯愛》，是一場關於理解、陪伴與被看見的旅程。\n\n從泡麵聲學院一路到今天，我親自演唱過無數你們點給我的歌。\n在那些夜晚裡，我看見了許多情感的影子。\n於是，我從中 精心挑選了 40 首歌曲，作為《摯愛》專輯可能走向的起點。\n\n今天，邀請你選出 1 ~ 10 首屬於你的感動。",
     enter: "進入投票所",
-
-    // II. Guide / About (Split for layout)
     aboutTitle: "邀請您共同完成屬於你的摯愛",
     aboutIntro: "因為這張專輯不是我的獨白。\n它是一段由你們的留言、點歌、聆聽交織而成的共同記憶。",
-    
     warningTitle: "重要提醒：",
     warningBody: "這 40 首歌曲包含未公開 Demo，請戴上耳機，將這份體驗留給自己。",
-    
     aboutClosing: "是你們讓這些歌在深夜裡亮起。\n而我希望，最後真正被收入《摯愛》的歌曲，也由你們的感受來參與決定。\n\n你的一票不是排名，而是一份記憶。\n\n因為《摯愛》，是我們一起完成的作品。",
-
-    // III. How to Vote
     howToTitle: "如何參與",
     howToBody: "這裡共有 我從泡麵聲學院精選出的 40 首歌曲。\n\n請選出 你最觸動的歌曲（最多 10 首）。\n\n送出後會跳出 留言框，你可以寫：\n為什麼選這些歌\n它陪你度過的瞬間\n\n你的留言可能會成為 MV 的文字素材之一。\n\n投票完成後，我會寄給你一張 有聲音樂卡片（Audio Postcard），作為我們一起完成《摯愛》的紀念。",
-
-    // UI Elements
     managerLogin: "Manager Login",
     name: "您的尊稱",
     email: "電子郵件",
@@ -110,18 +102,16 @@ export const TRANSLATIONS = {
     reasonPlaceholder: "這段旋律讓我想起...",
     confirmSelection: "確認選擇",
     cancel: "取消",
-
-    // IV. Inquiry (Final Modal)
     finalInquiryTitle: "謝謝你選下這幾首歌",
     finalInquiryPrompt: "在這裡，我想聽你說一點故事。\n\n寫下：\n為什麼是它們\n哪一段旋律讓你停下\n或它陪你走過了什麼樣的夜晚\n\n你的留言不是評論，而是珍貴的情感痕跡。\n它可能成為 MV 的一部分，也會成為我創作裡的方向。\n(非強制，若不想留言可直接送出)",
     finalInquiryPlaceholder: "寫下您的感受（您的文字可能會出現在未來的 MV 中）...",
     submitFinal: "傳送我的心意",
-    
-    // V. Thank You
     thankYou: "你的選擇與故事，我都收到了",
     thankYouDesc: "我會親自閱讀，也會親自珍惜。\n\n所有參與投票的人，都會收到我錄製的 有聲音樂卡片。\n這是一份獻給你的回禮，也是你曾在這段旅程中陪著我的證明。\n\n謝謝你願意一起完成《摯愛》。",
     close: "關閉",
     copyright: "© 2026 Willwi Music. All Rights Reserved.",
+    openInApp: "在瀏覽器開啟",
+    playFile: "播放音檔"
   },
   en: {
     profile: "Profile",
@@ -129,27 +119,17 @@ export const TRANSLATIONS = {
     contact: "Contact",
     enterEvent: "Start Voting",
     backToSite: "Back to Home",
-
-    // I. Home
     title: "THE 2026 COLLECTION",
     subtitle: "BELOVED",
     homeBody: "“Beloved” is a journey of being understood, accompanied, and truly seen.\nThis time, the album doesn’t begin with my writing.\nIt begins with your ears, and your heart.\n\nFrom Noodle Acoustic Academy to now, I’ve carefully selected 40 songs as the starting point for what “Beloved” may become.\n\nToday, I invite you to choose up to 10 songs that speak to you.",
     enter: "Start Voting",
-
-    // II. Guide / About
     aboutTitle: "Inviting you to complete “Beloved”",
     aboutIntro: "Because this album is not a monologue from me.\nIt is a shared memory shaped by your requests, your comments, and your listening.",
-    
     warningTitle: "Important Reminder:",
     warningBody: "These songs include unreleased demos. Please use headphones and keep this experience to yourself.",
-    
     aboutClosing: "You are the ones who gave them light in the quiet hours.\nAnd I hope the songs that ultimately enter the album will be guided by your feelings.\n\n“Beloved” is something we build together.",
-
-    // III. How to Vote
     howToTitle: "How to Vote",
     howToBody: "Choose up to 10 songs that resonate with you the most.\n\nAfter you submit, a comment box will appear. Write anything you wish.\n\nYour words may be used as part of the MV visuals.\n\nAfter voting, you’ll receive an Audio Postcard, recorded personally as a thank-you gift.",
-
-    // UI Elements
     managerLogin: "Manager Login",
     name: "Your Name",
     email: "Email Address",
@@ -170,18 +150,16 @@ export const TRANSLATIONS = {
     reasonPlaceholder: "It reminds me of...",
     confirmSelection: "Confirm",
     cancel: "Cancel",
-
-    // IV. Inquiry
     finalInquiryTitle: "Thank you for choosing these songs",
     finalInquiryPrompt: "Here, I’d love to hear a little of your story.\n\nTell me:\nWhy these songs\nWhich moment or melody stayed with you\n\nYour message isn’t a review.\nIt’s a trace of your truth.\n(Optional - you can skip this)",
     finalInquiryPlaceholder: "Write your thoughts (Your words might appear in a future MV)...",
     submitFinal: "Send My Thoughts",
-
-    // V. Thank You
     thankYou: "Your choices and your stories have reached me",
     thankYouDesc: "I will read them all personally, and I will keep them close.\n\nThank you for helping shape “Beloved.”",
     close: "Close",
     copyright: "© 2026 Willwi Music. All Rights Reserved.",
+    openInApp: "Open in Browser",
+    playFile: "Play Audio"
   },
   jp: {
     profile: "プロフィール",
@@ -189,27 +167,17 @@ export const TRANSLATIONS = {
     contact: "お問い合わせ",
     enterEvent: "投票を始める",
     backToSite: "公式サイトへ戻る",
-
-    // I. Home
     title: "最愛",
     subtitle: "2026 コレクション",
     homeBody: "「摯愛」は、理解されること、寄り添われること、そして見つめ返される旅です。\n泡麵声学院で歌ってきた数えきれないリクエスト曲の中から、40曲を丁寧に選びました。\n\nこのアルバムが大切にしたいのは「あなたと一緒に選ぶ温度」です。\n\n最大10曲まで、あなたの心に響く曲を選んでください。",
     enter: "投票を始める",
-
-    // II. Guide / About
     aboutTitle: "あなたと共に「摯愛」を完成させたい",
     aboutIntro: "このアルバムは、私だけの独白ではありません。\nあなたのリクエスト、言葉、そして聴いてくれた時間で編まれた共同の記憶です。",
-    
     warningTitle: "重要なお知らせ：",
     warningBody: "未発表デモが含まれています。イヤホンをして、この体験をあなただけのものにしてください。",
-    
     aboutClosing: "40曲は泡麵声学院で生まれた即興と対話の断片。\n深夜にそれらを灯してくれたのは、あなたです。\n\n「摯愛」は、あなたと共につくる作品です。",
-
-    // III. How to Vote
     howToTitle: "参加方法",
     howToBody: "ここには 40曲 が並んでいます。\n\n心に響いた曲（最大10曲）を選んでください。\n\n送信後、コメント欄 が表示されます。\n\nあなたの言葉は、MVの文字素材として使用される可能性があります。\n\n投票後、感謝の気持ちとして 音声付きミュージックカード をお送りします。",
-
-    // UI Elements
     managerLogin: "管理者ログイン",
     name: "お名前",
     email: "メールアドレス",
@@ -230,22 +198,19 @@ export const TRANSLATIONS = {
     reasonPlaceholder: "このメロディは...",
     confirmSelection: "確認",
     cancel: "キャンセル",
-
-    // IV. Inquiry
     finalInquiryTitle: "選んでくれて、ありがとうございます",
     finalInquiryPrompt: "ここでは、少しだけあなたの物語を聞かせてください。\n\nなぜその曲なのか\n心に残った旋律や瞬間\n\nあなたの言葉は批評ではなく、かけがえのない感情の痕跡です。\n(任意ですので、空欄でも構いません)",
     finalInquiryPlaceholder: "想いをここに（あなたの言葉が将来のMVに登場するかもしれません）...",
     submitFinal: "想いを送る",
-
-    // V. Thank You
     thankYou: "あなたが選んだ曲、あなたが書いてくれた言葉",
     thankYouDesc: "すべて受け取りました。大切に読ませていただきます。\n\n「摯愛」という作品が、本当の姿に近づくのはあなたのおかげです。",
     close: "閉じる",
     copyright: "© 2026 Willwi Music. All Rights Reserved.",
+    openInApp: "ブラウザで開く",
+    playFile: "再生する"
   }
 };
 
-// Initialize the 40 slots
 export const SONGS: Song[] = Array.from({ length: 40 }, (_, i) => ({
   id: i + 1,
   title: `Studio Session ${String(i + 1).padStart(2, '0')}`,
