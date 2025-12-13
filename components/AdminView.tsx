@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { getVotes, getLeaderboard, getSongs, updateSong, updateSongsBulk, getGlobalConfig, saveGlobalConfig, restoreFromBackup, publishSongsToCloud, fetchRemoteSongs, saveVote, extractYouTubeId } from '../services/storage';
+import { getAudioUrl } from '../constants';
 import { Song, User } from '../types';
 import { Layout, FadeIn } from './Layout';
-import { PlayIcon, SpinnerIcon, CheckIcon } from './Icons';
+import { PlayIcon, SpinnerIcon, CheckIcon, PauseIcon } from './Icons';
 import { useAudio } from './AudioContext';
 import { supabase } from '../services/supabaseClient';
 
@@ -32,7 +32,10 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [homeSongUrl, setHomeSongUrl] = useState('');
 
   const [editForm, setEditForm] = useState<Partial<Song>>({});
-  const { playingId } = useAudio();
+  
+  // Use Audio Context for Testing
+  const { playingId, playSong, pause, isPlaying } = useAudio();
+  
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
 
@@ -179,6 +182,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               if (newUrl.includes('/fo/')) return s;
 
               // 1. Force www.dropbox.com (Revert from dl.dropboxusercontent.com if needed for raw=1)
+              // This is critical because dropboxusercontent often forces download behavior
               if (newUrl.includes('dl.dropboxusercontent.com')) {
                   newUrl = newUrl.replace('dl.dropboxusercontent.com', 'www.dropbox.com');
               }
@@ -246,16 +250,16 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       const isYoutube = extractYouTubeId(url);
       if (isYoutube) return { status: 'ok', label: 'YouTube (OK)', color: 'text-green-500' };
 
-      if (url.includes('drive.google.com')) {
+      if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
           if (url.includes('/folders/') || url.includes('/drive/folders/')) {
-              return { status: 'error', label: '❌ FOLDER LINK (Must link to MP3 File)', color: 'text-red-500 font-bold' };
+              return { status: 'error', label: '❌ 這是資料夾連結！(Folder Link)', color: 'text-red-500 font-bold bg-red-900/20 px-2 py-0.5 rounded' };
           }
-          return { status: 'warning', label: 'Google Drive (Check "Anyone with Link")', color: 'text-yellow-500' };
+          return { status: 'warning', label: 'Google Drive (請右鍵檔案複製連結)', color: 'text-yellow-500' };
       }
 
-      if (url.includes('dropbox.com')) {
+      if (url.includes('dropbox.com') || url.includes('dropboxusercontent.com')) {
           if (url.includes('/fo/') || url.includes('/sh/')) {
-              return { status: 'error', label: '❌ FOLDER LINK (Must link to MP3 File)', color: 'text-red-500 font-bold' };
+              return { status: 'error', label: '❌ 這是資料夾連結！(Folder Link)', color: 'text-red-500 font-bold bg-red-900/20 px-2 py-0.5 rounded' };
           }
           return { status: 'ok', label: 'Dropbox (Auto-Optimized)', color: 'text-green-500' };
       }
@@ -279,6 +283,25 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       const updated = updateSong(editingSongId, editForm);
       setLocalSongs(updated);
       setEditingSongId(null);
+  };
+  
+  // --- TEST PLAYER LOGIC ---
+  const handleTestPlay = (song: Song) => {
+      // Logic from AudioPlayer to determine source
+      let rawUrl = song.customAudioUrl || '';
+      const youtubeId = extractYouTubeId(rawUrl) || song.youtubeId;
+      
+      if (youtubeId) {
+          window.open(`https://youtu.be/${youtubeId}`, '_blank');
+          return;
+      }
+      
+      const finalUrl = getAudioUrl(rawUrl);
+      if (playingId === song.id && isPlaying) {
+          pause();
+      } else {
+          playSong(song.id, finalUrl, song.title);
+      }
   };
 
   const handleBulkImport = () => {
@@ -444,15 +467,20 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
              <div className="flex items-start gap-4">
                 <div className="text-red-500 text-3xl">⚠️</div>
                 <div>
-                    <h3 className="text-red-500 font-bold mb-2 text-lg">CRITICAL FIX REQUIRED (For Public Access)</h3>
+                    <h3 className="text-red-500 font-bold mb-2 text-lg">Google Drive 404 錯誤修正指南</h3>
                     <p className="text-sm text-gray-300 mb-2">
-                        You MUST change your Google Drive folder permissions, otherwise <strong>ONLY YOU</strong> can hear the music.
+                        如果您看到 404 錯誤，通常是因為您貼上了「資料夾」的連結，而不是「檔案」連結。
                     </p>
-                    <ol className="list-decimal list-inside text-xs text-white space-y-1 bg-black/40 p-4 rounded border border-white/10">
-                        <li>Go to your Google Drive.</li>
-                        <li>Right click the <strong>MP3 file</strong> (or the folder).</li>
-                        <li>Select <strong>Share</strong> (共用).</li>
-                        <li>Under "General Access" (一般存取權), change "Restricted" (僅限您) to <span className="text-gold font-bold underline">"Anyone with the link" (知道連結的任何人)</span>.</li>
+                    <ol className="list-decimal list-inside text-xs text-white space-y-2 bg-black/40 p-4 rounded border border-white/10">
+                        <li>
+                            <strong className="text-gold">請勿使用資料夾連結：</strong> 播放器無法讀取整個資料夾 (如 <code>drive/folders/...</code>)。
+                        </li>
+                        <li>
+                            <strong>取得正確連結：</strong> 在 Google Drive 列表中的 <strong className="text-gold">單一 MP3 檔案上按右鍵</strong> {'>'} 選擇「共用」 {'>'} 「複製連結」。
+                        </li>
+                        <li>
+                            <strong>檢查權限：</strong> 確保該檔案的權限也是「知道連結的任何人」。
+                        </li>
                     </ol>
                 </div>
              </div>
@@ -676,7 +704,8 @@ create policy "Public Insert Votes" on votes for insert with check (true);
                 <div className="space-y-2">
                     {localSongs.map(song => {
                         const status = getLinkStatus(song.customAudioUrl || (song.youtubeId ? `https://youtu.be/${song.youtubeId}` : ''));
-                        
+                        const isActive = playingId === song.id;
+
                         return (
                         <div key={song.id} className="bg-white/5 p-4 rounded border border-white/10 hover:border-gold/30 transition-all">
                              {editingSongId === song.id ? (
@@ -738,7 +767,13 @@ create policy "Public Insert Votes" on votes for insert with check (true);
                                          </div>
                                      </div>
                                      <div className="flex items-center gap-3">
-                                         {(song.youtubeId || song.customAudioUrl) && <CheckIcon className="w-4 h-4 text-green-500" />}
+                                         <button 
+                                            onClick={() => handleTestPlay(song)} 
+                                            className={`w-8 h-8 flex items-center justify-center rounded-full border transition-all ${isActive && isPlaying ? 'bg-gold border-gold text-black' : 'border-white/20 text-gray-400 hover:text-white hover:border-white'}`}
+                                            title="Test Play"
+                                         >
+                                            {isActive && isPlaying ? <PauseIcon className="w-3 h-3" /> : <PlayIcon className="w-3 h-3 translate-x-0.5" />}
+                                         </button>
                                          <button onClick={() => startEdit(song)} className="text-[10px] uppercase bg-white/10 px-3 py-1 rounded hover:bg-white/20">Edit</button>
                                      </div>
                                  </div>

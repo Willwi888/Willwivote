@@ -7,24 +7,13 @@ export const getAudioUrl = (source: string) => {
     let finalUrl = source.trim();
 
     // --- FOLDER LINK DETECTION ---
-    // If the user pasted a folder link (Dropbox or Drive), we cannot stream it.
-    // Return original URL so the UI can show an "Open Folder" button instead of a broken player.
     if (finalUrl.includes('/folders/') || finalUrl.includes('/drive/folders/') || finalUrl.includes('/fo/') || finalUrl.includes('/sh/')) {
         return finalUrl;
     }
 
     // --- DROPBOX ULTIMATE FIX (2025 Edition) ---
-    // Critical: New Dropbox "scl" links require the 'rlkey' parameter.
-    // BEST PRACTICE: Use 'www.dropbox.com' with 'raw=1'. 
-    // This allows Dropbox to handle the auth/redirect to the correct block server (dl.dropboxusercontent.com) with the correct headers.
-    // Using 'dl.dropboxusercontent.com' directly with 'dl=1' often forces a download attachment, breaking <audio> tags.
-    if (finalUrl.match(/dropbox\.com/)) {
-        
-        // 1. Force the domain to www.dropbox.com (Handle both dl.dropboxusercontent.com and dropbox.com)
+    if (finalUrl.includes('dropbox.com') || finalUrl.includes('dropboxusercontent.com')) {
         finalUrl = finalUrl.replace(/^(https?:\/\/)?(dl\.dropboxusercontent\.com|www\.dropbox\.com)/, '$1www.dropbox.com');
-        
-        // 2. Ensure raw=1 is active (forces inline streaming)
-        // Replace dl=0 or dl=1 with raw=1
         if (finalUrl.includes('dl=0')) {
             finalUrl = finalUrl.replace('dl=0', 'raw=1');
         } else if (finalUrl.includes('dl=1')) {
@@ -32,30 +21,40 @@ export const getAudioUrl = (source: string) => {
         } else if (!finalUrl.includes('raw=')) {
             finalUrl = finalUrl + (finalUrl.includes('?') ? '&raw=1' : '?raw=1');
         }
-        
         return finalUrl;
     }
 
-    // --- GOOGLE DRIVE OPTIMIZATION ---
-    // Detect typical Google Drive ID format or full URL
-    if (finalUrl.includes('drive.google.com') || (finalUrl.match(/^[a-zA-Z0-9_-]{20,}$/) && !finalUrl.startsWith('http'))) {
+    // --- GOOGLE DRIVE FIX (Fixes 404 Error) ---
+    // Detects drive.google.com, docs.google.com, or plain IDs
+    if (finalUrl.includes('drive.google.com') || finalUrl.includes('docs.google.com') || (finalUrl.match(/^[a-zA-Z0-9_-]{20,}$/) && !finalUrl.startsWith('http'))) {
         
-        let id = finalUrl;
+        let id = '';
         if (finalUrl.startsWith('http')) {
-             // Try to extract ID from URL (d/ID or id=ID)
-             const match = finalUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || finalUrl.match(/id=([a-zA-Z0-9_-]+)/);
-             if (match) id = match[1];
+             // Extract ID from /d/ID or id=ID or open?id=ID
+             const match = finalUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || finalUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+             if (match && match[1]) {
+                 id = match[1];
+             }
+        } else {
+            // Assume the whole string is the ID if it looks like one
+            id = finalUrl;
         }
 
-        // Use export=download & confirm=t to bypass virus scan warning for large files
-        // Add a random cache buster to prevent iOS Safari from serving a stale broken 302 redirect
-        return `https://docs.google.com/uc?export=download&id=${id}&confirm=t&cb=${Math.random().toString(36).substring(7)}`;
+        // Only return the converted URL if we successfully extracted an ID
+        if (id) {
+            // CRITICAL FIX: Use 'drive.google.com' instead of 'docs.google.com'
+            // 'docs.google.com/uc' is deprecated for this use case and returns 404.
+            return `https://drive.google.com/uc?export=download&id=${id}`;
+        }
+        
+        // Fallback: If we couldn't find an ID, return original URL (better than broken 404 link)
+        return finalUrl;
     }
 
     if (finalUrl.startsWith('http') || finalUrl.startsWith('blob:')) return finalUrl;
     
-    // Default fallback (Assume ID)
-    return `https://docs.google.com/uc?export=download&id=${finalUrl}&confirm=t`;
+    // Fallback (Assume ID)
+    return `https://drive.google.com/uc?export=download&id=${finalUrl}`;
 };
 
 // --- ARTIST PROFILE DATA ---
@@ -69,7 +68,6 @@ export const ARTIST_DATA = {
     },
     featuredSong: {
         title: "Beloved 摯愛 (The 2026 Collection)",
-        // Auto-fix applied here for safety: using raw=1
         url: "https://www.dropbox.com/scl/fi/rwcmf3btrk3j6k55r518l/Beloved-The-2026-Collection.mp3?rlkey=v14343143&raw=1"
     },
     bio: {
