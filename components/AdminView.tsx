@@ -166,6 +166,77 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       }
   };
 
+  // --- ONE CLICK FIX BUTTON ---
+  const handleFixDropboxLinks = () => {
+      const current = getSongs();
+      let changedCount = 0;
+      
+      const updated = current.map(s => {
+          if (s.customAudioUrl && (s.customAudioUrl.includes('dropbox.com') || s.customAudioUrl.includes('dropboxusercontent.com'))) {
+              let newUrl = s.customAudioUrl;
+              
+              // Skip if it is a folder link
+              if (newUrl.includes('/fo/')) return s;
+
+              // 1. Force dl.dropboxusercontent.com (Better for streaming)
+              if (newUrl.includes('www.dropbox.com')) {
+                  newUrl = newUrl.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+              }
+              
+              // 2. Force dl=1 (Direct Download)
+              if (newUrl.includes('dl=0')) {
+                  newUrl = newUrl.replace('dl=0', 'dl=1');
+              } else if (!newUrl.includes('dl=1')) {
+                   newUrl = newUrl + (newUrl.includes('?') ? '&dl=1' : '?dl=1');
+              }
+              
+              if (newUrl !== s.customAudioUrl) {
+                  changedCount++;
+                  return { ...s, customAudioUrl: newUrl };
+              }
+          }
+          return s;
+      });
+
+      if (changedCount > 0) {
+          restoreFromBackup(updated);
+          setLocalSongs(updated);
+          alert(`✅ Fixed ${changedCount} Dropbox links!\n\n👉 IMPORTANT: Click 'PUBLISH TO CLOUD' now to make these changes live!`);
+      } else {
+          alert("All Dropbox links are already optimized! (No changes needed)");
+      }
+  };
+
+  const handleFixSingleLink = () => {
+      let url = editForm.customAudioUrl || '';
+      if (!url) return;
+      
+      if (url.includes('dropbox.com') || url.includes('dropboxusercontent.com')) {
+           if (url.includes('/fo/')) {
+               alert("This looks like a Folder Link. Skipping auto-fix.");
+               return;
+           }
+
+           let newUrl = url;
+           // robust replacement
+           if (newUrl.includes('www.dropbox.com')) {
+               newUrl = newUrl.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+           } else if (newUrl.includes('//dropbox.com')) {
+               newUrl = newUrl.replace('//dropbox.com', '//dl.dropboxusercontent.com');
+           }
+           
+           if (newUrl.includes('dl=0')) {
+               newUrl = newUrl.replace('dl=0', 'dl=1');
+           } else if (!newUrl.includes('dl=1')) {
+               newUrl = newUrl + (newUrl.includes('?') ? '&dl=1' : '?dl=1');
+           }
+           
+           setEditForm({ ...editForm, customAudioUrl: newUrl });
+      } else {
+          alert("Not a Dropbox link. Nothing to fix.");
+      }
+  };
+
   const startEdit = (song: Song) => {
       setEditingSongId(song.id);
       setEditForm({
@@ -519,6 +590,16 @@ create policy "Public Insert Votes" on votes for insert with check (true);
                             accept=".json" 
                             className="hidden" 
                          />
+                         
+                         {/* EMERGENCY FIX BUTTON */}
+                         <button 
+                             onClick={handleFixDropboxLinks}
+                             className="text-[10px] uppercase font-bold px-3 py-2 rounded bg-blue-900/50 border border-blue-500/50 text-blue-200 hover:bg-blue-800 transition-colors flex items-center gap-2"
+                             title="Converts www.dropbox.com to dl.dropboxusercontent.com and dl=1"
+                         >
+                            ⚡ AUTO-FIX DROPBOX LINKS
+                         </button>
+
                          <button onClick={handleDownloadBackup} className="text-[10px] uppercase bg-black border border-white/20 px-3 py-2 rounded hover:text-gold">Backup Data</button>
                          <button onClick={handleRestoreClick} className="text-[10px] uppercase bg-black border border-white/20 px-3 py-2 rounded hover:text-gold">Restore Backup</button>
                          <button onClick={() => setShowImport(!showImport)} className="text-[10px] uppercase bg-black border border-white/20 px-3 py-2 rounded hover:text-gold">Bulk Import URLs</button>
@@ -562,12 +643,21 @@ create policy "Public Insert Votes" on votes for insert with check (true);
                                             onChange={e => setEditForm({...editForm, title: e.target.value})}
                                             placeholder="Title"
                                          />
-                                         <input 
-                                            className="bg-black border border-white/20 p-2 text-sm text-white rounded"
-                                            value={editForm.customAudioUrl}
-                                            onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})}
-                                            placeholder="Audio URL (YouTube/Dropbox/MP3)"
-                                         />
+                                         <div className="flex gap-2">
+                                             <input 
+                                                className="bg-black border border-white/20 p-2 text-sm text-white rounded flex-1"
+                                                value={editForm.customAudioUrl}
+                                                onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})}
+                                                placeholder="Audio URL (YouTube/Dropbox/MP3)"
+                                             />
+                                             <button 
+                                                onClick={handleFixSingleLink}
+                                                className="bg-white/10 hover:bg-gold hover:text-black px-3 rounded text-lg transition-colors"
+                                                title="Fix this link (Convert Dropbox to Streaming)"
+                                             >
+                                                 🪄
+                                             </button>
+                                         </div>
                                      </div>
                                      <textarea 
                                          className="w-full bg-black border border-white/20 p-2 text-sm text-white rounded h-20"

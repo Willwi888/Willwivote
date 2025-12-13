@@ -78,12 +78,12 @@ const ArtistHomeView: React.FC<{
                             {/* Main Background Image - OPAQUE for Clarity */}
                             <img 
                                 src={ARTIST_DATA.images.hero}
-                                className="w-full h-full object-cover object-top opacity-100 transition-transform duration-[20s] hover:scale-105" 
+                                className="w-full h-full object-cover object-right-top transition-transform duration-[20s] hover:scale-105" 
                                 alt="Willwi Main Portrait" 
                                 crossOrigin="anonymous"
                             />
-                            {/* Gradients moved to BOTTOM/SIDES only, leaving face clear */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/20 to-transparent"></div>
+                            {/* Gradients: Adjusted to be less intrusive on the face - Dark on Left 35% */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent sm:via-35%"></div>
                             <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-black to-transparent opacity-90"></div>
                          </>
                      ) : (
@@ -125,20 +125,20 @@ const ArtistHomeView: React.FC<{
                      )}
                  </div>
 
-                 {/* Content Layer (Left Aligned) - Added STRONG GLOW */}
+                 {/* Content Layer (Left Aligned) - STRICT 50% WIDTH & CENTERED */}
                  {!playHeroVideo && (
-                     <div className="relative z-10 w-full max-w-4xl px-8 md:px-16 pt-20 flex flex-col items-start animate-slide-up">
+                     <div className="relative z-10 w-full md:w-1/2 h-full flex flex-col justify-center items-start px-8 md:px-16 animate-slide-up">
                         <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold pb-4 inline-block mb-8 drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]">
                             The 2026 Collection
                         </h2>
                         
                         {/* SACHIKO GLOW TITLE - INTENSE */}
-                        <h1 className="text-6xl md:text-9xl font-serif text-white tracking-wide leading-none mb-4 animate-sachiko-glow drop-shadow-[0_0_30px_rgba(255,215,0,0.5)]">
+                        <h1 className="text-6xl md:text-8xl lg:text-9xl font-serif text-white tracking-wide leading-none mb-4 animate-sachiko-glow drop-shadow-[0_0_30px_rgba(255,215,0,0.5)]">
                             BELOVED
                         </h1>
-                        <div className="text-3xl md:text-6xl italic text-metallic font-serif mb-8 drop-shadow-[0_0_25px_rgba(255,215,0,0.8)]">摯愛</div>
+                        <div className="text-3xl md:text-5xl lg:text-6xl italic text-metallic font-serif mb-8 drop-shadow-[0_0_25px_rgba(255,215,0,0.8)]">摯愛</div>
 
-                        <div className="border-l-4 border-gold pl-6 mb-12 max-w-xl bg-black/40 backdrop-blur-md p-6 rounded-r-lg shadow-[0_0_50px_rgba(255,215,0,0.1)] border border-white/5">
+                        <div className="border-l-4 border-gold pl-6 mb-12 w-full bg-black/40 backdrop-blur-md p-6 rounded-r-lg shadow-[0_0_50px_rgba(255,215,0,0.1)] border border-white/5">
                             <p className="text-white text-sm md:text-lg font-serif leading-9 whitespace-pre-wrap tracking-wide text-justify drop-shadow-md">
                                 {t.homeBody}
                             </p>

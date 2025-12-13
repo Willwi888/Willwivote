@@ -5,13 +5,26 @@ export const getAudioUrl = (source: string) => {
     if (!source) return '';
     
     // Dropbox Direct Link Conversion
-    if (source.includes('dropbox.com')) {
+    if (source.includes('dropbox.com') || source.includes('dropboxusercontent.com')) {
         // If it's a folder link, we can't play it directly, but return as is for "Open Link" button
         if (source.includes('/fo/')) return source; 
         
-        // Convert www.dropbox.com to dl.dropboxusercontent.com OR force dl=1
-        if (source.includes('dl=0')) return source.replace('dl=0', 'dl=1');
-        if (!source.includes('dl=1')) return source + (source.includes('?') ? '&dl=1' : '?dl=1');
+        let finalUrl = source;
+        
+        // 1. Convert domain to dl.dropboxusercontent.com for better streaming support (avoids 302 redirect issues)
+        if (finalUrl.includes('www.dropbox.com')) {
+            finalUrl = finalUrl.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+        }
+        
+        // 2. Ensure dl=1 (Direct Download) is active
+        if (finalUrl.includes('dl=0')) {
+            finalUrl = finalUrl.replace('dl=0', 'dl=1');
+        } else if (!finalUrl.includes('dl=1')) {
+            // Append dl=1 if missing
+            finalUrl = finalUrl + (finalUrl.includes('?') ? '&dl=1' : '?dl=1');
+        }
+
+        return finalUrl;
     }
 
     if (source.startsWith('http') || source.startsWith('blob:')) return source;
@@ -30,7 +43,8 @@ export const ARTIST_DATA = {
     },
     featuredSong: {
         title: "Beloved 摯愛 (The 2026 Collection)",
-        url: "https://www.dropbox.com/scl/fo/wu6ap45w972t0ca9bawez/AKi0puc4wh_mgzWZO5Zz0sM?rlkey=74hdf08gv7q417r2icrhux18j&st=dx6kl76m&dl=0" 
+        // Updated with the user's specific Dropbox MP3 link, formatted for direct streaming
+        url: "https://dl.dropboxusercontent.com/scl/fi/rwcmf3btrk3j6zje18wjh/.mp3?rlkey=k6j6j5op06nnnd013pxmcgafw&st=4oa3y6it&dl=1" 
     },
     bio: {
         zh: `來自台灣的 Willwi 陳威兒，是一位跨語系創作歌手與音樂製作人。\n作品多次獲得 Spotify 等國際串流平台編輯精選與推薦。\n\n「語言對我而言是承載情緒的器皿。」\n此理念貫穿其創作方向，並推動他持續探索多語系流行音樂的可能性。`,
@@ -158,8 +172,8 @@ export const TRANSLATIONS = {
     thankYouDesc: "I will read them all personally, and I will keep them close.\n\nThank you for helping shape “Beloved.”",
     close: "Close",
     copyright: "© 2026 Willwi Music. All Rights Reserved.",
-    openInApp: "Open in Browser",
-    playFile: "Play Audio"
+    openInApp: "ブラウザで開く",
+    playFile: "再生する"
   },
   jp: {
     profile: "プロフィール",

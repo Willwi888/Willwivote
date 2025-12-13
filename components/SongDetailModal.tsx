@@ -6,6 +6,7 @@ import AudioPlayer from './AudioPlayer';
 import { useAudio } from './AudioContext';
 import { CheckIcon, HeartIcon, ArrowLeftIcon, XIcon, PlayIcon } from './Icons';
 import { extractYouTubeId } from '../services/storage';
+import { getAudioUrl } from '../constants';
 
 interface SongDetailModalProps {
   song: Song | null;
@@ -183,10 +184,10 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                                         showControls={true} 
                                     />
                                 </div>
-                                {/* Fallback Link for Audio Files */}
+                                {/* Fallback Link for Audio Files - Uses CLEAN URL */}
                                 {song.customAudioUrl && (
                                     <a 
-                                        href={song.customAudioUrl} 
+                                        href={getAudioUrl(song.customAudioUrl)} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
                                         className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full text-[10px] uppercase tracking-widest backdrop-blur transition-colors flex items-center gap-2"

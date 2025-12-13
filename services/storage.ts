@@ -57,7 +57,7 @@ export const extractYouTubeId = (text: string): string | null => {
     if (!text || typeof text !== 'string') return null;
     
     // Skip extraction if it's explicitly a Dropbox folder or file link
-    if (text.includes('dropbox.com')) return null;
+    if (text.includes('dropbox.com') || text.includes('dropboxusercontent.com')) return null;
 
     const rawMatch = text.trim().match(/^([a-zA-Z0-9_-]{11})$/);
     if (rawMatch) return rawMatch[1];
@@ -95,7 +95,7 @@ export const saveVote = async (user: User) => {
           await supabase.from('votes').insert([{ 
               user_name: user.name, 
               user_email: user.email, 
-              vote_ids: user.votes,
+              vote_ids: user.votes, 
               vote_reasons: user.voteReasons, 
               created_at: new Date().toISOString()
           }]);
@@ -279,7 +279,7 @@ export const updateSong = (id: number, updates: Partial<Song>) => {
     
     // Check if we are updating the audio URL
     if (updates.customAudioUrl !== undefined) {
-        const url = updates.customAudioUrl.trim();
+        let url = updates.customAudioUrl.trim();
         const yId = extractYouTubeId(url);
         
         if (yId) {
@@ -291,17 +291,22 @@ export const updateSong = (id: number, updates: Partial<Song>) => {
             // CRITICAL FIX: We must EXPLICITLY clear the youtubeId so the old video doesn't persist
             updates.youtubeId = ''; 
             
-            // Auto-convert Dropbox File links (not folders) for better playback
-            if (url.includes('dropbox.com') && !url.includes('/fo/') && !url.includes('dl=1')) {
-                // Replace dl=0 with dl=1
-                updates.customAudioUrl = url.replace('dl=0', 'dl=1');
-                if (!updates.customAudioUrl.includes('dl=1')) {
-                     // Handle cases without dl=0, append it
-                     updates.customAudioUrl = updates.customAudioUrl + (updates.customAudioUrl.includes('?') ? '&dl=1' : '?dl=1');
+            // Auto-convert Dropbox File links
+            if (url.includes('dropbox.com') || url.includes('dropboxusercontent.com')) {
+                // If it's NOT a folder link, try to optimize it
+                if (!url.includes('/fo/')) {
+                     // 1. Replace www.dropbox.com with dl.dropboxusercontent.com for smoother streaming
+                     url = url.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+                     
+                     // 2. Ensure dl=1 is set (Standardize)
+                     if (url.includes('dl=0')) {
+                         url = url.replace('dl=0', 'dl=1');
+                     } else if (!url.includes('dl=1')) {
+                         url = url + (url.includes('?') ? '&dl=1' : '?dl=1');
+                     }
                 }
-            } else {
-                updates.customAudioUrl = url;
             }
+            updates.customAudioUrl = url;
         }
     }
 
