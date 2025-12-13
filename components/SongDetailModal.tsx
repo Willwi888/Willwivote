@@ -99,11 +99,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   return (
     <div className="fixed inset-0 z-[100] bg-[#020202] w-full h-full flex flex-col md:flex-row animate-fade-in font-serif">
       
-      {/* 
-          FATAL FIX: CLOSE BUTTON 
-          High Z-Index (z-[120]) + Solid Background + X Icon
-          Ensures visibility on all backgrounds (Video/Image/Black)
-      */}
+      {/* CLOSE BUTTON */}
       <div className="absolute top-6 left-6 z-[120]">
            <button 
                 onClick={onClose}

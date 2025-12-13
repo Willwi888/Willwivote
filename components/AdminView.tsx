@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getVotes, getLeaderboard, getSongs, updateSong, updateSongsBulk, getGlobalConfig, saveGlobalConfig, restoreFromBackup, publishSongsToCloud, fetchRemoteSongs } from '../services/storage';
+import { getVotes, getLeaderboard, getSongs, updateSong, updateSongsBulk, getGlobalConfig, saveGlobalConfig, restoreFromBackup, publishSongsToCloud, fetchRemoteSongs, saveVote } from '../services/storage';
 import { Song, User } from '../types';
 import { Layout, FadeIn } from './Layout';
 import { PlayIcon, SpinnerIcon, CheckIcon } from './Icons';
 import { useAudio } from './AudioContext';
 import { supabase } from '../services/supabaseClient';
 
-type Tab = 'dashboard' | 'songs';
+type Tab = 'dashboard' | 'songs' | 'manual_vote';
+type CloudStatus = 'connected' | 'offline' | 'checking' | 'missing_table_songs' | 'missing_table_votes' | 'missing_both';
 
 export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -21,7 +22,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [storageCount, setStorageCount] = useState(0);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  const [cloudStatus, setCloudStatus] = useState<'connected' | 'offline' | 'checking' | 'missing_table'>('checking');
+  const [cloudStatus, setCloudStatus] = useState<CloudStatus>('checking');
   
   const [editingSongId, setEditingSongId] = useState<number | null>(null);
   
@@ -34,6 +35,12 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { playingId } = useAudio();
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
+
+  // Manual Vote State
+  const [manualVoteName, setManualVoteName] = useState('');
+  const [manualVoteEmail, setManualVoteEmail] = useState('');
+  const [manualVoteIds, setManualVoteIds] = useState<string>(''); // Comma separated IDs
+  const [manualVoteStatus, setManualVoteStatus] = useState('');
   
   // Ref for the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,7 +73,6 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setHomeSongTitle(config.homepageSongTitle || '');
       setHomeSongUrl(config.homepageSongUrl || '');
       
-      // Attempt to load remote config to populate fields if available
       try {
           const remoteData = await fetchRemoteSongs();
           if (remoteData?.config) {
@@ -80,14 +86,22 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setUsers(fetchedVotes);
         
         if (supabase) {
-            // Check if table exists by selecting 1 row
-            const { error: tableError } = await supabase.from('songs').select('count', { count: 'exact', head: true });
-            if (tableError) {
-                if (tableError.code === '42P01') { 
-                     setCloudStatus('missing_table');
-                } else {
-                     setCloudStatus('offline');
-                }
+            // Check Tables Existence
+            const { error: songsError } = await supabase.from('songs').select('count', { count: 'exact', head: true });
+            const { error: votesError } = await supabase.from('votes').select('count', { count: 'exact', head: true });
+            
+            const missingSongs = songsError && songsError.code === '42P01';
+            const missingVotes = votesError && votesError.code === '42P01';
+
+            if (missingSongs && missingVotes) {
+                setCloudStatus('missing_both');
+            } else if (missingSongs) {
+                setCloudStatus('missing_table_songs');
+            } else if (missingVotes) {
+                setCloudStatus('missing_table_votes');
+            } else if (songsError || votesError) {
+                console.error("Supabase Connection Error:", songsError || votesError);
+                setCloudStatus('offline');
             } else {
                 setCloudStatus('connected');
             }
@@ -123,24 +137,25 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const handlePublishToCloud = async () => {
-      if (cloudStatus === 'missing_table') {
-          alert("Database setup required. Please see instructions.");
-          return;
-      }
-      if (!confirm("This will overwrite the Live Website with your local data (including Homepage Song). Are you sure?")) return;
+      // NOTE: Removed the block that disabled this if table missing. 
+      // We want to try anyway, and let the error show up if it fails.
+      if (!confirm("This will overwrite the Live Website with your local data. Are you sure?")) return;
       setIsPublishing(true);
       try {
-          // Pass the current config inputs to be saved as ID 0
           await publishSongsToCloud(localSongs, {
               introAudioUrl: introUrl,
               homepageSongTitle: homeSongTitle,
               homepageSongUrl: homeSongUrl
           });
           alert("✅ Success! Your songs AND homepage settings are now live.");
-          loadAllData(); // Refresh status
-      } catch (e) {
+          loadAllData();
+      } catch (e: any) {
           console.error(e);
-          alert("❌ Publish Failed. Please check if the 'songs' table exists (See instruction below).");
+          if (e.code === '42P01' || e.message?.includes('does not exist')) {
+             alert("❌ Publish Failed: Database tables are missing. Please check the 'DB SETUP REQUIRED' warning.");
+          } else {
+             alert("❌ Publish Failed. Please check database connection.");
+          }
       } finally {
           setIsPublishing(false);
       }
@@ -172,7 +187,39 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setLocalSongs(updated);
       setShowImport(false);
       setImportText('');
-      alert(`Success! Updated ${Math.min(lines.length, 40)} songs.`);
+      alert(`✅ Success! Updated ${Math.min(lines.length, 40)} songs locally.\n\n👉 IMPORTANT: Click 'PUBLISH TO CLOUD' to save these changes.`);
+  };
+
+  const handleManualVoteSubmit = async () => {
+      if (!manualVoteName || !manualVoteEmail || !manualVoteIds) {
+          alert("Please fill in all fields.");
+          return;
+      }
+      
+      const voteIds = manualVoteIds.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0 && n <= 40);
+      
+      if (voteIds.length === 0) {
+          alert("No valid song IDs found (1-40).");
+          return;
+      }
+
+      setManualVoteStatus('Saving...');
+      
+      const manualUser: User = {
+          name: manualVoteName + " (Admin Manual)",
+          email: manualVoteEmail,
+          timestamp: new Date().toISOString(),
+          votes: voteIds,
+          voteReasons: { 0: "Manually added by Admin" }
+      };
+      
+      await saveVote(manualUser);
+      setManualVoteStatus('Saved!');
+      setManualVoteName('');
+      setManualVoteEmail('');
+      setManualVoteIds('');
+      setTimeout(() => setManualVoteStatus(''), 2000);
+      loadAllData(); // Refresh list
   };
 
   const handleDownloadBackup = () => {
@@ -199,7 +246,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const handleRestoreClick = () => {
       if (fileInputRef.current) {
-          fileInputRef.current.value = ''; // Reset value to allow re-importing same file
+          fileInputRef.current.value = '';
           fileInputRef.current.click();
       }
   };
@@ -223,7 +270,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   setHomeSongUrl(data.globalConfig.homepageSongUrl || '');
               }
               alert("✅ Restore Successful! \n\nIMPORTANT: If you are on the Live Site, please click 'Publish to Cloud' now to sync these changes to the database.");
-              loadAllData(); // Refresh UI
+              loadAllData();
           } catch (err) {
               alert("❌ Failed to restore backup. Invalid JSON file.");
           }
@@ -261,6 +308,8 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const leaderboard = getLeaderboard(localSongs, users);
   const maxVotesForSingleSong = leaderboard.length > 0 ? leaderboard[0].count : 1;
+  const isMissingSongs = cloudStatus === 'missing_table_songs' || cloudStatus === 'missing_both';
+  const isMissingVotes = cloudStatus === 'missing_table_votes' || cloudStatus === 'missing_both';
 
   return (
     <div className="min-h-screen bg-[#050505] text-gray-200 p-8 font-sans">
@@ -273,7 +322,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     Beloved 2026 
                     {cloudStatus === 'connected' && <span className="text-green-400 font-bold px-2 py-0.5 bg-green-900/20 rounded border border-green-900/50 flex items-center gap-1">ONLINE</span>}
                     {cloudStatus === 'offline' && <span className="text-gray-400 px-2 py-0.5 bg-white/5 rounded border border-white/10">OFFLINE</span>}
-                    {cloudStatus === 'missing_table' && <span className="text-red-500 px-2 py-0.5 bg-red-900/20 rounded border border-red-900/50 font-bold">DB SETUP REQUIRED</span>}
+                    {(isMissingSongs || isMissingVotes) && <span className="text-red-500 px-2 py-0.5 bg-red-900/20 rounded border border-red-900/50 font-bold">DB SETUP REQUIRED</span>}
                 </div>
             </div>
           </div>
@@ -281,6 +330,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
              <div className="flex bg-white/5 rounded-lg p-1">
                  <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 text-[10px] uppercase tracking-widest rounded transition-colors ${activeTab === 'dashboard' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>Analytics</button>
                  <button onClick={() => setActiveTab('songs')} className={`px-4 py-2 text-[10px] uppercase tracking-widest rounded transition-colors ${activeTab === 'songs' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>CMS (Songs)</button>
+                 <button onClick={() => setActiveTab('manual_vote')} className={`px-4 py-2 text-[10px] uppercase tracking-widest rounded transition-colors ${activeTab === 'manual_vote' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>+ Manual Vote</button>
              </div>
              <button onClick={onBack} className="text-xs border border-white/20 hover:bg-white hover:text-black px-4 py-2 rounded transition-all uppercase tracking-widest">Exit</button>
           </div>
@@ -390,6 +440,31 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             </table>
                         </div>
                     )}
+                    
+                    {/* CRITICAL WARNING FOR MISSING VOTES TABLE */}
+                    {isMissingVotes && (
+                        <div className="mt-8 bg-red-900/20 border border-red-500/50 p-6 rounded animate-pulse">
+                            <h3 className="text-red-500 font-bold mb-2 uppercase tracking-widest flex items-center gap-2">⚠️ CRITICAL: VOTES ARE NOT BEING SAVED</h3>
+                            <p className="text-sm text-gray-300 mb-4">
+                                The <strong>'votes'</strong> table is missing from your database. Users are voting, but their data is only saved on their local devices. You cannot see it here.
+                            </p>
+                            <p className="text-xs text-gray-400 mb-2">Run this SQL code in Supabase to fix it immediately:</p>
+                            <div className="bg-black p-4 rounded text-xs font-mono text-green-400 overflow-x-auto select-all">
+                                create table if not exists votes (<br/>
+                                &nbsp;&nbsp;id bigint generated by default as identity primary key,<br/>
+                                &nbsp;&nbsp;user_name text,<br/>
+                                &nbsp;&nbsp;user_email text,<br/>
+                                &nbsp;&nbsp;vote_ids jsonb,<br/>
+                                &nbsp;&nbsp;vote_reasons jsonb,<br/>
+                                &nbsp;&nbsp;created_at timestamp with time zone default timezone('utc'::text, now())<br/>
+                                );<br/><br/>
+                                alter table votes enable row level security;<br/>
+                                create policy "Public votes are viewable by everyone" on votes for select using (true);<br/>
+                                create policy "Everyone can insert votes" on votes for insert with check (true);
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             </section>
 
@@ -420,14 +495,39 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
             </section>
             </div>
+        ) : activeTab === 'manual_vote' ? (
+            <div className="max-w-xl mx-auto py-12 animate-fade-in">
+                 <h2 className="text-xl font-serif text-gold mb-6 text-center">Admin Manual Vote Entry</h2>
+                 <div className="bg-[#121212] p-8 rounded-xl border border-white/10 space-y-6">
+                     <p className="text-gray-400 text-xs text-center mb-4">Input a vote on behalf of a user manually.</p>
+                     
+                     <div>
+                         <label className="block text-[10px] uppercase text-gray-500 mb-2">User Name</label>
+                         <input className="w-full bg-[#050505] border border-white/10 p-3 rounded text-white focus:border-gold outline-none" value={manualVoteName} onChange={e => setManualVoteName(e.target.value)} placeholder="Name..." />
+                     </div>
+                     <div>
+                         <label className="block text-[10px] uppercase text-gray-500 mb-2">User Email (or Fake ID)</label>
+                         <input className="w-full bg-[#050505] border border-white/10 p-3 rounded text-white focus:border-gold outline-none" value={manualVoteEmail} onChange={e => setManualVoteEmail(e.target.value)} placeholder="email@example.com" />
+                     </div>
+                     <div>
+                         <label className="block text-[10px] uppercase text-gray-500 mb-2">Song IDs (Comma separated)</label>
+                         <input className="w-full bg-[#050505] border border-white/10 p-3 rounded text-white focus:border-gold outline-none" value={manualVoteIds} onChange={e => setManualVoteIds(e.target.value)} placeholder="e.g. 1, 5, 12, 40" />
+                         <p className="text-[9px] text-gray-600 mt-2">Enter the ID numbers of the songs (1-40).</p>
+                     </div>
+                     
+                     <button onClick={handleManualVoteSubmit} className="w-full bg-gold text-black py-4 rounded font-bold uppercase tracking-widest hover:bg-white transition-colors">
+                         {manualVoteStatus || "Submit Vote"}
+                     </button>
+                 </div>
+            </div>
         ) : (
             <div className="space-y-6 animate-fade-in pb-20">
-                 {/* DATABASE MISSING WARNING */}
-                 {cloudStatus === 'missing_table' && (
+                 {/* DATABASE MISSING WARNING - SONGS */}
+                 {isMissingSongs && (
                      <div className="bg-red-900/20 border border-red-500/50 p-6 rounded mb-8">
-                         <h3 className="text-red-500 font-bold mb-2 uppercase tracking-widest">⚠️ Critical: Database Table Missing</h3>
-                         <p className="text-sm text-gray-300 mb-4">The App is currently in <strong>Local Mode</strong>. To enable Cloud Sync and real-time publishing, you must create the 'songs' table in Supabase.</p>
-                         <p className="text-xs text-gray-400 mb-2">Copy this SQL code and run it in your Supabase SQL Editor:</p>
+                         <h3 className="text-red-500 font-bold mb-2 uppercase tracking-widest">⚠️ Critical: 'Songs' Table Missing</h3>
+                         <p className="text-sm text-gray-300 mb-4">You cannot publish songs to the cloud until you create this table.</p>
+                         <p className="text-xs text-gray-400 mb-2">Run this SQL code in Supabase:</p>
                          <div className="bg-black p-4 rounded text-xs font-mono text-green-400 overflow-x-auto select-all">
                              create table if not exists songs (<br/>
                              &nbsp;&nbsp;id bigint primary key,<br/>
@@ -452,7 +552,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                          <h3 className="text-gold font-serif text-lg mb-1 flex items-center gap-2">🚀 Publish Changes</h3>
                          <p className="text-[10px] text-gray-400">Push your local song edits AND Homepage Settings to the Cloud.</p>
                      </div>
-                     <button onClick={handlePublishToCloud} disabled={isPublishing || cloudStatus === 'missing_table'} className="bg-gold text-black px-6 py-3 rounded text-xs font-bold uppercase hover:bg-white transition-colors shadow-[0_0_20px_rgba(197,160,89,0.3)] disabled:opacity-50 disabled:cursor-not-allowed">{isPublishing ? 'Publishing...' : (cloudStatus === 'missing_table' ? 'Setup Required' : 'Publish to Cloud')}</button>
+                     <button onClick={handlePublishToCloud} disabled={isPublishing} className="bg-gold text-black px-6 py-3 rounded text-xs font-bold uppercase hover:bg-white transition-colors shadow-[0_0_20px_rgba(197,160,89,0.3)] disabled:opacity-50 disabled:cursor-not-allowed">{isPublishing ? 'Publishing...' : 'Publish to Cloud'}</button>
                  </div>
 
                  <div className="flex gap-2 mb-4 justify-end">

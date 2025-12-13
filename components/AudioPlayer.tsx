@@ -3,6 +3,7 @@ import React from 'react';
 import { getAudioUrl } from '../constants';
 import { PlayIcon, PauseIcon, SpinnerIcon, VolumeIcon, RetryIcon } from './Icons';
 import { useAudio } from './AudioContext';
+import { extractYouTubeId } from '../services/storage';
 
 interface AudioPlayerProps {
   id: number | string; // Unique ID for this track
@@ -42,17 +43,32 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const isError = isCurrent && error;
 
   // Determine final Source URL
-  const getFinalSource = () => {
-    if (src && src.trim() !== '') return getAudioUrl(src);
-    if (driveId && driveId.trim() !== '') return getAudioUrl(driveId);
-    return '';
-  };
+  const rawUrl = src || driveId || '';
+  
+  // Check if this is actually a YouTube link masquerading as audio
+  const youtubeId = extractYouTubeId(rawUrl);
+  const isYouTube = !!youtubeId;
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onToggleExternal) onToggleExternal();
+    
+    // CASE 1: It's a YouTube link (Most of your songs)
+    // CRITICAL FIX: Do NOT try to play this with <audio>.
+    // Just open the modal immediately.
+    if (isYouTube) {
+        if (onToggleExternal) {
+            onToggleExternal();
+        } else {
+            console.warn("YouTube link detected but no modal handler provided.");
+        }
+        return; 
+    }
 
-    const url = getFinalSource();
+    // CASE 2: It's a real Audio file (MP3/Drive)
+    // We play it using the Audio engine.
+    if (onToggleExternal) onToggleExternal(); // Still open modal if needed (for visuals)
+
+    const url = getAudioUrl(rawUrl);
     if (!url) {
         console.warn("AudioPlayer: No valid URL for track", id);
         return;

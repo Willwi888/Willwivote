@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
-import { getSongs, getGlobalConfig, saveUserSession, getUserSession, fetchRemoteSongs, extractYouTubeId, saveVote } from './services/storage';
+import { getSongs, getGlobalConfig, saveUserSession, getUserSession, fetchRemoteSongs, extractYouTubeId, saveVote, syncOfflineVotes } from './services/storage';
 import { Song, User, AppStep, MAX_VOTES, Language } from './types';
 import { TRANSLATIONS, ARTIST_DATA } from './constants';
 import { AudioProvider, useAudio } from './components/AudioContext';
@@ -260,6 +260,7 @@ const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+      // 1. Load Data
       const load = async () => {
           const loadedSongs = getSongs();
           setSongs(loadedSongs);
@@ -283,10 +284,16 @@ const App: React.FC = () => {
       };
       load();
 
+      // 2. Load User Session
       const session = getUserSession();
       if (session) {
           setUser(session);
       }
+
+      // 3. CRITICAL: Attempt to upload any votes that are stuck on this device
+      // This runs every time the app opens, recovering "missing" votes for the admin.
+      syncOfflineVotes();
+
   }, []);
 
   const t = TRANSLATIONS[lang];

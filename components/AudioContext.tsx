@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext, useRef, useState, useEffect } from 'react';
 
-// The shape of our Audio Context
 interface AudioContextType {
   playingId: number | string | null;
   isLoading: boolean;
@@ -30,8 +29,8 @@ export const useAudio = () => {
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // State
   const [playingId, setPlayingId] = useState<number | string | null>(null);
-  const [currentSrc, setCurrentSrc] = useState<string>('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -40,135 +39,123 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [volume, setVolumeState] = useState(1);
   const [currentTitle, setCurrentTitle] = useState('');
 
-  // Setup Audio Object
+  // 1. Initialize Audio Object ONCE
   useEffect(() => {
     const audio = new Audio();
     audio.preload = "none"; 
-    // Security: Anonymous cross-origin
     audio.crossOrigin = "anonymous"; 
-    
     audioRef.current = audio;
 
+    // --- EVENT LISTENERS ---
     const handleEnded = () => {
         setIsPlaying(false);
         setPlayingId(null);
     };
-
     const handleTimeUpdate = () => {
         if (!isNaN(audio.currentTime)) setCurrentTime(audio.currentTime);
     };
-
     const handleError = (e: Event) => {
         const target = e.target as HTMLAudioElement;
-        // Don't report error if it's just the initial state or empty
+        // Ignore empty src errors
         if (!target.src || target.src === window.location.href) return;
         
-        console.error("Audio Playback Error Occurred:");
-        console.error("- Error Code:", target.error?.code);
-        console.error("- Error Message:", target.error?.message);
-        
+        console.error("Audio Error:", target.error);
         setIsLoading(false);
         setIsPlaying(false);
-        // Only set error if we were actually trying to play
-        if (playingId) setError(true);
+        setError(true);
     };
-
     const handleCanPlay = () => {
         setIsLoading(false);
         setError(false);
         if (audio.duration) setDuration(audio.duration);
     };
-    
-    // Bind
+    const handleWaiting = () => setIsLoading(true);
+    const handlePlaying = () => {
+        setIsLoading(false);
+        setIsPlaying(true);
+        setError(false);
+    };
+    const handlePause = () => setIsPlaying(false);
+
+    // Attach
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('error', handleError);
     audio.addEventListener('canplay', handleCanPlay);
-    // Sync state with actual audio events
-    audio.addEventListener('pause', () => setIsPlaying(false));
-    audio.addEventListener('play', () => setIsPlaying(true));
-    audio.addEventListener('waiting', () => setIsLoading(true));
-    audio.addEventListener('playing', () => setIsLoading(false));
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('playing', handlePlaying);
+    audio.addEventListener('pause', handlePause);
 
     return () => {
+        // Cleanup
         audio.pause();
         audio.src = '';
         audio.removeEventListener('ended', handleEnded);
         audio.removeEventListener('timeupdate', handleTimeUpdate);
         audio.removeEventListener('error', handleError);
         audio.removeEventListener('canplay', handleCanPlay);
+        audio.removeEventListener('waiting', handleWaiting);
+        audio.removeEventListener('playing', handlePlaying);
+        audio.removeEventListener('pause', handlePause);
     };
-  }, [playingId]);
+  }, []);
 
-  // MOBILE UNLOCK FUNCTION
-  // Must be called inside a click event handler (e.g. "Enter Studio")
+  // 2. Mobile Unlock (Optional, for "Enter" button)
   const initializeAudio = () => {
       const audio = audioRef.current;
-      if (!audio) return;
-      
-      // We play a silent buffer or just play/pause to unlock the AudioContext
-      if (audio.paused && !playingId) {
-          audio.load(); // Force load
+      if (audio && audio.paused) {
+          audio.load();
       }
   };
 
-  const playSong = async (id: number | string, url: string, title: string = '') => {
+  // 3. MAIN PLAY LOGIC - SYNCHRONOUS EXECUTION
+  // This function assumes 'url' is a valid Audio URL (mp3/wav), NOT a YouTube link.
+  const playSong = (id: number | string, url: string, title: string = '') => {
     const audio = audioRef.current;
-    if (!audio || !url) return;
+    if (!audio) return;
 
-    // Toggle logic
+    // If clicking the same song...
     if (playingId === id) {
-        if (isPlaying) {
+        if (!audio.paused) {
             audio.pause();
         } else {
-            const playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(e => console.error("Resume failed", e));
-            }
+            const p = audio.play();
+            if (p !== undefined) p.catch(e => console.error("Resume error", e));
         }
         return;
     }
 
-    // New song setup
+    // New Song
+    // Update State
     setPlayingId(id);
     setCurrentTitle(title);
-    setCurrentSrc(url);
     setIsLoading(true);
     setError(false);
-
-    // CRITICAL FOR MOBILE:
-    // We must set src and call play() synchronously within the event handler.
-    // The previous async fetch() caused iOS to lose the "user gesture" token.
+    
+    // EXECUTE IMMEDIATELY (Do not wait for re-render)
     audio.src = url;
     audio.load();
-    
     const playPromise = audio.play();
+    
     if (playPromise !== undefined) {
         playPromise
             .then(() => {
-                // Playback started successfully
-                setIsLoading(false);
+                // Success
             })
             .catch(e => {
-                console.error("Play failed:", e);
-                setIsLoading(false);
+                console.error("Play start error:", e);
+                // If AbortError (user clicked fast), ignore. Else set error.
                 if (e.name !== 'AbortError') {
+                    setIsLoading(false);
                     setError(true);
                 }
             });
     }
   };
 
-  const pause = () => {
-    if (audioRef.current) {
-        audioRef.current.pause();
-    }
-  };
-
-  const resume = () => {
-      if (audioRef.current) audioRef.current.play();
-  };
-
+  const pause = () => audioRef.current?.pause();
+  const resume = () => audioRef.current?.play();
+  
   const seek = (time: number) => {
     if (audioRef.current) {
         audioRef.current.currentTime = time;

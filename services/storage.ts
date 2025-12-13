@@ -75,6 +75,7 @@ export const extractYouTubeId = (text: string): string | null => {
 // --- VOTING LOGIC ---
 export const saveVote = async (user: User) => {
   const currentData = getLocalVotes();
+  // Prevent duplicate local save
   if (!currentData.find(u => u.email === user.email)) {
       const newData = [...currentData, user];
       try {
@@ -92,9 +93,40 @@ export const saveVote = async (user: User) => {
               created_at: new Date().toISOString()
           }]);
       } catch (e) {
-          console.error("Supabase Error", e);
+          console.error("Supabase Error (Vote might be saved locally only)", e);
       }
   }
+};
+
+// NEW: Auto-Sync Function (For recovering votes when DB was down)
+export const syncOfflineVotes = async () => {
+    if (!supabase) return;
+
+    // Try to sync the current user's session if they voted
+    const session = getUserSession();
+    if (session && session.votes.length > 0) {
+        try {
+            // Check if this vote already exists
+             const { data: existing } = await supabase
+                .from('votes')
+                .select('id')
+                .eq('user_email', session.email)
+                .limit(1);
+            
+            if (!existing || existing.length === 0) {
+                 await supabase.from('votes').insert([{ 
+                    user_name: session.name, 
+                    user_email: session.email, 
+                    vote_ids: session.votes, 
+                    vote_reasons: session.voteReasons,
+                    created_at: session.timestamp || new Date().toISOString()
+                }]);
+                console.log("Synced offline vote for", session.email);
+            }
+        } catch (e) {
+            // Silently fail if table still missing
+        }
+    }
 };
 
 const getLocalVotes = (): User[] => {
@@ -140,7 +172,7 @@ export const getLeaderboard = (songs: Song[], votes: User[]) => {
 
 const mergeSongs = (metadata: Song[]): Song[] => {
     let merged = [...DEFAULT_SONGS];
-    // Filter out ID 0 from defaults if it exists (it shouldn't, but safety first)
+    // Filter out ID 0 from defaults if it exists
     merged = merged.filter(s => s.id !== 0);
     
     merged = merged.map(s => {
@@ -193,8 +225,8 @@ export const fetchRemoteSongs = async (): Promise<{ songs: Song[], config?: Part
         if (configRow) {
             remoteConfig = {
                 homepageSongTitle: configRow.title,
-                homepageSongUrl: configRow.youtube_id || configRow.custom_audio_url, // Use youtube_id column for URL storage primarily
-                introAudioUrl: configRow.custom_image_url // Overloading a column for intro url if needed, or just skip
+                homepageSongUrl: configRow.youtube_id || configRow.custom_audio_url,
+                introAudioUrl: configRow.custom_image_url 
             };
         }
 
@@ -211,19 +243,20 @@ export const fetchRemoteSongs = async (): Promise<{ songs: Song[], config?: Part
                 lyrics: row.lyrics,
                 credits: row.credits
             }));
-        
-        return { songs: mergeSongs(remoteSongs), config: remoteConfig };
+            
+        // Merge with local overrides to ensure we have 40 slots if DB has fewer
+        const merged = mergeSongs(remoteSongs);
+        return { songs: merged, config: remoteConfig };
     } catch (e) {
-        console.error("Fetch remote songs failed", e);
         return null;
     }
 };
 
-export const publishSongsToCloud = async (songs: Song[], config?: GlobalConfig) => {
-    if (!supabase) throw new Error("Supabase not configured");
+export const publishSongsToCloud = async (songs: Song[], config: GlobalConfig) => {
+    if (!supabase) return;
     
-    // Prepare regular songs
-    const rows = songs.map(s => ({
+    // 1. Prepare Songs Data
+    const songsData = songs.map(s => ({
         id: s.id,
         title: s.title,
         youtube_id: s.youtubeId || null,
@@ -234,85 +267,56 @@ export const publishSongsToCloud = async (songs: Song[], config?: GlobalConfig) 
         updated_at: new Date().toISOString()
     }));
 
-    // Inject Config as ID 0 if provided
-    if (config) {
-        rows.push({
-            id: 0,
-            title: config.homepageSongTitle || "Beloved",
-            youtube_id: config.homepageSongUrl || null, // Store URL in youtube_id for generic usage
-            custom_audio_url: config.homepageSongUrl || null, // Redundant backup
-            custom_image_url: config.introAudioUrl || null,
-            lyrics: "SYSTEM_CONFIG",
-            credits: "SYSTEM",
-            updated_at: new Date().toISOString()
-        });
-    }
+    // 2. Prepare Config Data (Stored as ID 0)
+    const configData = {
+        id: 0,
+        title: config.homepageSongTitle || 'Homepage Featured',
+        youtube_id: config.homepageSongUrl || null, // Storing URL in youtube_id column for convenience
+        custom_image_url: config.introAudioUrl || null,
+        updated_at: new Date().toISOString()
+    };
 
-    const { error } = await supabase.from('songs').upsert(rows);
+    // 3. Upsert All
+    const { error } = await supabase.from('songs').upsert([configData, ...songsData]);
     if (error) throw error;
 };
 
 export const updateSong = (id: number, updates: Partial<Song>) => {
-  const currentSongs = getSongs();
-  let finalUpdates = { ...updates };
-  
-  if (updates.customAudioUrl && !updates.youtubeId) {
-      const extractedId = extractYouTubeId(updates.customAudioUrl);
-      if (extractedId) finalUpdates.youtubeId = extractedId;
-  }
-
-  const updatedSongs = currentSongs.map(s => s.id === id ? { ...s, ...finalUpdates } : s);
-  try {
-    localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(updatedSongs));
-  } catch (e) {}
-  return updatedSongs;
+    const current = getSongs();
+    const updated = current.map(s => s.id === id ? { ...s, ...updates } : s);
+    saveLocalMetadata(updated);
+    return updated;
 };
 
 export const updateSongsBulk = (lines: string[]) => {
-  const currentSongs = getSongs();
-  const cleanLines = lines.filter(l => l.trim().length > 0);
-  
-  const cleanTitleText = (rawTitle: string): string => {
-    return rawTitle
-        .replace(/\(Uploaded by TunesToTube\)/gi, '')
-        .replace(/TunesToTube/gi, '')
-        .replace(/\.(mp3|wav|m4a)$/i, '')
-        .replace(/[\(\[]Official Audio[\)\]]/gi, '')
-        .replace(/[\(\[]Demo[\)\]]/gi, '')
-        .replace(/^\d+\s*[-.|]\s*/, '')
-        .trim();
-  };
+    const current = getSongs();
+    const updated = current.map((s, i) => {
+        if (i < lines.length) {
+            const line = lines[i].trim();
+            const yId = extractYouTubeId(line);
+            if (yId) return { ...s, youtubeId: yId, customAudioUrl: '' }; // Prefer ID
+            if (line.startsWith('http')) return { ...s, customAudioUrl: line, youtubeId: '' };
+        }
+        return s;
+    });
+    saveLocalMetadata(updated);
+    return updated;
+};
 
-  const updatedSongs = currentSongs.map((s, index) => {
-      if (index >= cleanLines.length) return s;
-      const line = cleanLines[index].trim();
-      let newTitle = s.title;
-      let newYoutubeId = s.youtubeId;
-      let newCustomAudioUrl = s.customAudioUrl;
-
-      const ytId = extractYouTubeId(line);
-      if (ytId) {
-          newYoutubeId = ytId;
-          newCustomAudioUrl = ''; 
-          const textWithoutUrl = line.replace(/https?:\/\/\S+/g, '').trim();
-          const cleanRawTitle = textWithoutUrl.replace(/^[-|]\s+/, '').replace(/\s+[-|]$/, '').trim();
-          if (cleanRawTitle.length > 1) newTitle = cleanTitleText(cleanRawTitle);
-      } else if (line.startsWith('http')) {
-          newCustomAudioUrl = line;
-      } else {
-          newTitle = cleanTitleText(line);
-      }
-      return { ...s, title: newTitle, youtubeId: newYoutubeId, customAudioUrl: newCustomAudioUrl };
-  });
-
-  try {
-    localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(updatedSongs));
-  } catch(e) {}
-  return updatedSongs;
+const saveLocalMetadata = (songs: Song[]) => {
+    // Only save what's different from master/default to save space, or just save all fields that are editable
+    const metadata = songs.map(s => ({
+        id: s.id,
+        title: s.title,
+        youtubeId: s.youtubeId,
+        customAudioUrl: s.customAudioUrl,
+        customImageUrl: s.customImageUrl,
+        lyrics: s.lyrics,
+        credits: s.credits
+    }));
+    localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(metadata));
 };
 
 export const restoreFromBackup = (songs: Song[]) => {
-    try {
-        localStorage.setItem(SONG_METADATA_KEY, JSON.stringify(songs));
-    } catch(e) {}
+    saveLocalMetadata(songs);
 };
