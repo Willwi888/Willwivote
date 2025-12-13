@@ -53,13 +53,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     e.stopPropagation();
     
     // CASE 1: It's a YouTube link (Most of your songs)
-    // CRITICAL FIX: Do NOT try to play this with <audio>.
-    // Just open the modal immediately.
+    // NUCLEAR FIX: Absolutely NO AudioContext logic here.
+    // Just execute the modal callback callback.
     if (isYouTube) {
         if (onToggleExternal) {
             onToggleExternal();
         } else {
-            console.warn("YouTube link detected but no modal handler provided.");
+            console.error("YouTube link detected but no modal handler provided. Cannot play on mobile.");
         }
         return; 
     }
@@ -85,11 +85,29 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  // If it's YouTube, we just show a "View" button state
+  if (isYouTube && !showControls) {
+       return (
+        <div className="flex items-center justify-center shrink-0">
+             <button
+              onClick={handleToggle}
+              className={`
+                  group/btn flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 outline-none
+                  border border-gold/30 text-gold hover:bg-gold hover:text-black
+              `}
+              title="Watch Video"
+              >
+               <PlayIcon className="w-4 h-4 translate-x-0.5" />
+             </button>
+        </div>
+       );
+  }
+
   return (
     <div 
         className={`flex ${showControls ? 'flex-col gap-4 w-full' : 'items-center justify-center'}`}
     >
-      {/* Play/Pause Button */}
+      {/* Play/Pause Button (Audio Only) */}
       {!showControls && (
         <div className="flex items-center justify-center shrink-0">
           {variant === 'minimal' ? (
@@ -145,7 +163,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         </div>
       )}
 
-      {/* Expanded Controls (Waveform-style) - Jewelry Design */}
+      {/* Expanded Controls (Audio Only) */}
       {showControls && (
           <div className={`flex items-center gap-4 w-full bg-[#0a0a0a] rounded-lg p-4 animate-fade-in border transition-colors duration-500 ${isError ? 'border-red-900 shadow-[0_0_20px_rgba(220,38,38,0.1)]' : 'border-gold/20 shadow-[0_0_20px_rgba(197,160,89,0.05)]'}`}>
               

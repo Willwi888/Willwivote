@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getVotes, getLeaderboard, getSongs, updateSong, updateSongsBulk, getGlobalConfig, saveGlobalConfig, restoreFromBackup, publishSongsToCloud, fetchRemoteSongs, saveVote } from '../services/storage';
+import { getVotes, getLeaderboard, getSongs, updateSong, updateSongsBulk, getGlobalConfig, saveGlobalConfig, restoreFromBackup, publishSongsToCloud, fetchRemoteSongs, saveVote, extractYouTubeId } from '../services/storage';
 import { Song, User } from '../types';
 import { Layout, FadeIn } from './Layout';
 import { PlayIcon, SpinnerIcon, CheckIcon } from './Icons';
@@ -574,7 +574,24 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                          <h3 className="text-white font-serif text-xl mb-6">Edit Track #{String(editingSongId).padStart(2,'0')}</h3>
                          <div className="space-y-4">
                              <div><label className="block text-[10px] uppercase text-gray-500 mb-1">Song Title</label><input className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none" value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})} /></div>
-                             <div><label className="block text-[10px] uppercase text-gray-500 mb-1">Audio Link / YouTube Link</label><input className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none font-mono text-xs" value={editForm.customAudioUrl} onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})} placeholder="https://..." /></div>
+                             
+                             <div>
+                                <label className="block text-[10px] uppercase text-gray-500 mb-1">Audio Link / YouTube Link</label>
+                                <div className="relative">
+                                    <input 
+                                        className={`w-full bg-black border p-2 text-white rounded outline-none font-mono text-xs transition-colors ${extractYouTubeId(editForm.customAudioUrl || '') ? 'border-green-500 focus:border-green-500' : 'border-white/20 focus:border-white'}`} 
+                                        value={editForm.customAudioUrl} 
+                                        onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})} 
+                                        placeholder="Paste YouTube or MP3 link here..." 
+                                    />
+                                    {extractYouTubeId(editForm.customAudioUrl || '') && (
+                                        <div className="absolute right-2 top-2 text-[9px] text-green-400 font-bold bg-green-900/30 px-2 py-0.5 rounded flex items-center gap-1">
+                                            <CheckIcon className="w-3 h-3" /> YOUTUBE DETECTED
+                                        </div>
+                                    )}
+                                </div>
+                             </div>
+
                              <div><label className="block text-[10px] uppercase text-gray-500 mb-1">Lyrics</label><textarea className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none h-32" value={editForm.lyrics} onChange={e => setEditForm({...editForm, lyrics: e.target.value})} /></div>
                              <div><label className="block text-[10px] uppercase text-gray-500 mb-1">Credits</label><textarea className="w-full bg-black border border-white/20 p-2 text-white rounded focus:border-white outline-none h-24" value={editForm.credits} onChange={e => setEditForm({...editForm, credits: e.target.value})} placeholder="Arranger: Willwi..." /></div>
                          </div>

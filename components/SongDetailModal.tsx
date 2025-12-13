@@ -4,7 +4,7 @@ import { Song, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 import AudioPlayer from './AudioPlayer';
 import { useAudio } from './AudioContext';
-import { CheckIcon, HeartIcon, ArrowLeftIcon, XIcon } from './Icons';
+import { CheckIcon, HeartIcon, ArrowLeftIcon, XIcon, PlayIcon } from './Icons';
 import { extractYouTubeId } from '../services/storage';
 
 interface SongDetailModalProps {
@@ -113,20 +113,34 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
       </div>
 
       {/* Left Panel: Visual/Media */}
-      <div className="w-full md:w-1/2 h-[40vh] md:h-full relative bg-black flex-shrink-0">
+      <div className="w-full md:w-1/2 h-[45vh] md:h-full relative bg-black flex-shrink-0 group">
           
-          <div className="w-full h-full relative">
+          <div className="w-full h-full relative bg-black flex flex-col justify-center">
               {isYouTubeSource ? (
                   <>
-                    <iframe 
-                        key={song.id} 
-                        className="w-full h-full object-cover" 
-                        src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=1&playsinline=1&rel=0&controls=1&modestbranding=1&loop=1&origin=${encodeURIComponent(window.location.origin)}`}
-                        title={song.title}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                    ></iframe>
+                    <div className="relative w-full h-full bg-black">
+                        <iframe 
+                            key={song.id} 
+                            className="w-full h-full object-contain" 
+                            src={`https://www.youtube.com/embed/${finalYoutubeId}?autoplay=0&playsinline=1&rel=0&controls=1&modestbranding=1&origin=${encodeURIComponent(window.location.origin)}`}
+                            title={song.title}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            referrerPolicy="no-referrer"
+                        ></iframe>
+                        {/* Fallback Overlay Button for Mobile Compatibility */}
+                        <div className="absolute bottom-4 right-4 z-20 md:hidden">
+                             <a 
+                                href={`https://www.youtube.com/watch?v=${finalYoutubeId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg hover:bg-red-700 transition-colors"
+                             >
+                                 <PlayIcon className="w-3 h-3 fill-current" /> App 播放
+                             </a>
+                        </div>
+                    </div>
                     <div className="absolute inset-0 pointer-events-none border-r border-white/5 hidden md:block"></div>
                   </>
               ) : (
@@ -155,7 +169,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
       </div>
 
       {/* Right Panel: Content (Lyrics & Credits) */}
-      <div className="w-full md:w-1/2 h-[60vh] md:h-full relative bg-[#050505] flex flex-col border-l border-white/5">
+      <div className="w-full md:w-1/2 h-[55vh] md:h-full relative bg-[#050505] flex flex-col border-l border-white/5">
           
           <div 
             ref={lyricsContainerRef}
@@ -186,7 +200,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                          </div>
                       </div>
                       
-                      <h2 className="font-serif text-4xl md:text-6xl text-white tracking-wide leading-tight text-metallic">
+                      <h2 className="font-serif text-3xl md:text-6xl text-white tracking-wide leading-tight text-metallic">
                           {song.title}
                       </h2>
                   </div>

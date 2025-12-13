@@ -55,20 +55,36 @@ export const clearUserSession = () => {
 
 // --- YOUTUBE HELPER (ROBUST) ---
 export const extractYouTubeId = (text: string): string | null => {
-    if (!text) return null;
-    // Enhanced Regex to capture:
-    // - youtube.com/watch?v=ID
-    // - youtu.be/ID
-    // - youtube.com/embed/ID
-    // - youtube.com/shorts/ID
-    // - youtube.com/live/ID
-    const urlMatch = text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-    if (urlMatch) return urlMatch[1];
+    if (!text || typeof text !== 'string') return null;
     
-    // Captures raw ID if user just pastes the 11 chars
+    // 1. Direct 11 char ID check
     const rawMatch = text.trim().match(/^([a-zA-Z0-9_-]{11})$/);
     if (rawMatch) return rawMatch[1];
+
+    // 2. Comprehensive URL regex
+    // Covers:
+    // - youtube.com/watch?v=
+    // - m.youtube.com/watch?v=
+    // - music.youtube.com/watch?v=
+    // - youtu.be/
+    // - youtube.com/shorts/
+    // - youtube.com/embed/
+    const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/|live\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
+    const match = text.match(regExp);
     
+    if (match && match[1].length === 11) {
+        return match[1];
+    }
+    
+    // 3. Fallback for dirty URLs
+    if (text.includes('youtube') || text.includes('youtu.be')) {
+        const vParam = text.split('v=')[1];
+        if (vParam) {
+            const id = vParam.split('&')[0].split('#')[0];
+            if (id && id.length === 11) return id;
+        }
+    }
+
     return null;
 };
 

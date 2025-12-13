@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Layout } from './components/Layout';
 import { getSongs, getGlobalConfig, saveUserSession, getUserSession, fetchRemoteSongs, extractYouTubeId, saveVote, syncOfflineVotes } from './services/storage';
 import { Song, User, AppStep, MAX_VOTES, Language } from './types';
@@ -259,42 +259,46 @@ const App: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-      // 1. Load Data
-      const load = async () => {
-          const loadedSongs = getSongs();
-          setSongs(loadedSongs);
-          const config = getGlobalConfig();
-          setGlobalConfig({
-            homepageSongTitle: config.homepageSongTitle || '',
-            homepageSongUrl: config.homepageSongUrl || ''
-          });
-          
-          const remote = await fetchRemoteSongs();
-          if (remote) {
-              setSongs(remote.songs);
-              if (remote.config) {
-                  const newConfig = {
-                      homepageSongTitle: remote.config.homepageSongTitle || config.homepageSongTitle || '',
-                      homepageSongUrl: remote.config.homepageSongUrl || config.homepageSongUrl || ''
-                  };
-                  setGlobalConfig(newConfig);
-              }
+  // Define data loading as a memoized function so we can call it whenever steps change
+  const loadData = useCallback(async () => {
+      // 1. Load Local
+      const loadedSongs = getSongs();
+      setSongs(loadedSongs);
+      const config = getGlobalConfig();
+      setGlobalConfig({
+        homepageSongTitle: config.homepageSongTitle || '',
+        homepageSongUrl: config.homepageSongUrl || ''
+      });
+      
+      // 2. Load Remote (Background)
+      const remote = await fetchRemoteSongs();
+      if (remote) {
+          setSongs(remote.songs);
+          if (remote.config) {
+              const newConfig = {
+                  homepageSongTitle: remote.config.homepageSongTitle || config.homepageSongTitle || '',
+                  homepageSongUrl: remote.config.homepageSongUrl || config.homepageSongUrl || ''
+              };
+              setGlobalConfig(newConfig);
           }
-      };
-      load();
-
-      // 2. Load User Session
-      const session = getUserSession();
-      if (session) {
-          setUser(session);
       }
-
-      // 3. CRITICAL: Attempt to upload any votes that are stuck on this device
-      // This runs every time the app opens, recovering "missing" votes for the admin.
+      
+      // 3. Sync Offline Votes
       syncOfflineVotes();
-
   }, []);
+
+  // Initial Load
+  useEffect(() => {
+      loadData();
+      const session = getUserSession();
+      if (session) setUser(session);
+  }, [loadData]);
+
+  // RELOAD DATA WHEN RETURNING FROM ADMIN OR NAVIGATING
+  useEffect(() => {
+      loadData();
+      window.scrollTo(0, 0);
+  }, [step, loadData]);
 
   const t = TRANSLATIONS[lang];
 
