@@ -93,11 +93,14 @@
         overflow-x: hidden;
         selection-background-color: #FFD700;
         selection-color: #000;
+        /* Disable selection globally */
+        user-select: none;
+        -webkit-user-select: none;
       }
       
       ::selection {
-        background: rgba(255, 215, 0, 0.5);
-        color: #000;
+        background: transparent;
+        color: #FFD700;
       }
 
       /* Refined Noise (Cinematic Grain) */
@@ -164,6 +167,8 @@
       /* Form Elements */
       input, textarea {
         transition: all 0.4s ease;
+        user-select: text !important; /* Allow typing */
+        -webkit-user-select: text !important;
       }
       input:focus, textarea:focus {
         background: rgba(255,255,255,0.05);
@@ -180,6 +185,41 @@
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.0"
   }
 }
+</script>
+<script>
+    // --- DIGITAL FORTRESS PROTECTION ---
+    
+    // 1. Disable Right Click
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // 2. Disable Key Combinations (Save, Print, Inspect)
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+S (Save)
+        if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+        }
+        // Ctrl+P (Print)
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+        }
+        // Ctrl+U (View Source)
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+            e.preventDefault();
+        }
+        // F12 (Dev Tools)
+        if (e.key === 'F12') {
+            e.preventDefault();
+        }
+        // Ctrl+Shift+I (Dev Tools)
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I')) {
+            e.preventDefault();
+        }
+    });
+
+    // 3. Disable Drag and Drop
+    document.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+    });
 </script>
 </head>
   <body oncontextmenu="return false;">

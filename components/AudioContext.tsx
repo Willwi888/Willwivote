@@ -29,6 +29,8 @@ export const useAudio = () => {
 
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const blobUrlRef = useRef<string | null>(null); // Keep track of blob URLs to revoke them
+
   const [playingId, setPlayingId] = useState<number | string | null>(null);
   const [currentSrc, setCurrentSrc] = useState<string>('');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -42,7 +44,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Setup Audio Object
   useEffect(() => {
     const audio = new Audio();
-    audio.preload = "auto";
+    audio.preload = "none"; // Security: Don't load until requested
+    // Security: Anonymous cross-origin to prevent sending credentials
+    audio.crossOrigin = "anonymous"; 
+    
     audioRef.current = audio;
 
     const handleEnded = () => {
@@ -62,7 +67,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.error("Audio Playback Error Occurred:");
         console.error("- Error Code:", target.error?.code);
         console.error("- Error Message:", target.error?.message);
-        console.error("- Attempted URL:", target.src);
         
         setIsLoading(false);
         setIsPlaying(false);
@@ -85,6 +89,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => {
         audio.pause();
         audio.src = '';
+        if (blobUrlRef.current) {
+            URL.revokeObjectURL(blobUrlRef.current);
+        }
         audio.removeEventListener('ended', handleEnded);
         audio.removeEventListener('timeupdate', handleTimeUpdate);
         audio.removeEventListener('error', handleError);
@@ -103,8 +110,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           audio.play().then(() => {
               audio.pause();
           }).catch(e => {
-              // This is expected if user interaction policy blocks it, 
-              // but we try anyway so subsequent clicks work.
               console.log("Audio unlock attempt (silent):", e);
           });
       }
@@ -131,8 +136,29 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsLoading(true);
     setError(false);
 
+    // CLEANUP PREVIOUS BLOB
+    if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
+    }
+
     try {
-        audio.src = url;
+        // SECURITY ATTEMPT: Try to fetch as Blob first (Hides URL)
+        // Note: This relies on the source allowing CORS. 
+        // If it fails (like Google Drive often does for XHR), we fallback to direct src.
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Fetch failed");
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            blobUrlRef.current = blobUrl;
+            audio.src = blobUrl;
+        } catch (fetchErr) {
+            // Fallback: Direct source (Protected by UI overlay)
+            // console.warn("Blob masking failed (CORS), falling back to direct stream.", fetchErr);
+            audio.src = url;
+        }
+
         audio.load();
         await audio.play();
     } catch (e) {

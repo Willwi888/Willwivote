@@ -4,7 +4,7 @@ import { Song, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 import AudioPlayer from './AudioPlayer';
 import { useAudio } from './AudioContext';
-import { CheckIcon, HeartIcon, ArrowLeftIcon } from './Icons';
+import { CheckIcon, HeartIcon, ArrowLeftIcon, XIcon } from './Icons';
 import { extractYouTubeId } from '../services/storage';
 
 interface SongDetailModalProps {
@@ -99,21 +99,26 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   return (
     <div className="fixed inset-0 z-[100] bg-[#020202] w-full h-full flex flex-col md:flex-row animate-fade-in font-serif">
       
+      {/* 
+          FATAL FIX: CLOSE BUTTON 
+          High Z-Index (z-[120]) + Solid Background + X Icon
+          Ensures visibility on all backgrounds (Video/Image/Black)
+      */}
+      <div className="absolute top-6 left-6 z-[120]">
+           <button 
+                onClick={onClose}
+                className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/20 text-white pl-3 pr-4 py-2 rounded-full hover:bg-gold hover:text-black hover:border-gold transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] group"
+            >
+                <XIcon className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+                <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
+                    {t.close || "CLOSE"}
+                </span>
+            </button>
+      </div>
+
       {/* Left Panel: Visual/Media */}
       <div className="w-full md:w-1/2 h-[40vh] md:h-full relative bg-black flex-shrink-0">
           
-          <div className="absolute top-6 left-6 z-50 mix-blend-difference">
-             <button 
-                  onClick={onClose}
-                  className="group flex items-center gap-3 text-white/60 hover:text-white transition-all duration-500"
-              >
-                  <ArrowLeftIcon className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-                  <span className="text-[10px] uppercase tracking-[0.3em] font-medium hidden md:inline-block">
-                      {t.back}
-                  </span>
-              </button>
-          </div>
-
           <div className="w-full h-full relative">
               {isYouTubeSource ? (
                   <>
@@ -163,7 +168,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
               <div className="min-h-full flex flex-col p-8 md:p-20">
                   
                   {/* Header */}
-                  <div className="mb-12 space-y-6 animate-slide-up">
+                  <div className="mb-12 space-y-6 animate-slide-up pt-12 md:pt-0"> {/* Padding top on mobile to avoid overlap if header is high */}
                       <div className="flex items-center justify-between border-b border-white/10 pb-4">
                          <div className="flex items-center gap-3">
                             <span className="text-gold text-lg">✦</span>
