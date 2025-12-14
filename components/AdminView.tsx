@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getVotes, getSongs, updateSong, getGlobalConfig, saveGlobalConfig, restoreFromBackup, publishSongsToCloud, fetchRemoteSongs, uploadAudioFile, updateSongsBulk } from '../services/storage';
 import { Song, User } from '../types';
-import { CheckIcon, SpinnerIcon, PlayIcon, ExternalLinkIcon } from './Icons';
+import { CheckIcon, SpinnerIcon, PlayIcon, ExternalLinkIcon, XIcon } from './Icons';
 import { supabase } from '../services/supabaseClient';
 
-type Tab = 'dashboard' | 'songs';
+type Tab = 'dashboard' | 'songs' | 'votes';
 type CloudStatus = 'connected' | 'offline' | 'checking' | 'missing_table_songs' | 'missing_table_votes' | 'missing_both';
 
 export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -30,7 +30,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [homeSongUrl, setHomeSongUrl] = useState('');
 
   // Editing State
-  const [editingSongId, setEditingSongId] = useState<number | null>(null);
+  const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [editForm, setEditForm] = useState<Partial<Song>>({});
   
   // Refs
@@ -97,13 +97,14 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       const data = {
           songs: localSongs,
           config: { introAudioUrl: introUrl, homepageSongTitle: homeSongTitle, homepageSongUrl: homeSongUrl },
+          votes: users, // Include votes in backup
           timestamp: new Date().toISOString()
       };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `beloved_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.download = `beloved_full_backup_${new Date().toISOString().slice(0,10)}.json`;
       a.click();
   };
 
@@ -152,6 +153,31 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       }
   };
 
+  const handleExportCSV = () => {
+     // Add BOM for Excel UTF-8 compatibility
+     const BOM = "\uFEFF";
+     const csvContent = BOM + "Date,Name,Email,Votes IDs,Feedback Messages\n"
+        + users.map(u => {
+            const date = new Date(u.timestamp).toLocaleString();
+            const votes = u.votes.join('; ');
+            const feedback = u.voteReasons 
+                ? Object.entries(u.voteReasons).map(([id, reason]) => `[Track ${id}: ${reason}]`).join('; ')
+                : '';
+            // Escape quotes for CSV
+            const safeFeedback = feedback.replace(/"/g, '""');
+            return `"${date}","${u.name}","${u.email}","${votes}","${safeFeedback}"`;
+        }).join("\n");
+        
+     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+     const url = URL.createObjectURL(blob);
+     const link = document.createElement("a");
+     link.setAttribute("href", url);
+     link.setAttribute("download", `votes_feedback_${new Date().toISOString().slice(0,10)}.csv`);
+     document.body.appendChild(link);
+     link.click();
+     document.body.removeChild(link);
+  };
+
   // --- QUICK UPLOAD LOGIC ---
 
   const handleQuickUploadClick = (id: number) => {
@@ -165,14 +191,10 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       
       setIsUploading(true);
       try {
-          // 1. Upload
           const publicUrl = await uploadAudioFile(file, quickUploadId);
-          
           if (publicUrl) {
-              // 2. Update Local State & Storage immediately
               const updated = updateSong(quickUploadId, { customAudioUrl: publicUrl });
               setLocalSongs(updated);
-              // alert("✅ Uploaded!"); // Optional: Remove alert for speed
           }
       } catch (e) {
           alert("Upload Failed. Check console.");
@@ -186,16 +208,18 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   // --- EDIT MODAL LOGIC ---
 
   const openEdit = (song: Song) => {
-      setEditingSongId(song.id);
+      setEditingSong(song);
       setEditForm({ ...song });
   };
 
   const saveEdit = () => {
-      if (editingSongId === null) return;
-      const updated = updateSong(editingSongId, editForm);
+      if (!editingSong) return;
+      const updated = updateSong(editingSong.id, editForm);
       setLocalSongs(updated);
-      setEditingSongId(null);
+      setEditingSong(null);
   };
+
+  const getSongTitle = (id: number) => localSongs.find(s => s.id === id)?.title || `Track ${id}`;
 
   // --- CALCULATE PROGRESS ---
   const songsWithAudio = localSongs.filter(s => 
@@ -203,8 +227,6 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     s.youtubeId
   ).length;
   const progressPercent = Math.round((songsWithAudio / localSongs.length) * 100);
-
-  // --- RENDER ---
 
   if (!isAuthenticated) {
     return (
@@ -229,12 +251,13 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#050505] text-gray-200 font-sans pb-20">
       {/* HEADER */}
-      <div className="bg-gray-900 border-b border-white/10 p-6 sticky top-0 z-30 flex justify-between items-center shadow-lg">
-        <div className="flex items-center gap-6">
+      <div className="bg-gray-900 border-b border-white/10 p-6 sticky top-0 z-30 flex flex-col md:flex-row justify-between items-center shadow-lg gap-4">
+        <div className="flex flex-col md:flex-row items-center gap-6">
             <h1 className="text-gold font-bold text-lg tracking-widest">ADMIN CONSOLE</h1>
             <div className="flex gap-2">
                 <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-1 rounded text-xs uppercase tracking-wider ${activeTab === 'dashboard' ? 'bg-gold text-black' : 'bg-black text-gray-400 hover:text-white'}`}>Dashboard</button>
                 <button onClick={() => setActiveTab('songs')} className={`px-4 py-1 rounded text-xs uppercase tracking-wider ${activeTab === 'songs' ? 'bg-gold text-black' : 'bg-black text-gray-400 hover:text-white'}`}>Manage Songs</button>
+                <button onClick={() => setActiveTab('votes')} className={`px-4 py-1 rounded text-xs uppercase tracking-wider ${activeTab === 'votes' ? 'bg-gold text-black' : 'bg-black text-gray-400 hover:text-white'}`}>Votes & Feedback</button>
             </div>
         </div>
         <div className="flex items-center gap-4">
@@ -339,50 +362,30 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             {localSongs.map(song => {
                                 const hasMp3 = song.customAudioUrl && !song.customAudioUrl.includes('dropbox') && !song.customAudioUrl.includes('drive');
                                 const isUploadingThis = isUploading && quickUploadId === song.id;
-                                // Highlight rows that are NOT done
                                 const isPending = !hasMp3 && !song.youtubeId;
                                 
                                 return (
                                     <tr key={song.id} className={`transition-colors group ${isPending ? 'bg-gold/5 hover:bg-gold/10' : 'hover:bg-white/5 opacity-60 hover:opacity-100'}`}>
                                         <td className="p-4 text-gray-500">{String(song.id).padStart(2,'0')}</td>
-                                        <td className="p-4 font-medium text-gray-200">
+                                        <td className="p-4 font-bold text-white">
                                             {song.title}
-                                            {/* Show lyrics length hint */}
-                                            <span className="ml-2 text-[9px] text-gray-600 font-mono border border-gray-800 px-1 rounded">
-                                                {(song.lyrics || "").length} chars
-                                            </span>
-                                            <div className="text-[10px] text-gray-600 font-mono truncate max-w-[200px] mt-1">{song.customAudioUrl || song.youtubeId || "No Audio"}</div>
                                         </td>
                                         <td className="p-4">
-                                            {isUploadingThis ? (
-                                                <span className="text-gold text-xs flex items-center gap-1"><SpinnerIcon className="w-3 h-3"/> Uploading...</span>
-                                            ) : hasMp3 ? (
-                                                <span className="text-green-500 text-xs border border-green-500/30 px-2 py-1 rounded bg-green-500/10">MP3 OK</span>
-                                            ) : song.youtubeId ? (
-                                                <span className="text-red-400 text-xs">YouTube</span>
-                                            ) : (
-                                                <span className="text-yellow-500 text-[10px] uppercase tracking-wider font-bold animate-pulse">Waiting for Upload</span>
-                                            )}
+                                            <div className="flex flex-col gap-1">
+                                                {hasMp3 && <span className="text-[10px] bg-green-900 text-green-200 px-2 py-0.5 rounded w-fit flex items-center gap-1">MP3 <CheckIcon className="w-3 h-3"/></span>}
+                                                {song.youtubeId && <span className="text-[10px] bg-red-900 text-red-200 px-2 py-0.5 rounded w-fit flex items-center gap-1">YouTube <PlayIcon className="w-3 h-3"/></span>}
+                                                {isPending && <span className="text-[10px] text-gray-600 uppercase">Pending</span>}
+                                            </div>
                                         </td>
-                                        <td className="p-4 text-right space-x-2">
-                                            <button 
-                                                onClick={() => handleQuickUploadClick(song.id)}
-                                                disabled={isUploading}
-                                                className={`
-                                                    px-3 py-1 rounded text-xs border transition-colors shadow-lg
-                                                    ${isPending 
-                                                        ? 'bg-gold text-black border-gold hover:bg-white hover:border-white font-bold' 
-                                                        : 'bg-gray-800 text-gray-400 border-white/10 hover:text-white'}
-                                                `}
-                                            >
-                                                ☁️ Upload
-                                            </button>
-                                            <button 
-                                                onClick={() => openEdit(song)}
-                                                className="bg-black hover:bg-white hover:text-black text-gray-400 px-3 py-1 rounded text-xs border border-white/10 transition-colors"
-                                            >
-                                                Edit
-                                            </button>
+                                        <td className="p-4 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button onClick={() => handleQuickUploadClick(song.id)} className="text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-white px-3 py-1 rounded transition-colors flex items-center gap-2">
+                                                    {isUploadingThis ? <SpinnerIcon className="w-3 h-3"/> : 'Upload MP3'}
+                                                </button>
+                                                <button onClick={() => openEdit(song)} className="text-xs text-gold hover:text-white border border-gold/30 hover:border-gold px-3 py-1 rounded transition-colors">
+                                                    Edit
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
@@ -392,50 +395,126 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
             </div>
         )}
+
+        {/* TAB: VOTES (NEW) */}
+        {activeTab === 'votes' && (
+            <div className="animate-fade-in space-y-6">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-gold uppercase tracking-widest text-sm font-bold">Votes & Feedback ({users.length})</h2>
+                    <button onClick={handleExportCSV} className="text-xs bg-gold text-black px-4 py-2 rounded font-bold hover:bg-white transition-colors flex items-center gap-2 shadow-lg hover:scale-105">
+                        <span>⬇</span> Export CSV (Excel)
+                    </button>
+                </div>
+
+                <div className="bg-gray-900 rounded border border-white/5 overflow-hidden shadow-2xl">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[800px]">
+                            <thead>
+                                <tr className="bg-black text-[10px] text-gray-500 uppercase tracking-widest border-b border-white/10">
+                                    <th className="p-4 w-32">Date</th>
+                                    <th className="p-4 w-48">User Info</th>
+                                    <th className="p-4 w-1/4">Votes</th>
+                                    <th className="p-4">Feedback & Messages</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5 text-sm font-serif">
+                                {users.length === 0 ? (
+                                    <tr><td colSpan={4} className="p-12 text-center text-gray-500 italic">No votes received yet.</td></tr>
+                                ) : (
+                                    users.map((user, i) => {
+                                        const hasFeedback = user.voteReasons && Object.keys(user.voteReasons).length > 0;
+                                        return (
+                                            <tr key={i} className={`hover:bg-white/5 transition-colors group ${hasFeedback ? 'bg-gold/5' : ''}`}>
+                                                <td className="p-4 text-gray-500 align-top whitespace-nowrap">
+                                                    {new Date(user.timestamp).toLocaleDateString()}<br/>
+                                                    <span className="text-xs opacity-50">{new Date(user.timestamp).toLocaleTimeString()}</span>
+                                                </td>
+                                                <td className="p-4 align-top">
+                                                    <div className="text-white font-bold">{user.name}</div>
+                                                    <div className="text-gold text-xs mt-1 select-all font-mono opacity-80 group-hover:opacity-100">{user.email}</div>
+                                                </td>
+                                                <td className="p-4 align-top">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {user.votes.sort((a,b)=>a-b).map(vid => (
+                                                            <span key={vid} className="inline-block bg-white/10 text-gray-300 text-[10px] px-1.5 py-0.5 rounded border border-white/5 font-mono">
+                                                                #{String(vid).padStart(2,'0')}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 align-top">
+                                                    {hasFeedback ? (
+                                                        <div className="space-y-2">
+                                                            {Object.entries(user.voteReasons || {}).map(([songId, msg]) => {
+                                                                const sId = parseInt(songId);
+                                                                const songTitle = getSongTitle(sId);
+                                                                return (
+                                                                    <div key={songId} className="bg-black/60 p-3 rounded border border-gold/20 relative">
+                                                                        <div className="text-gold text-[9px] uppercase tracking-wider mb-1 font-bold flex items-center gap-2">
+                                                                            <span className="bg-gold/20 px-1 rounded text-gold">TRACK {String(songId).padStart(2, '0')}</span>
+                                                                            <span className="opacity-70 truncate max-w-[200px] text-gray-400">{songTitle}</span>
+                                                                        </div>
+                                                                        <p className="text-white italic text-sm leading-relaxed pl-2 border-l-2 border-gold/50">"{msg}"</p>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-gray-700 text-xs italic opacity-30">-</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        )}
+
       </div>
 
       {/* EDIT MODAL OVERLAY */}
-      {editingSongId !== null && (
+      {editingSong && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-gray-900 border border-gold/30 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
-                  <h3 className="text-gold text-lg font-serif mb-6">Edit Track {editingSongId}</h3>
-                  <div className="space-y-4">
-                      <div>
-                          <label className="block text-[10px] text-gray-500 uppercase mb-1">Song Title</label>
-                          <input className="w-full bg-black border border-white/20 p-2 text-white focus:border-gold outline-none" 
-                                 value={editForm.title || ''} onChange={e => setEditForm({...editForm, title: e.target.value})} />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-900 w-full max-w-2xl rounded-lg border border-gold/30 shadow-2xl overflow-hidden animate-slide-up">
+                  <div className="bg-black p-4 border-b border-white/10 flex justify-between items-center">
+                      <h3 className="text-gold font-bold tracking-widest uppercase">Edit Track {editingSong.id}</h3>
+                      <button onClick={() => setEditingSong(null)}><XIcon className="w-5 h-5 text-gray-500 hover:text-white" /></button>
+                  </div>
+                  <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                              <label className="block text-[10px] text-gray-500 uppercase mb-1">Audio URL (Auto-filled by Upload)</label>
-                              <input className="w-full bg-black border border-white/20 p-2 text-gray-400 focus:border-gold outline-none text-xs" 
-                                     value={editForm.customAudioUrl || ''} onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})} />
+                              <label className="text-[10px] text-gray-500 uppercase block mb-1">Title</label>
+                              <input className="w-full bg-black border border-white/20 p-2 text-white" value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})} />
                           </div>
                           <div>
-                               <label className="block text-[10px] text-gray-500 uppercase mb-1">YouTube ID (Optional)</label>
-                               <input className="w-full bg-black border border-white/20 p-2 text-gray-400 focus:border-gold outline-none text-xs" 
-                                      value={editForm.youtubeId || ''} onChange={e => setEditForm({...editForm, youtubeId: e.target.value})} />
+                              <label className="text-[10px] text-gray-500 uppercase block mb-1">YouTube Video ID (Optional)</label>
+                              <input className="w-full bg-black border border-white/20 p-2 text-white font-mono" value={editForm.youtubeId || ''} onChange={e => setEditForm({...editForm, youtubeId: e.target.value})} />
                           </div>
                       </div>
                       <div>
-                          <label className="block text-[10px] text-gray-500 uppercase mb-1">Lyrics</label>
-                          <textarea className="w-full bg-black border border-white/20 p-2 text-white focus:border-gold outline-none h-64 font-mono text-xs leading-relaxed" 
-                                    value={editForm.lyrics || ''} onChange={e => setEditForm({...editForm, lyrics: e.target.value})} />
+                          <label className="text-[10px] text-gray-500 uppercase block mb-1">Direct Audio URL (MP3/Dropbox)</label>
+                          <input className="w-full bg-black border border-white/20 p-2 text-white font-mono text-xs" value={editForm.customAudioUrl || ''} onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})} />
                       </div>
                       <div>
-                          <label className="block text-[10px] text-gray-500 uppercase mb-1">Credits</label>
-                          <textarea className="w-full bg-black border border-white/20 p-2 text-white focus:border-gold outline-none h-32 font-mono text-xs" 
-                                    value={editForm.credits || ''} onChange={e => setEditForm({...editForm, credits: e.target.value})} />
+                          <label className="text-[10px] text-gray-500 uppercase block mb-1">Lyrics</label>
+                          <textarea className="w-full bg-black border border-white/20 p-2 text-white h-40 font-serif whitespace-pre text-sm" value={editForm.lyrics || ''} onChange={e => setEditForm({...editForm, lyrics: e.target.value})} />
+                      </div>
+                      <div>
+                          <label className="text-[10px] text-gray-500 uppercase block mb-1">Credits</label>
+                          <textarea className="w-full bg-black border border-white/20 p-2 text-white h-20 text-sm" value={editForm.credits || ''} onChange={e => setEditForm({...editForm, credits: e.target.value})} />
                       </div>
                   </div>
-                  <div className="flex justify-end gap-4 mt-8 pt-4 border-t border-white/10">
-                      <button onClick={() => setEditingSongId(null)} className="px-6 py-2 text-gray-500 hover:text-white text-xs uppercase tracking-widest">Cancel</button>
-                      <button onClick={saveEdit} className="px-8 py-2 bg-gold text-black font-bold uppercase tracking-widest hover:bg-white">Save Changes</button>
+                  <div className="p-4 border-t border-white/10 bg-black flex justify-end gap-3">
+                      <button onClick={() => setEditingSong(null)} className="px-4 py-2 text-xs text-gray-400 hover:text-white uppercase tracking-wider">Cancel</button>
+                      <button onClick={saveEdit} className="px-6 py-2 bg-gold text-black font-bold uppercase tracking-wider rounded hover:bg-white hover:scale-105 transition-all">Save Changes</button>
                   </div>
               </div>
           </div>
       )}
-
     </div>
   );
 };
