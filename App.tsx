@@ -80,12 +80,12 @@ const ArtistHomeView: React.FC<{
                 </div>
             </nav>
 
-            {/* Hero Section */}
-            <header className="relative w-full h-screen flex items-center overflow-hidden">
+            {/* Hero Section - UPDATED: min-h-screen to prevent cutoff */}
+            <header className="relative w-full min-h-screen flex items-center">
                  
                  {/* Video Overlay */}
                  {playHeroVideo && (
-                     <div className="absolute inset-0 w-full h-full bg-black z-20 animate-fade-in">
+                     <div className="absolute inset-0 w-full h-full bg-black z-50 animate-fade-in fixed top-0 left-0">
                          <iframe 
                             className="w-full h-full object-cover" 
                             src={playlistId 
@@ -110,81 +110,97 @@ const ArtistHomeView: React.FC<{
                      </div>
                  )}
 
-                 {/* Content Layer (RIGHT Aligned on Desktop, CENTERED on Mobile) */}
+                 {/* Content Layer */}
                  {!playHeroVideo && (
-                     <div className="relative z-10 w-full md:w-[65%] h-full flex flex-col justify-center items-center md:items-end ml-auto px-6 md:px-16 lg:pr-40 animate-slide-up text-center md:text-right pt-20 md:pt-0">
-                        <h2 className="text-gold text-xs tracking-[0.4em] uppercase font-sans border-b border-gold pb-4 inline-block mb-8 drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]">
-                            The 2026 Collection
-                        </h2>
+                     <div className="relative z-10 w-full md:w-[65%] h-full flex flex-col justify-center items-center md:items-end ml-auto px-6 md:px-16 lg:pr-32 animate-slide-up py-24 md:py-0">
                         
-                        {/* SACHIKO GLOW TITLE */}
-                        <h1 className="text-5xl md:text-8xl lg:text-9xl font-serif text-white tracking-wide leading-none mb-4 animate-sachiko-glow drop-shadow-[0_0_30px_rgba(255,215,0,0.5)]">
-                            BELOVED
-                        </h1>
-                        <div className="text-3xl md:text-5xl lg:text-6xl italic text-metallic font-serif mb-8 drop-shadow-[0_0_25px_rgba(255,215,0,0.8)]">摯愛</div>
+                        {/* 
+                            NEW LAYOUT GROUP: 
+                            This groups the Title, Subtitle, Text, and Buttons into a single vertically centered axis 
+                            that is positioned on the right side of the screen.
+                        */}
+                        <div className="flex flex-col items-center md:items-center w-full md:max-w-xl">
+                            
+                            <h2 className="text-gold/80 text-[10px] md:text-xs tracking-[0.5em] uppercase font-sans border-b border-gold/40 pb-4 mb-8 drop-shadow-[0_0_10px_rgba(255,215,0,0.5)]">
+                                The 2026 Collection
+                            </h2>
+                            
+                            {/* TITLE GROUP: Centered Relative to each other */}
+                            <div className="flex flex-col items-center mb-10 relative">
+                                <h1 className="text-6xl md:text-8xl lg:text-9xl font-serif text-white tracking-wide leading-none animate-sachiko-glow drop-shadow-[0_0_40px_rgba(255,215,0,0.4)] text-center">
+                                    BELOVED
+                                </h1>
+                                {/* Chinese Title - Centered Below */}
+                                <div className="text-3xl md:text-5xl lg:text-6xl italic text-metallic font-serif mt-2 md:-mt-2 drop-shadow-[0_0_25px_rgba(255,215,0,0.8)]">
+                                    摯愛
+                                </div>
+                            </div>
 
-                        {/* Description - ADJUSTED SIZE TO PREVENT COVERING FACE */}
-                        {/* Changed md:max-w-xl to md:max-w-lg and reduced padding/margins */}
-                        <div className="mb-10 w-full md:max-w-lg bg-gradient-to-t md:bg-gradient-to-l from-black/90 via-black/40 to-transparent p-5 md:p-6 md:pr-0 rounded-xl backdrop-blur-sm md:border-r border-gold/30 shadow-none md:shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
-                            <p className="text-white text-sm md:text-lg font-serif leading-8 md:leading-9 whitespace-pre-wrap tracking-wide text-center md:text-right drop-shadow-md px-2 md:pr-4 md:pl-0">
-                                {t.homeBody}
-                            </p>
-                        </div>
+                            {/* WARMER GLASS CARD */}
+                            <div className="mb-10 w-full bg-[#1a1200]/40 backdrop-blur-md p-8 md:p-10 rounded-2xl border border-white/10 shadow-[0_0_40px_rgba(255,215,0,0.15)] relative overflow-hidden group">
+                                {/* Subtle internal glow */}
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold/50 to-transparent opacity-50"></div>
+                                
+                                <p className="text-[#eceae0] text-sm md:text-base font-serif leading-[2.8] tracking-[0.1em] whitespace-pre-wrap text-center drop-shadow-sm font-light">
+                                    {t.homeBody}
+                                </p>
+                            </div>
 
-                        {/* BUTTONS CONTAINER */}
-                        <div className="flex flex-col sm:flex-row w-full items-center md:items-end justify-center md:justify-end gap-6 md:gap-8 relative">
-                             {/* Primary Action Button */}
-                             <button 
-                                onClick={onEnterEvent} 
-                                className="group relative px-16 py-6 bg-gold text-black overflow-hidden shadow-[0_0_60px_rgba(255,215,0,0.6)] hover:shadow-[0_0_100px_rgba(255,215,0,1)] hover:scale-105 transition-all duration-500 border-2 border-white/20 sm:ml-auto md:ml-0 md:self-end"
-                            >
-                                <span className="relative z-10 text-lg md:text-xl font-bold uppercase tracking-[0.3em] flex items-center gap-4">
-                                    {t.enter} <ArrowLeftIcon className="rotate-180 w-6 h-6" />
-                                </span>
-                            </button>
-
-                            {(youtubeId || playlistId) && (
+                            {/* BUTTONS CONTAINER - Centered */}
+                            <div className="flex flex-col sm:flex-row w-full items-center justify-center gap-6 md:gap-8 relative pb-8 md:pb-0">
+                                {/* Primary Action Button */}
                                 <button 
-                                    onClick={() => setPlayHeroVideo(true)}
-                                    className="flex items-center gap-4 group cursor-pointer flex-row-reverse"
+                                    onClick={onEnterEvent} 
+                                    className="group relative px-12 py-5 bg-gold text-black overflow-hidden shadow-[0_0_40px_rgba(255,215,0,0.4)] hover:shadow-[0_0_80px_rgba(255,215,0,0.8)] hover:scale-105 transition-all duration-500 border border-white/20 rounded-sm"
                                 >
-                                    <div className="w-16 h-16 rounded-full border border-gold/50 flex items-center justify-center bg-black/50 backdrop-blur-md group-hover:bg-gold group-hover:border-white group-hover:text-black transition-all duration-500 shadow-[0_0_20px_rgba(255,215,0,0.2)]">
-                                        <PlayIcon className="w-6 h-6 text-gold group-hover:text-black ml-1 transition-colors" />
-                                    </div>
-                                    <span className="text-xs uppercase tracking-[0.2em] text-gold font-bold drop-shadow-md">
-                                        {playlistId ? "Play Album" : "Watch Video"}
+                                    <span className="relative z-10 text-base md:text-lg font-bold uppercase tracking-[0.3em] flex items-center gap-3">
+                                        {t.enter} <PlayIcon className="w-5 h-5 fill-current" />
                                     </span>
                                 </button>
-                            )}
-                            
-                            {!youtubeId && !playlistId && isDropboxFolder && (
-                                <a 
-                                    href={featuredSong.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-4 group cursor-pointer flex-row-reverse"
-                                >
-                                    <div className="w-16 h-16 rounded-full border border-gold/50 flex items-center justify-center bg-black/50 backdrop-blur-md group-hover:bg-gold group-hover:border-white group-hover:text-black transition-all duration-500 shadow-[0_0_20px_rgba(255,215,0,0.2)]">
-                                        <PlayIcon className="w-6 h-6 text-gold group-hover:text-black ml-1 transition-colors" />
-                                    </div>
-                                    <span className="text-xs uppercase tracking-[0.2em] text-gold font-bold drop-shadow-md">
-                                        Open Album
-                                    </span>
-                                </a>
-                            )}
 
-                             {/* Audio Player Fallback */}
-                            {!youtubeId && !playlistId && !isDropboxFolder && featuredSong.url && (
-                                <div className="mt-4 w-full max-w-xs self-center md:self-end">
-                                    <AudioPlayer 
-                                        id="homepage-featured"
-                                        src={featuredSong.url}
-                                        title={featuredSong.title}
-                                        variant="minimal"
-                                        showControls={true}
-                                    />
-                                </div>
-                            )}
+                                {(youtubeId || playlistId) && (
+                                    <button 
+                                        onClick={() => setPlayHeroVideo(true)}
+                                        className="flex items-center gap-4 group cursor-pointer"
+                                    >
+                                        <div className="w-14 h-14 rounded-full border border-gold/40 flex items-center justify-center bg-black/40 backdrop-blur-md group-hover:bg-gold group-hover:border-white group-hover:text-black transition-all duration-500 shadow-[0_0_20px_rgba(255,215,0,0.1)]">
+                                            <PlayIcon className="w-5 h-5 text-gold group-hover:text-black ml-1 transition-colors" />
+                                        </div>
+                                        <span className="text-[10px] uppercase tracking-[0.2em] text-gold/80 group-hover:text-gold font-bold drop-shadow-md transition-colors">
+                                            {playlistId ? "Play Album" : "Watch Video"}
+                                        </span>
+                                    </button>
+                                )}
+                                
+                                {!youtubeId && !playlistId && isDropboxFolder && (
+                                    <a 
+                                        href={featuredSong.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-4 group cursor-pointer"
+                                    >
+                                        <div className="w-14 h-14 rounded-full border border-gold/40 flex items-center justify-center bg-black/40 backdrop-blur-md group-hover:bg-gold group-hover:border-white group-hover:text-black transition-all duration-500 shadow-[0_0_20px_rgba(255,215,0,0.1)]">
+                                            <PlayIcon className="w-5 h-5 text-gold group-hover:text-black ml-1 transition-colors" />
+                                        </div>
+                                        <span className="text-[10px] uppercase tracking-[0.2em] text-gold/80 group-hover:text-gold font-bold drop-shadow-md transition-colors">
+                                            Open Album
+                                        </span>
+                                    </a>
+                                )}
+
+                                {/* Audio Player Fallback */}
+                                {!youtubeId && !playlistId && !isDropboxFolder && featuredSong.url && (
+                                    <div className="mt-4 w-full max-w-xs">
+                                        <AudioPlayer 
+                                            id="homepage-featured"
+                                            src={featuredSong.url}
+                                            title={featuredSong.title}
+                                            variant="minimal"
+                                            showControls={true}
+                                        />
+                                    </div>
+                                )}
+                            </div>
                         </div>
                      </div>
                  )}
