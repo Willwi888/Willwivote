@@ -111,7 +111,7 @@ With this in mind—listen, and choose your beloved.`,
     copyright: {
         text: "© 2026 Willwi Music Production. All Rights Reserved.",
         credits: [
-            "Executive Producer: Willwi Chen",
+            "Executive Producer: Tsung Yu Chen",
             "Visual Direction: Studio Gold",
             "Distributed by: Willwi Music"
         ]
