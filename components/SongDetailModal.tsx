@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Song, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 import AudioPlayer from './AudioPlayer';
 import { useAudio } from './AudioContext';
-import { CheckIcon, HeartIcon, ArrowLeftIcon, XIcon, PlayIcon } from './Icons';
+import { CheckIcon, HeartIcon, ArrowLeftIcon, XIcon, PlayIcon, ExternalLinkIcon } from './Icons';
 import { extractYouTubeId } from '../services/storage';
 import { getAudioUrl } from '../constants';
 
@@ -95,9 +94,8 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   // Detect if the link is a Folder (Dropbox or Drive)
   const rawUrl = song.customAudioUrl || '';
   const isFolderLink = rawUrl.includes('/folders/') || rawUrl.includes('/drive/folders/') || rawUrl.includes('/fo/') || rawUrl.includes('/sh/');
-  
-  // Logic to determine if we should show AudioPlayer
-  // If it's a FOLDER, we do NOT show the player, only the button.
+  const finalAudioUrl = getAudioUrl(rawUrl);
+
   const hasAudioSource = Boolean(
       !isYouTubeSource && 
       !isFolderLink &&
@@ -194,7 +192,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                            </div>
                       ) : hasAudioSource ? (
                           // --- UPDATED PLAYER POSITIONING: justify-end + padding ---
-                          <div className="absolute inset-0 flex flex-col items-center justify-end pb-24 px-8 md:px-12 z-20">
+                          <div className="absolute inset-0 flex flex-col items-center justify-end pb-12 md:pb-24 px-6 md:px-12 z-20">
                                 <div className="w-full max-w-md bg-black/60 backdrop-blur-xl p-6 rounded-2xl border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
                                     <AudioPlayer 
                                         id={song.id} 
@@ -204,8 +202,21 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                                         variant="featured" 
                                         showControls={true} 
                                     />
+                                    
+                                    {/* --- STABILITY FALLBACK BUTTON --- */}
+                                    <div className="mt-4 flex justify-center">
+                                        <a 
+                                            href={finalAudioUrl}
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 text-[10px] text-gray-500 hover:text-gold uppercase tracking-widest transition-colors py-2 border-b border-transparent hover:border-gold/50"
+                                            title="Click if audio is stuck or buffering too long"
+                                        >
+                                            <ExternalLinkIcon className="w-3 h-3" />
+                                            {t.openInApp || "無法播放？開啟原檔"}
+                                        </a>
+                                    </div>
                                 </div>
-                                {/* REMOVED "Open in App" BUTTON HERE */}
                           </div>
                       ) : (
                           <div className="absolute inset-0 flex items-center justify-center z-20">

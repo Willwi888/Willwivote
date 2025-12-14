@@ -58,6 +58,8 @@ export const extractYouTubeId = (text: string): string | null => {
     
     // Skip extraction if it's explicitly a Dropbox folder or file link
     if (text.includes('dropbox.com') || text.includes('dropboxusercontent.com')) return null;
+    // Skip extraction if it's a Supabase Storage link
+    if (text.includes('supabase.co/storage')) return null;
 
     const rawMatch = text.trim().match(/^([a-zA-Z0-9_-]{11})$/);
     if (rawMatch) return rawMatch[1];
@@ -78,6 +80,41 @@ export const extractYouTubeId = (text: string): string | null => {
     }
 
     return null;
+};
+
+// --- UPLOAD HELPER ---
+export const uploadAudioFile = async (file: File, songId: number): Promise<string | null> => {
+    if (!supabase) return null;
+    
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `song_${songId}_${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        // Upload to 'audio' bucket
+        const { error: uploadError } = await supabase.storage
+            .from('audio')
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (uploadError) {
+            console.error("Upload Error:", uploadError);
+            throw uploadError;
+        }
+
+        // Get Public URL
+        const { data } = supabase.storage
+            .from('audio')
+            .getPublicUrl(filePath);
+
+        return data.publicUrl;
+    } catch (error) {
+        console.error("File upload failed:", error);
+        alert("Upload failed! Please ensure you have created a PUBLIC bucket named 'audio' in Supabase dashboard.");
+        return null;
+    }
 };
 
 // --- VOTING LOGIC ---
@@ -245,6 +282,12 @@ export const fetchRemoteSongs = async (): Promise<{ songs: Song[], config?: Part
                 credits: row.credits
             }));
         
+        // SAFETY GUARD: If remote DB is empty (length 0), DO NOT overwrite local storage!
+        // This protects users who have input data locally but haven't published yet.
+        if (remoteSongs.length === 0) {
+            return null;
+        }
+
         // Ensure remote songs completely override local defaults by saving them to local storage as cache
         saveLocalMetadata(remoteSongs);
             

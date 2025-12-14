@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getVotes, getLeaderboard, getSongs, updateSong, updateSongsBulk, getGlobalConfig, saveGlobalConfig, restoreFromBackup, publishSongsToCloud, fetchRemoteSongs, saveVote, extractYouTubeId } from '../services/storage';
+import { getVotes, getLeaderboard, getSongs, updateSong, updateSongsBulk, getGlobalConfig, saveGlobalConfig, restoreFromBackup, publishSongsToCloud, fetchRemoteSongs, saveVote, extractYouTubeId, uploadAudioFile } from '../services/storage';
 import { getAudioUrl } from '../constants';
 import { Song, User } from '../types';
 import { Layout, FadeIn } from './Layout';
@@ -22,6 +22,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [loadingData, setLoadingData] = useState(false);
   const [storageCount, setStorageCount] = useState(0);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [cloudStatus, setCloudStatus] = useState<CloudStatus>('checking');
   
@@ -46,8 +47,10 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [manualVoteIds, setManualVoteIds] = useState<string>(''); // Comma separated IDs
   const [manualVoteStatus, setManualVoteStatus] = useState('');
   
-  // Ref for the hidden file input
+  // Ref for the hidden file input (Backup/Restore)
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Ref for MP3 Upload
+  const mp3InputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
       if (isAuthenticated) {
@@ -264,6 +267,10 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           }
           return { status: 'ok', label: 'Dropbox (Auto-Optimized)', color: 'text-green-500' };
       }
+
+      if (url.includes('supabase.co')) {
+          return { status: 'ok', label: 'Professional Cloud (Fast)', color: 'text-green-400 font-bold bg-green-900/30 px-2 py-0.5 rounded' };
+      }
       
       return { status: 'unknown', label: 'Direct URL', color: 'text-blue-400' };
   };
@@ -284,6 +291,31 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       const updated = updateSong(editingSongId, editForm);
       setLocalSongs(updated);
       setEditingSongId(null);
+  };
+
+  // --- MP3 UPLOAD HANDLER ---
+  const handleUploadClick = () => {
+      if (mp3InputRef.current) mp3InputRef.current.click();
+  };
+
+  const handleMp3Selected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || editingSongId === null) return;
+      
+      setIsUploading(true);
+      try {
+          const publicUrl = await uploadAudioFile(file, editingSongId);
+          if (publicUrl) {
+              setEditForm({ ...editForm, customAudioUrl: publicUrl });
+              alert("✅ Upload Complete! The audio URL has been updated.\n\nDon't forget to click 'Save Changes' and then 'Publish to Cloud'.");
+          }
+      } catch (e) {
+          // Error handled in storage.ts alert
+      } finally {
+          setIsUploading(false);
+          // Reset input
+          if (mp3InputRef.current) mp3InputRef.current.value = '';
+      }
   };
   
   // --- TEST PLAYER LOGIC (ROBUST) ---
@@ -478,19 +510,19 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
              <div className="flex items-start gap-4">
                 <div className="text-red-500 text-3xl">⚠️</div>
                 <div>
-                    <h3 className="text-red-500 font-bold mb-2 text-lg">Google Drive 404 錯誤修正指南</h3>
+                    <h3 className="text-red-500 font-bold mb-2 text-lg">高流量串流設定指南 (High Traffic Setup)</h3>
                     <p className="text-sm text-gray-300 mb-2">
-                        如果您看到 404 錯誤，通常是因為您貼上了「資料夾」的連結，而不是「檔案」連結。
+                        如果預期有大量聽眾，請勿使用個人雲端 (Google Drive/Dropbox)。請按照以下步驟啟用專業串流：
                     </p>
                     <ol className="list-decimal list-inside text-xs text-white space-y-2 bg-black/40 p-4 rounded border border-white/10">
                         <li>
-                            <strong className="text-gold">請勿使用資料夾連結：</strong> 播放器無法讀取整個資料夾 (如 <code>drive/folders/...</code>)。
+                            <strong className="text-gold">Supabase 設定：</strong> 登入 Supabase 後台 {'>'} Storage {'>'} New Bucket {'>'} Name: <code>audio</code> {'>'} 勾選 <strong>Public bucket</strong> {'>'} Save。
                         </li>
                         <li>
-                            <strong>取得正確連結：</strong> 在 Google Drive 列表中的 <strong className="text-gold">單一 MP3 檔案上按右鍵</strong> {'>'} 選擇「共用」 {'>'} 「複製連結」。
+                            <strong>權限設定：</strong> 執行下方的 SQL 指令，允許網站上傳檔案。
                         </li>
                         <li>
-                            <strong>檢查權限：</strong> 確保該檔案的權限也是「知道連結的任何人」。
+                            <strong>上傳音檔：</strong> 在下方編輯歌曲時，點擊 <strong className="text-gold">"Upload MP3"</strong> 按鈕。
                         </li>
                     </ol>
                 </div>
@@ -498,14 +530,13 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
 
         {/* SQL Setup Instructions */}
-        {(isMissingSongs || isMissingVotes || isConnectionError) && (
+        {true && (
             <div className="mb-8 p-6 bg-red-900/10 border border-red-900/50 rounded-lg animate-fade-in">
                 <h3 className="text-red-500 font-bold mb-4 flex items-center gap-2">
-                    <span className="text-xl">⚠️</span> DATABASE SETUP REQUIRED
+                    <span className="text-xl">⚠️</span> DATABASE & STORAGE SETUP REQUIRED
                 </h3>
                 <p className="text-sm text-gray-300 mb-4">
-                    Your database is missing the required tables or permissions. 
-                    Please run the SQL below in your <a href="https://supabase.com/dashboard/project/_/sql" target="_blank" className="text-gold hover:underline font-bold">Supabase SQL Editor</a>.
+                    Run this SQL in <a href="https://supabase.com/dashboard/project/_/sql" target="_blank" className="text-gold hover:underline font-bold">Supabase SQL Editor</a> to enable tables and file uploads.
                 </p>
                 <div className="bg-black p-4 rounded text-xs font-mono text-green-400 overflow-x-auto border border-white/10 relative group">
                     <pre>{`
@@ -531,20 +562,26 @@ create table if not exists votes (
   created_at timestamptz default now()
 );
 
--- 3. Enable RLS (Security)
+-- 3. Enable RLS
 alter table songs enable row level security;
 alter table votes enable row level security;
 
--- 4. Create Policies (Allow Public Read/Write for this Event)
+-- 4. Table Policies (Allow Public Read/Write)
 create policy "Public Read Songs" on songs for select using (true);
 create policy "Public Insert Songs" on songs for insert with check (true);
 create policy "Public Update Songs" on songs for update using (true);
 
 create policy "Public Read Votes" on votes for select using (true);
 create policy "Public Insert Votes" on votes for insert with check (true);
+
+-- 5. STORAGE POLICIES (Allow Uploads to 'audio' bucket)
+-- Note: You must create a public bucket named 'audio' first!
+create policy "Public Select Audio" on storage.objects for select using ( bucket_id = 'audio' );
+create policy "Public Upload Audio" on storage.objects for insert with check ( bucket_id = 'audio' );
+create policy "Public Update Audio" on storage.objects for update using ( bucket_id = 'audio' );
                     `}</pre>
                     <button 
-                        onClick={() => navigator.clipboard.writeText(`create table if not exists songs ( id bigint primary key, title text, youtube_id text, custom_audio_url text, custom_image_url text, lyrics text, credits text, updated_at timestamptz ); create table if not exists votes ( id bigint generated by default as identity primary key, user_name text, user_email text, vote_ids jsonb, vote_reasons jsonb, created_at timestamptz default now() ); alter table songs enable row level security; alter table votes enable row level security; create policy "Public Read Songs" on songs for select using (true); create policy "Public Insert Songs" on songs for insert with check (true); create policy "Public Update Songs" on songs for update using (true); create policy "Public Update Votes" on votes for update using (true); create policy "Public Read Votes" on votes for select using (true); create policy "Public Insert Votes" on votes for insert with check (true);`)}
+                        onClick={() => navigator.clipboard.writeText(`create table if not exists songs ( id bigint primary key, title text, youtube_id text, custom_audio_url text, custom_image_url text, lyrics text, credits text, updated_at timestamptz ); create table if not exists votes ( id bigint generated by default as identity primary key, user_name text, user_email text, vote_ids jsonb, vote_reasons jsonb, created_at timestamptz default now() ); alter table songs enable row level security; alter table votes enable row level security; create policy "Public Read Songs" on songs for select using (true); create policy "Public Insert Songs" on songs for insert with check (true); create policy "Public Update Songs" on songs for update using (true); create policy "Public Read Votes" on votes for select using (true); create policy "Public Insert Votes" on votes for insert with check (true); create policy "Public Select Audio" on storage.objects for select using ( bucket_id = 'audio' ); create policy "Public Upload Audio" on storage.objects for insert with check ( bucket_id = 'audio' ); create policy "Public Update Audio" on storage.objects for update using ( bucket_id = 'audio' );`)}
                         className="absolute top-4 right-4 bg-white text-black px-3 py-1 rounded text-[10px] uppercase font-bold opacity-50 group-hover:opacity-100 transition-opacity"
                     >
                         Copy SQL
@@ -742,12 +779,22 @@ create policy "Public Insert Votes" on votes for insert with check (true);
                                                 onChange={e => setEditForm({...editForm, customAudioUrl: e.target.value})}
                                                 placeholder="Audio URL (YouTube/Dropbox/MP3)"
                                              />
+                                             
+                                             {/* --- MP3 UPLOAD BUTTON --- */}
+                                             <input 
+                                                type="file" 
+                                                ref={mp3InputRef} 
+                                                onChange={handleMp3Selected} 
+                                                accept="audio/*" 
+                                                className="hidden" 
+                                             />
                                              <button 
-                                                onClick={handleFixSingleLink}
-                                                className="bg-white/10 hover:bg-gold hover:text-black px-3 rounded text-lg transition-colors"
-                                                title="Fix this link (Convert Dropbox to Streaming)"
+                                                onClick={handleUploadClick}
+                                                disabled={isUploading}
+                                                className={`bg-white/10 hover:bg-gold hover:text-black px-3 rounded text-xs uppercase font-bold transition-colors flex items-center gap-1 ${isUploading ? 'cursor-wait opacity-50' : ''}`}
+                                                title="Upload MP3 to Professional Cloud Storage"
                                              >
-                                                 🪄
+                                                 {isUploading ? <SpinnerIcon className="w-3 h-3" /> : '☁️ Upload MP3'}
                                              </button>
                                          </div>
                                      </div>

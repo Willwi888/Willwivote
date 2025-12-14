@@ -28,6 +28,7 @@ export const useAudio = () => {
 
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const retryCountRef = useRef(0);
 
   // State
   const [playingId, setPlayingId] = useState<number | string | null>(null);
@@ -49,9 +50,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // CRITICAL FIX: Add playsinline to prevent iOS from forcing fullscreen video player
     audio.setAttribute('playsinline', 'true');
     audio.setAttribute('webkit-playsinline', 'true');
+    audio.setAttribute('x-webkit-airplay', 'allow');
     
     // Set explicit type hint where possible, though browser detection is usually fine
-    audio.preload = "none"; 
+    audio.preload = "auto"; 
     audioRef.current = audio;
 
     // --- EVENT LISTENERS ---
@@ -68,6 +70,23 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (!target.src || target.src === window.location.href) return;
         
         console.error("Audio Error:", target.error, target.src);
+
+        // --- ROBUST RETRY LOGIC ---
+        if (retryCountRef.current < 1) {
+             console.log("Attempting Auto-Retry...");
+             retryCountRef.current += 1;
+             setTimeout(() => {
+                 target.load();
+                 target.play().catch(err => {
+                     console.error("Retry failed:", err);
+                     setIsLoading(false);
+                     setIsPlaying(false);
+                     setError(true);
+                 });
+             }, 1000);
+             return;
+        }
+
         setIsLoading(false);
         setIsPlaying(false);
         setError(true);
@@ -77,6 +96,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (audio.readyState >= 3) {
             setIsLoading(false);
             setError(false);
+            // Reset retry count on success
+            retryCountRef.current = 0; 
         }
         if (audio.duration) setDuration(audio.duration);
     };
@@ -84,13 +105,17 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const handleStalled = () => {
         // If data is unavailable, we might want to flag loading
         console.warn("Audio Stalled");
-        // Don't set error immediately, just keep loading state
         setIsLoading(true);
+        // Sometimes stalled means we need to poke it
+        if (!audio.paused && audio.readyState < 3) {
+             // Optional: trigger load if really stuck? 
+        }
     };
     const handlePlaying = () => {
         setIsLoading(false);
         setIsPlaying(true);
         setError(false);
+        retryCountRef.current = 0;
     };
     const handlePause = () => setIsPlaying(false);
     const handleLoadedMetadata = () => {
@@ -104,7 +129,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata); 
     audio.addEventListener('waiting', handleWaiting);
-    audio.addEventListener('stalled', handleStalled); // Added Stalled Listener
+    audio.addEventListener('stalled', handleStalled);
     audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('pause', handlePause);
 
@@ -128,7 +153,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const initializeAudio = () => {
       const audio = audioRef.current;
       if (audio) {
-          // Subtle unlock for iOS
           audio.load();
       }
   };
@@ -138,6 +162,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const playSong = (id: number | string, url: string, title: string = '') => {
     const audio = audioRef.current;
     if (!audio) return;
+
+    // Reset Retry Count
+    retryCountRef.current = 0;
 
     // If clicking the same song...
     if (playingId === id) {
@@ -174,6 +201,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 console.error("Play start error:", e);
                 // If AbortError (user clicked fast), ignore. Else set error.
                 if (e.name !== 'AbortError') {
+                    // Try auto-recover for "NotAllowed" (iOS sometimes needs interaction)
+                    // But usually interaction is guaranteed by the click handler.
                     setIsLoading(false);
                     setError(true);
                 }

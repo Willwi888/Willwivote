@@ -11,14 +11,18 @@ export const getAudioUrl = (source: string) => {
         return finalUrl;
     }
 
-    // --- DROPBOX ULTIMATE FIX (2025 Edition) ---
+    // --- DROPBOX ULTIMATE FIX (Stability Edition) ---
     if (finalUrl.includes('dropbox.com') || finalUrl.includes('dropboxusercontent.com')) {
+        // Force www.dropbox.com for consistent API handling
         finalUrl = finalUrl.replace(/^(https?:\/\/)?(dl\.dropboxusercontent\.com|www\.dropbox\.com)/, '$1www.dropbox.com');
+        
+        // Clean URL params to ensure we get a fresh stream link
         if (finalUrl.includes('dl=0')) {
             finalUrl = finalUrl.replace('dl=0', 'raw=1');
         } else if (finalUrl.includes('dl=1')) {
             finalUrl = finalUrl.replace('dl=1', 'raw=1');
         } else if (!finalUrl.includes('raw=')) {
+            // Append raw=1, handling existing query params
             finalUrl = finalUrl + (finalUrl.includes('?') ? '&raw=1' : '?raw=1');
         }
         return finalUrl;
@@ -43,7 +47,6 @@ export const getAudioUrl = (source: string) => {
         // Only return the converted URL if we successfully extracted an ID
         if (id) {
             // CRITICAL FIX: Use 'drive.google.com' instead of 'docs.google.com'
-            // 'docs.google.com/uc' is deprecated for this use case and returns 404.
             return `https://drive.google.com/uc?export=download&id=${id}`;
         }
         
