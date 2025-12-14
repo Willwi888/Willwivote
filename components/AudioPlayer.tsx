@@ -204,11 +204,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                           Buffering...
                       </div>
                   )}
-                  {isError && (
-                      <div className="absolute -top-3 left-0 w-full text-center text-[8px] text-red-400 tracking-[0.1em] uppercase font-bold whitespace-nowrap overflow-visible">
-                          Playback Failed. Click button to open file.
-                      </div>
-                  )}
+                  {/* REMOVED ERROR TEXT AS REQUESTED */}
                   
                   <input 
                       type="range" 

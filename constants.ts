@@ -113,7 +113,7 @@ With this in mind—listen, and choose your beloved.`,
         credits: [
             "Executive Producer: Willwi Chen",
             "Visual Direction: Studio Gold",
-            "Distributed by: Universal Music Group (Pending)"
+            "Distributed by: Willwi Music"
         ]
     }
 };

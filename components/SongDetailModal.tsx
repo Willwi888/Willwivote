@@ -122,7 +122,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
       </div>
 
       {/* Left Panel: Visual/Media */}
-      <div className="w-full md:w-1/2 h-[45vh] md:h-full relative bg-black flex-shrink-0 group">
+      <div className="w-full md:w-1/2 h-[45vh] md:h-full relative bg-black flex-shrink-0 group overflow-hidden">
           
           <div className="w-full h-full relative bg-black flex flex-col justify-center">
               {isYouTubeSource ? (
@@ -154,9 +154,25 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   </>
               ) : (
                   <>
-                      <img src={defaultCover} className="w-full h-full object-cover opacity-60" alt="Cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent"></div>
-                      <div className="absolute inset-0 bg-black/20"></div>
+                      {/* --- BREATHING IMAGE CONTAINER --- */}
+                      <div className="absolute inset-0 overflow-hidden">
+                         <div className="w-full h-full relative animate-pulse-slow">
+                             {/* Overlay to darken slightly for better text contrast/mood */}
+                             <div className="absolute inset-0 bg-black/30 z-10"></div>
+                             
+                             {/* The Image with Halo */}
+                             <img 
+                                src={defaultCover} 
+                                className="w-full h-full object-cover opacity-80 scale-105" 
+                                alt="Cover" 
+                             />
+                             
+                             {/* Breathing Gold Border/Glow Effect */}
+                             <div className="absolute inset-0 border-[0px] border-gold/0 animate-breathe-gold z-10 box-border pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.8)]"></div>
+                         </div>
+                      </div>
+
+                      {/* --- CONTENT OVERLAY --- */}
                       
                       {isFolderLink ? (
                            <div className="absolute inset-0 flex flex-col items-center justify-center p-12 gap-6 z-20 text-center animate-fade-in">
@@ -177,8 +193,9 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                                 </p>
                            </div>
                       ) : hasAudioSource ? (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center p-12 gap-6 z-20">
-                                <div className="bg-black/30 backdrop-blur-md p-6 rounded-full border border-white/10 shadow-2xl">
+                          // --- UPDATED PLAYER POSITIONING: justify-end + padding ---
+                          <div className="absolute inset-0 flex flex-col items-center justify-end pb-24 px-8 md:px-12 z-20">
+                                <div className="w-full max-w-md bg-black/60 backdrop-blur-xl p-6 rounded-2xl border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
                                     <AudioPlayer 
                                         id={song.id} 
                                         driveId={song.driveId} 
@@ -188,17 +205,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                                         showControls={true} 
                                     />
                                 </div>
-                                {/* Fallback Link for Audio Files - Uses CLEAN URL */}
-                                {song.customAudioUrl && (
-                                    <a 
-                                        href={getAudioUrl(song.customAudioUrl)} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full text-[10px] uppercase tracking-widest backdrop-blur transition-colors flex items-center gap-2"
-                                    >
-                                        <PlayIcon className="w-3 h-3" /> {t.openInApp || "Open in Browser"}
-                                    </a>
-                                )}
+                                {/* REMOVED "Open in App" BUTTON HERE */}
                           </div>
                       ) : (
                           <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -297,15 +304,15 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       >
                           {isVoted ? (
                               <>
-                                  <span className="text-xs uppercase tracking-[0.4em] font-bold">{t.voted}</span>
-                                  <CheckIcon className="w-4 h-4" />
+                                  <span className="text-xl font-sans uppercase tracking-[0.2em] font-bold">VOTED</span>
+                                  <CheckIcon className="w-5 h-5" />
                               </>
                           ) : (
                               <>
-                                  <span className="text-xs uppercase tracking-[0.4em] font-bold group-hover:tracking-[0.5em] transition-all duration-500">
-                                      {canVote ? t.voteForThis : "Selection Full"}
+                                  <span className="text-xl font-sans uppercase tracking-[0.4em] font-bold group-hover:tracking-[0.5em] transition-all duration-500">
+                                      {canVote ? "VOTE" : "SELECTION FULL"}
                                   </span>
-                                  <HeartIcon className={`w-4 h-4 ${canVote ? '' : 'opacity-20'}`} />
+                                  {/* REMOVED HEART ICON AS REQUESTED */}
                               </>
                           )}
                       </button>
