@@ -66,8 +66,9 @@ export const ARTIST_DATA = {
     englishName: "WILLWI", 
     title: "Singer-Songwriter & Producer",
     images: {
-        hero: "https://wsrv.nl/?url=drive.google.com/uc?id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9&output=jpg&w=1200&q=100", 
-        profile: "https://wsrv.nl/?url=drive.google.com/uc?id=1_ZLs1g_KrVzTYpYSD_oJYwlKjft26aP9&output=jpg&w=1200&q=100" 
+        // UPDATE: New High Res Image ID: 1CoOpBFrsnvr7Z16MIc_Xxyr63ieOuIsW
+        hero: "https://wsrv.nl/?url=drive.google.com/uc?id=1CoOpBFrsnvr7Z16MIc_Xxyr63ieOuIsW&output=jpg&w=2500&q=100", 
+        profile: "https://wsrv.nl/?url=drive.google.com/uc?id=1CoOpBFrsnvr7Z16MIc_Xxyr63ieOuIsW&output=jpg&w=2500&q=100" 
     },
     featuredSong: {
         title: "Beloved 摯愛 (The 2026 Collection)",
@@ -130,7 +131,7 @@ export const TRANSLATIONS = {
         copyright: "© 2026 WILLWI MUSIC. All Rights Reserved.",
         
         // Intro Step
-        aboutTitle: "《摯愛》2026 大碟票選活動",
+        aboutTitle: "《摯愛：2026 大碟票選活動》",
         aboutIntro: "這不僅是一次投票，而是一次共同製作。\n\n這裡收錄了 40 首創作靈感，涵蓋了各種風格與語言。由於涉及不同唱片公司的合作規劃，我們需要先確認最終歌單。\n\n致謝名單與詳細製作資訊，將列於每一首歌曲的歌詞下方，以表達我最高的敬意。",
         warningTitle: "⚠️ 試聽須知",
         warningBody: "所有曲目皆為 Demo 或未混音版本，僅供本次活動內部試聽。\n請勿錄音、轉載或公開分享，違者將追究法律責任。",

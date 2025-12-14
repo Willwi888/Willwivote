@@ -197,6 +197,13 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setEditingSongId(null);
   };
 
+  // --- CALCULATE PROGRESS ---
+  const songsWithAudio = localSongs.filter(s => 
+    (s.customAudioUrl && !s.customAudioUrl.includes('dropbox') && !s.customAudioUrl.includes('drive')) || 
+    s.youtubeId
+  ).length;
+  const progressPercent = Math.round((songsWithAudio / localSongs.length) * 100);
+
   // --- RENDER ---
 
   if (!isAuthenticated) {
@@ -231,7 +238,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
         </div>
         <div className="flex items-center gap-4">
-             <button onClick={handleBackup} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
+             <button onClick={handleBackup} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 border border-blue-400/30 px-3 py-1 rounded-full bg-blue-500/10">
                  <span>↓</span> Backup Data
              </button>
              <button onClick={onBack} className="text-xs text-gray-500 hover:text-white">Exit</button>
@@ -250,10 +257,13 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <p className="text-3xl text-white font-serif">{users.length}</p>
                     </div>
                     <div className="bg-gray-900 p-6 rounded border border-white/5">
-                        <h3 className="text-gray-500 text-xs uppercase tracking-widest mb-2">Cloud Status</h3>
-                        <div className="flex items-center gap-2">
-                             <div className={`w-2 h-2 rounded-full ${cloudStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                             <p className="text-lg text-white font-mono uppercase">{cloudStatus.replace('_', ' ')}</p>
+                        <h3 className="text-gray-500 text-xs uppercase tracking-widest mb-2">Audio Upload Progress</h3>
+                        <div className="flex items-end gap-3 mb-2">
+                            <p className="text-3xl text-white font-serif">{songsWithAudio}</p>
+                            <p className="text-gray-500 text-sm mb-1">/ {localSongs.length}</p>
+                        </div>
+                        <div className="w-full bg-black h-2 rounded-full overflow-hidden">
+                            <div className="bg-gold h-full transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
                         </div>
                     </div>
                     <div className="bg-gray-900 p-6 rounded border border-white/5 relative overflow-hidden group">
@@ -308,8 +318,14 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     className="hidden" 
                     accept="audio/*"
                 />
+                
+                <div className="flex justify-between items-center mb-4">
+                    <p className="text-xs text-gray-500 uppercase tracking-widest">
+                        Task List: {localSongs.length - songsWithAudio} remaining
+                    </p>
+                </div>
 
-                <div className="bg-gray-900 rounded border border-white/5 overflow-hidden">
+                <div className="bg-gray-900 rounded border border-white/5 overflow-hidden shadow-2xl">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-black text-[10px] text-gray-500 uppercase tracking-widest border-b border-white/10">
@@ -323,12 +339,18 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             {localSongs.map(song => {
                                 const hasMp3 = song.customAudioUrl && !song.customAudioUrl.includes('dropbox') && !song.customAudioUrl.includes('drive');
                                 const isUploadingThis = isUploading && quickUploadId === song.id;
+                                // Highlight rows that are NOT done
+                                const isPending = !hasMp3 && !song.youtubeId;
                                 
                                 return (
-                                    <tr key={song.id} className="hover:bg-white/5 transition-colors group">
+                                    <tr key={song.id} className={`transition-colors group ${isPending ? 'bg-gold/5 hover:bg-gold/10' : 'hover:bg-white/5 opacity-60 hover:opacity-100'}`}>
                                         <td className="p-4 text-gray-500">{String(song.id).padStart(2,'0')}</td>
                                         <td className="p-4 font-medium text-gray-200">
                                             {song.title}
+                                            {/* Show lyrics length hint */}
+                                            <span className="ml-2 text-[9px] text-gray-600 font-mono border border-gray-800 px-1 rounded">
+                                                {(song.lyrics || "").length} chars
+                                            </span>
                                             <div className="text-[10px] text-gray-600 font-mono truncate max-w-[200px] mt-1">{song.customAudioUrl || song.youtubeId || "No Audio"}</div>
                                         </td>
                                         <td className="p-4">
@@ -339,16 +361,21 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                             ) : song.youtubeId ? (
                                                 <span className="text-red-400 text-xs">YouTube</span>
                                             ) : (
-                                                <span className="text-gray-600 text-xs">-</span>
+                                                <span className="text-yellow-500 text-[10px] uppercase tracking-wider font-bold animate-pulse">Waiting for Upload</span>
                                             )}
                                         </td>
                                         <td className="p-4 text-right space-x-2">
                                             <button 
                                                 onClick={() => handleQuickUploadClick(song.id)}
                                                 disabled={isUploading}
-                                                className="bg-gray-800 hover:bg-gold hover:text-black text-gray-300 px-3 py-1 rounded text-xs border border-white/10 transition-colors"
+                                                className={`
+                                                    px-3 py-1 rounded text-xs border transition-colors shadow-lg
+                                                    ${isPending 
+                                                        ? 'bg-gold text-black border-gold hover:bg-white hover:border-white font-bold' 
+                                                        : 'bg-gray-800 text-gray-400 border-white/10 hover:text-white'}
+                                                `}
                                             >
-                                                ☁️ Upload MP3
+                                                ☁️ Upload
                                             </button>
                                             <button 
                                                 onClick={() => openEdit(song)}
@@ -392,12 +419,12 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       </div>
                       <div>
                           <label className="block text-[10px] text-gray-500 uppercase mb-1">Lyrics</label>
-                          <textarea className="w-full bg-black border border-white/20 p-2 text-white focus:border-gold outline-none h-40 font-mono text-xs leading-relaxed" 
+                          <textarea className="w-full bg-black border border-white/20 p-2 text-white focus:border-gold outline-none h-64 font-mono text-xs leading-relaxed" 
                                     value={editForm.lyrics || ''} onChange={e => setEditForm({...editForm, lyrics: e.target.value})} />
                       </div>
                       <div>
                           <label className="block text-[10px] text-gray-500 uppercase mb-1">Credits</label>
-                          <textarea className="w-full bg-black border border-white/20 p-2 text-white focus:border-gold outline-none h-20 font-mono text-xs" 
+                          <textarea className="w-full bg-black border border-white/20 p-2 text-white focus:border-gold outline-none h-32 font-mono text-xs" 
                                     value={editForm.credits || ''} onChange={e => setEditForm({...editForm, credits: e.target.value})} />
                       </div>
                   </div>

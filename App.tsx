@@ -123,8 +123,9 @@ const ArtistHomeView: React.FC<{
                         </h1>
                         <div className="text-3xl md:text-5xl lg:text-6xl italic text-metallic font-serif mb-8 drop-shadow-[0_0_25px_rgba(255,215,0,0.8)]">摯愛</div>
 
-                        {/* Description - Adjusted for Mobile Readability - REMOVED JUSTIFY on Mobile */}
-                        <div className="mb-12 w-full md:max-w-xl bg-gradient-to-t md:bg-gradient-to-l from-black/90 via-black/40 to-transparent p-6 md:p-8 md:pr-0 rounded-xl backdrop-blur-sm md:border-r border-gold/30 shadow-none md:shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
+                        {/* Description - ADJUSTED SIZE TO PREVENT COVERING FACE */}
+                        {/* Changed md:max-w-xl to md:max-w-lg and reduced padding/margins */}
+                        <div className="mb-10 w-full md:max-w-lg bg-gradient-to-t md:bg-gradient-to-l from-black/90 via-black/40 to-transparent p-5 md:p-6 md:pr-0 rounded-xl backdrop-blur-sm md:border-r border-gold/30 shadow-none md:shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
                             <p className="text-white text-sm md:text-lg font-serif leading-8 md:leading-9 whitespace-pre-wrap tracking-wide text-center md:text-right drop-shadow-md px-2 md:pr-4 md:pl-0">
                                 {t.homeBody}
                             </p>
@@ -377,7 +378,7 @@ const App: React.FC = () => {
                         className={`
                             absolute inset-0 w-full h-full object-cover transition-all duration-[1500ms]
                             ${step === AppStep.ARTIST_HOME 
-                                ? 'opacity-100 object-[35%_20%] hover:scale-105' 
+                                ? 'opacity-100 object-[50%_15%] hover:scale-105' 
                                 : 'opacity-20 blur-sm object-center scale-105 animate-pulse-slow'
                             }
                         `} 
