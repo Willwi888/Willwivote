@@ -75,42 +75,34 @@ export const ARTIST_DATA = {
         url: "https://www.dropbox.com/scl/fi/rwcmf3btrk3j6k55r518l/Beloved-The-2026-Collection.mp3?rlkey=v14343143&raw=1"
     },
     bio: {
-        zh: `WILLWI 陳威兒，跨語系創作歌手與音樂製作人。
+        zh: `日本演歌歌手 小林幸子 老師說過：
+「舞台是自己唱出來的，不是人家給的。」
 
-本次活動為預計於 2026 年第二季隆重發行的《摯愛 BELOVED》專輯之前導暖身票選。這張作品彙集了 40 首橫跨不同風格的創作，由於涉及多家唱片公司的版權合作與發行規劃，我們決定打破常規，將歌單的最終決定權交給聽眾。
+我一直記得這句話。
 
-這不僅是一張專輯，更是一場關於「選擇」的音樂實驗。
-
-日本演歌女王 小林幸子 老師曾說過：
-「舞台是自己唱出來的，不是人家給的。希望大家記得我是歌手，不是話題。」
-這句話，是我音樂路上的最高準則。
-
-以此為念。請聆聽，並選出你心中的摯愛。`,
+所以這個計畫，
+不是等誰來決定我該留下什麼。
+而是把選擇攤開來，
+讓作品自己站出來。`,
         
-        en: `WILLWI is a multilingual singer-songwriter and music producer.
+        en: `The legendary Sachiko Kobayashi once said:
+"The stage is earned through singing, not given."
 
-This event serves as the official pre-heat voting campaign for the upcoming album "BELOVED," scheduled for release in Q2 2026. This collection features 40 tracks spanning various genres. Due to complex copyright collaborations, we have decided to entrust the final tracklist decision to you.
-
-This is more than an album; it is a musical experiment about "choice."
-
-The legendary Sachiko Kobayashi once said:
-"The stage is earned through singing, not given. I hope to be remembered as a singer, not a topic."
 This quote stands as my highest guiding principle.
 
-With this in mind—listen, and choose your beloved.`,
+So this project isn't about waiting for someone to decide what I should keep.
+It is about laying out the choices,
+and letting the work speak for itself.`,
 
-        jp: `WILLWI（ウィルウィ）、マルチリンガル・シンガーソングライター兼音楽プロデューサー。
+        jp: `演歌の女王・小林幸子先生の言葉を、私の音楽人生の指針としています。
+「舞台は誰かに与えられるものではなく、自分で歌って掴み取るもの。」
 
-本イベントは、2026年第2四半期リリース予定のアルバム『摯愛 BELOVED』のプレ・キャンペーンです。様々なジャンルを網羅した40曲の未発表デモ音源を公開します。
-複数のレーベルとの権利関係やリリース計画が複雑に絡み合うため、今回は従来の常識を覆し、最終的な収録曲の決定権をリスナーの皆様に託すことにしました。
+この言葉をいつも胸に刻んでいます。
 
-これは単なるアルバム制作ではなく、「選択」という名の音楽実験です。
-
-演歌の女王・小林幸子先生の言葉を、私の音楽人生の指針としています。
-「舞台は誰かに与えられるものではなく、自分で歌って掴み取るもの。話題としてではなく、歌手として記憶されたい。」
-
-この信念を胸に。
-どうか試聴して、あなたの心に響く「摯愛」を選んでください。`
+だからこそ、このプロジェクトは、
+誰かが何を残すべきか決めるのを待つものではありません。
+選択肢を広げ、
+作品そのものが立ち上がるようにするものです。`
     },
     copyright: {
         text: "© 2026 Willwi Music Production. All Rights Reserved.",
@@ -125,22 +117,22 @@ With this in mind—listen, and choose your beloved.`,
 export const TRANSLATIONS = {
     zh: {
         enter: "進入票選",
-        homeBody: "每一首歌，都是靈魂的碎片。\n在 2026 年第二季《摯愛》正式降臨之前，\n因為版權與廠牌的跨界合作，\n我將 40 首未公開的創作交付予你。\n\n請聆聽，並選出你心中的摯愛。\n你的選擇，將決定這張專輯的模樣。",
-        profile: "關於 威兒",
+        homeBody: "這不是一張已經完成的專輯\n它還在被選擇\n\n我準備了 40 首作品\n它們來自不同時間、不同狀態\n也來自不同合作關係\n\n在正式完成 2026 年專輯之前\n我選擇先把它們放在這裡\n\n不是為了測試市場\n也不是為了迎合誰\n只是想看看\n真正被留下的會是哪一些",
+        profile: "關於",
         managerLogin: "管理員登入",
         copyright: "© 2026 WILLWI MUSIC. All Rights Reserved.",
         
         // Intro Step
-        aboutTitle: "《摯愛：2026 大碟票選活動》",
-        aboutIntro: "這不僅是一次投票，而是一次共同製作。\n\n這裡收錄了 40 首創作靈感，涵蓋了各種風格與語言。由於涉及不同唱片公司的合作規劃，我們需要先確認最終歌單。\n\n致謝名單與詳細製作資訊，將列於每一首歌曲的歌詞下方，以表達我最高的敬意。",
+        aboutTitle: "BELOVED 摯愛\n2026 專輯票選計畫",
+        aboutIntro: "你現在做的事，不是在幫我投票，你是在參與一張專輯的形成。\n\n你選的每一首歌，都會被認真看待。\n你留下的每一句話，都會成為後續製作的參考。\n\n不需要寫得很好，只要是真實的。",
         warningTitle: "⚠️ 試聽須知",
-        warningBody: "所有曲目皆為 Demo 或未混音版本，僅供本次活動內部試聽。\n請勿錄音、轉載或公開分享，違者將追究法律責任。",
+        warningBody: "本頁所有歌曲皆為 Demo，部分作品尚未完成最終製作。\n請勿錄音、轉傳或外流，所有內容僅限於本網站內試聽。\n\n如果你願意尊重作品，作品才有機會走到最後。",
         start: "開始聆聽",
         backToSite: "返回首頁",
 
         // Voting Step
-        selection: "曲目票選",
-        votingRule: "請選擇 10 首您最喜愛的歌曲",
+        selection: "投票方式",
+        votingRule: "聽完之後選你想留下的歌。你不需要選滿，一首也可以。如果你願意，也可以告訴我你為什麼選它。",
         confirm: "確認選擇",
         selectMore: "請至少選擇 1 首歌曲",
         
@@ -158,33 +150,33 @@ export const TRANSLATIONS = {
 
         // Auth Step
         finalInquiryTitle: "最後一步",
-        finalInquiryPrompt: "為了確保投票的真實性，並讓我們在專輯發行時通知您，請留下您的稱呼與聯繫方式。",
+        finalInquiryPrompt: "送出前請填寫 Email，我會把一份有聲音樂卡片寄給你。\n這不是名單蒐集，而是一份回禮。",
         name: "您的稱呼",
         email: "電子信箱",
         submitFinal: "送出投票",
         
         // Success Step
-        thankYou: "感謝您的參與",
-        thankYouDesc: "您的選擇已記錄。\n\n每一票對我來說都意義非凡。這張專輯因為有你的參與而更加完整。\n請靜候 2026 年，讓我們一起見證《摯愛》的誕生。",
+        thankYou: "謝謝你",
+        thankYouDesc: "謝謝你花時間聽，謝謝你願意留下。\n這張專輯完成的時候，它會記得你。",
     },
     en: {
         enter: "ENTER",
-        homeBody: "Every song is a fragment of the soul.\nBefore the official release of 'BELOVED' in Q2 2026,\ndue to cross-label collaborations,\nI entrust 40 unreleased tracks to you.\n\nListen, and choose your beloved.\nYour choice will define this album.",
+        homeBody: "This is not a finished album.\nIt is still being chosen.\n\nI have prepared 40 tracks from different times and states.\nBefore the official release of the 2026 album,\nI choose to place them here first.\n\nNot to test the market,\nNor to cater to anyone.\nJust to see,\nWhich ones will truly remain.",
         profile: "PROFILE",
         managerLogin: "MANAGER LOGIN",
         copyright: "© 2026 WILLWI MUSIC. All Rights Reserved.",
 
         // Intro Step
-        aboutTitle: "The 2026 'BELOVED' Campaign",
-        aboutIntro: "This is not just a vote; it's a co-production.\n\nHere are 40 demos representing my creative journey. Due to multi-label planning, we need your help to finalize the tracklist.\n\nAcknowledgments and credits are listed below the lyrics of each track to express my deepest gratitude.",
+        aboutTitle: "BELOVED 2026 Campaign",
+        aboutIntro: "What you are doing now is not just voting for me; you are participating in the formation of an album.\n\nEvery song you choose will be taken seriously.\nEvery word you leave will become a reference for future production.\n\nIt doesn't need to be written well, just real.",
         warningTitle: "⚠️ LISTENING POLICY",
-        warningBody: "All tracks are Demos or unmixed versions for internal review only.\nDo not record, distribute, or share publicly.",
+        warningBody: "All tracks on this page are Demos; some are not yet in their final production stage.\nPlease do not record, repost, or leak.\nAll content is for listening within this website only.\n\nIf you are willing to respect the work, the work will have a chance to make it to the end.",
         start: "START LISTENING",
         backToSite: "RETURN HOME",
 
         // Voting Step
         selection: "SELECTION",
-        votingRule: "Please select your top 10 favorites",
+        votingRule: "Listen and choose the songs you want to keep. You don't need to pick 10; even one is fine. If you're willing, tell me why you chose it.",
         confirm: "CONFIRM",
         selectMore: "Please select at least 1 song.",
 
@@ -202,33 +194,33 @@ export const TRANSLATIONS = {
 
         // Auth Step
         finalInquiryTitle: "Final Step",
-        finalInquiryPrompt: "To verify your vote and notify you upon release, please provide your details.",
+        finalInquiryPrompt: "Please fill in your Email before submitting. I will send you an audio music card.\nThis is not a list collection, but a return gift.",
         name: "YOUR NAME",
         email: "EMAIL ADDRESS",
         submitFinal: "SUBMIT VOTE",
 
         // Success Step
         thankYou: "Thank You",
-        thankYouDesc: "Your voice has been heard.\n\nEvery vote means the world to me. This album is now more complete because of you.\nStay tuned for 2026, and let's witness the birth of 'BELOVED' together.",
+        thankYouDesc: "Thank you for taking the time to listen, thank you for being willing to stay.\nWhen this album is completed, it will remember you.",
     },
     jp: {
         enter: "入場する",
-        homeBody: "すべての歌は、魂の欠片。\n2026年第2四半期、「BELOVED」が正式にリリースされる前に、\n版権とレーベルの枠を超えて、\n未公開の40曲をあなたに託します。\n\n聴いて、あなたの「最愛」を選んでください。\nその選択が、このアルバムの形を決めます。",
+        homeBody: "これは完成したアルバムではありません。\nまだ選択の途中です。\n\n異なる時期、異なる状態の40曲を用意しました。\n2026年のアルバムが正式に完成する前に、\nまずはここに置くことを選びました。\n\n市場をテストするためでも、\n誰かに迎合するためでもありません。\nただ、どの曲が本当に残るのかを\n見てみたいだけです。",
         profile: "プロフィール",
         managerLogin: "管理者ログイン",
         copyright: "© 2026 WILLWI MUSIC. All Rights Reserved.",
 
         // Intro Step
-        aboutTitle: "2026『摯愛』選抜キャンペーン",
-        aboutIntro: "これは単なる投票ではなく、共同制作です。\n\nここには、近年の創作活動から生まれた40曲のデモが収められています。異なるレコード会社間の調整が必要なため、最終的な曲目リストの決定権をあなたに委ねたいと思います。\n\n感謝のリストとクレジットは、各曲の歌詞の下に記載されています。",
+        aboutTitle: "BELOVED 2026\n選抜キャンペーン",
+        aboutIntro: "あなたが今していることは、単なる投票ではありません。アルバムの形成に参加しているのです。\n\nあなたが選んだすべての曲は真剣に受け止められます。\nあなたが残したすべての言葉は、今後の制作の参考になります。\n\n上手に書く必要はありません。リアルであればいいのです。",
         warningTitle: "⚠️ 試聴上の注意",
-        warningBody: "すべての楽曲はデモ版です。\n録音、転載、公開共有は固くお断りします。",
+        warningBody: "このページのすべての曲はデモであり、一部の作品は最終制作段階ではありません。\n録音、転載、流出はしないでください。\nすべてのコンテンツは本サイト内での試聴に限ります。\n\n作品を尊重していただければ、作品は最後まで残るチャンスを得ることができます。",
         start: "試聴開始",
         backToSite: "ホームへ戻る",
 
         // Voting Step
-        selection: "楽曲選択",
-        votingRule: "お気に入りの10曲を選んでください",
+        selection: "投票方法",
+        votingRule: "聴いて、残したい曲を選んでください。10曲選ぶ必要はありません。1曲でも構いません。もしよろしければ、その理由も教えてください。",
         confirm: "確認",
         selectMore: "少なくとも1曲を選んでください",
 
@@ -246,14 +238,14 @@ export const TRANSLATIONS = {
 
         // Auth Step
         finalInquiryTitle: "最終ステップ",
-        finalInquiryPrompt: "投票の真正性を確保し、リリース時にお知らせするため、お名前と連絡先をご記入ください。",
+        finalInquiryPrompt: "送信する前にメールアドレスを入力してください。オーディオ・ミュージックカードをお送りします。\nこれは名簿集めではなく、お返しです。",
         name: "お名前",
         email: "メールアドレス",
         submitFinal: "投票を送信",
 
         // Success Step
-        thankYou: "ご参加ありがとうございます",
-        thankYouDesc: "あなたの選択は記録されました。\n\n一票一票が私にとって大きな意味を持ちます。あなたの参加により、このアルバムはより完全なものになります。\n2026年、『摯愛』の誕生を共に目撃しましょう。",
+        thankYou: "ありがとう",
+        thankYouDesc: "聴いてくれてありがとう、残ってくれてありがとう。\nこのアルバムが完成したとき、それはあなたを覚えているでしょう。",
     }
 };
 

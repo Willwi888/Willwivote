@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Song, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
@@ -36,6 +37,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 }) => {
   const [voteStage, setVoteStage] = useState<'view' | 'reason'>('view');
   const [reason, setReason] = useState('');
+  const [showFeedback, setShowFeedback] = useState(false);
   const { pause } = useAudio(); 
   
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
@@ -44,6 +46,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
       if (isOpen) {
           setVoteStage('view');
           setReason(savedReason || '');
+          setShowFeedback(false);
           pause(); 
           if (lyricsContainerRef.current) lyricsContainerRef.current.scrollTop = 0;
           document.body.style.overflow = 'hidden';
@@ -80,7 +83,13 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 
   const handleConfirmVote = () => {
       onVote(song.id, reason);
-      setVoteStage('view');
+      setShowFeedback(true);
+      
+      // Show feedback for 2 seconds before returning to view mode
+      setTimeout(() => {
+          setShowFeedback(false);
+          setVoteStage('view');
+      }, 2000);
   };
 
   let finalYoutubeId = song.youtubeId;
@@ -299,7 +308,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 
           {/* Bottom Action Bar */}
           <div className="absolute bottom-0 left-0 w-full z-20">
-              <div className="bg-[#050505]/95 backdrop-blur-xl border-t border-white/10 p-6 md:p-8">
+              <div className="bg-[#050505]/95 backdrop-blur-xl border-t border-white/10 p-6 md:p-8 min-h-[140px] flex flex-col justify-center transition-all duration-300">
                   {voteStage === 'view' ? (
                       <button
                           onClick={handleVoteClick}
@@ -323,10 +332,22 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                                   <span className="text-xl font-sans uppercase tracking-[0.4em] font-bold group-hover:tracking-[0.5em] transition-all duration-500">
                                       {canVote ? "VOTE" : "SELECTION FULL"}
                                   </span>
-                                  {/* REMOVED HEART ICON AS REQUESTED */}
                               </>
                           )}
                       </button>
+                  ) : showFeedback ? (
+                      // --- VISUAL FEEDBACK ANIMATION ---
+                      <div className="animate-slide-up w-full flex flex-col items-center justify-center">
+                          <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/40 flex items-center justify-center mb-3 text-gold shadow-[0_0_20px_rgba(255,215,0,0.2)]">
+                              <CheckIcon className="w-6 h-6" />
+                          </div>
+                          <p className="text-white text-sm uppercase tracking-[0.2em] font-bold mb-1">
+                              Vote Recorded
+                          </p>
+                          <p className="text-gold/60 text-[10px] tracking-widest uppercase font-serif italic">
+                              {reason ? "Message Saved" : "Selection Confirmed"}
+                          </p>
+                      </div>
                   ) : (
                       <div className="animate-slide-up">
                           <p className="font-serif text-xs italic text-gray-400 text-center mb-4">{t.tellUsWhy}</p>
