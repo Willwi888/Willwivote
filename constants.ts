@@ -122,6 +122,13 @@ export const TRANSLATIONS = {
         managerLogin: "管理員登入",
         copyright: "© 2026 WILLWI MUSIC. All Rights Reserved.",
         
+        // Member Access
+        memberTitle: "EARLY ACCESS",
+        memberDesc: "《摯愛》目前為會員優先開放內容。\n感謝你們長期的支持，也誠摯邀請你們給我一些回饋。",
+        memberPlaceholder: "請輸入通關密碼",
+        memberSubmit: "驗證進入",
+        memberError: "密碼錯誤",
+
         // Intro Step
         aboutTitle: "BELOVED 摯愛\n2026 專輯票選計畫",
         aboutIntro: "你現在做的事，不是在幫我投票，你是在參與一張專輯的形成。\n\n你選的每一首歌，都會被認真看待。\n你留下的每一句話，都會成為後續製作的參考。\n\n不需要寫得很好，只要是真實的。",
@@ -166,6 +173,13 @@ export const TRANSLATIONS = {
         managerLogin: "MANAGER LOGIN",
         copyright: "© 2026 WILLWI MUSIC. All Rights Reserved.",
 
+        // Member Access
+        memberTitle: "EARLY ACCESS",
+        memberDesc: "《BELOVED》is currently available for Early Access.\nThank you for your long-term support.\nI sincerely invite you to share your feedback.",
+        memberPlaceholder: "Enter Passcode",
+        memberSubmit: "ENTER",
+        memberError: "Invalid Passcode",
+
         // Intro Step
         aboutTitle: "BELOVED 2026 Campaign",
         aboutIntro: "What you are doing now is not just voting for me; you are participating in the formation of an album.\n\nEvery song you choose will be taken seriously.\nEvery word you leave will become a reference for future production.\n\nIt doesn't need to be written well, just real.",
@@ -209,6 +223,13 @@ export const TRANSLATIONS = {
         profile: "プロフィール",
         managerLogin: "管理者ログイン",
         copyright: "© 2026 WILLWI MUSIC. All Rights Reserved.",
+
+        // Member Access
+        memberTitle: "メンバー限定",
+        memberDesc: "《BELOVED》は現在、メンバー向けの早期アクセス中です。\n長きにわたる応援に感謝いたします。\nぜひ、ご意見をお聞かせください。",
+        memberPlaceholder: "パスワードを入力",
+        memberSubmit: "入場",
+        memberError: "パスワードが違います",
 
         // Intro Step
         aboutTitle: "BELOVED 2026\n選抜キャンペーン",

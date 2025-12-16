@@ -5,7 +5,7 @@ import { getSongs, getGlobalConfig, saveUserSession, getUserSession, fetchRemote
 import { Song, User, AppStep, MAX_VOTES, Language } from './types';
 import { TRANSLATIONS, ARTIST_DATA } from './constants';
 import { AudioProvider, useAudio } from './components/AudioContext';
-import { HeartIcon, ArrowLeftIcon, CheckIcon, PlayIcon, PauseIcon, SpinnerIcon, RetryIcon, XIcon } from './components/Icons';
+import { HeartIcon, ArrowLeftIcon, CheckIcon, PlayIcon, PauseIcon, SpinnerIcon, RetryIcon, XIcon, LockIcon } from './components/Icons';
 import { AdminView } from './components/AdminView';
 import { SongDetailModal } from './components/SongDetailModal';
 import AudioPlayer from './components/AudioPlayer';
@@ -286,6 +286,10 @@ const App: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
+  // Member Access State
+  const [memberPassword, setMemberPassword] = useState('');
+  const [memberLoginError, setMemberLoginError] = useState(false);
+  
   // Controls hero video on home page
   const [playHeroVideo, setPlayHeroVideo] = useState(false);
 
@@ -347,11 +351,26 @@ const App: React.FC = () => {
 
   const t = TRANSLATIONS[lang];
 
+  // Updated Enter Event: Redirects to Member Login first
   const handleEnterEvent = () => {
-      if (user.email && user.votes.length > 0) {
-          setStep(AppStep.SUCCESS);
+      setStep(AppStep.MEMBER_LOGIN);
+  };
+  
+  // Handle Member Login
+  const handleMemberLogin = (e: React.FormEvent) => {
+      e.preventDefault();
+      // UPDATED PASSWORD
+      if (memberPassword === '20260206') {
+          setMemberLoginError(false);
+          // Proceed to app logic
+          if (user.email && user.votes.length > 0) {
+              setStep(AppStep.SUCCESS);
+          } else {
+              setStep(AppStep.INTRO);
+          }
       } else {
-          setStep(AppStep.INTRO);
+          setMemberLoginError(true);
+          setMemberPassword('');
       }
   };
 
@@ -435,7 +454,7 @@ const App: React.FC = () => {
                     <AdminView onBack={() => setStep(AppStep.ARTIST_HOME)} />
                 )}
 
-                {(step === AppStep.INTRO || step === AppStep.AUTH || step === AppStep.VOTING || step === AppStep.SUCCESS) && (
+                {(step === AppStep.INTRO || step === AppStep.AUTH || step === AppStep.VOTING || step === AppStep.SUCCESS || step === AppStep.MEMBER_LOGIN) && (
                      <div className="min-h-screen text-white relative">
                         <nav className="p-4 md:p-6 flex justify-between items-center border-b border-white/10 sticky top-0 bg-[#050505]/80 backdrop-blur-md z-40">
                             <button onClick={() => setStep(AppStep.ARTIST_HOME)} className="text-xs uppercase tracking-widest text-gray-500 hover:text-white flex items-center">
@@ -443,6 +462,75 @@ const App: React.FC = () => {
                             </button>
                             <LangSwitcher lang={lang} setLang={setLang} className="gap-2" />
                         </nav>
+                        
+                        {step === AppStep.MEMBER_LOGIN && (
+                            <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 animate-fade-in relative z-10">
+                                <div className="max-w-md w-full bg-black/40 backdrop-blur-xl border border-gold/30 p-8 md:p-12 rounded-2xl shadow-[0_0_50px_rgba(255,215,0,0.1)] text-center relative overflow-hidden">
+                                     {/* Decorative Shine */}
+                                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold to-transparent opacity-50"></div>
+                                     
+                                     {/* CREDIT CARD GRAPHIC */}
+                                     <div className="relative w-full aspect-[1.58/1] bg-gradient-to-br from-[#1a1a1a] to-black rounded-xl border border-gold/40 shadow-[0_0_30px_rgba(255,215,0,0.2)] mb-8 flex flex-col justify-between p-6 overflow-hidden group hover:scale-[1.02] transition-transform duration-500 select-none mx-auto max-w-[320px]">
+                                        {/* Glossy shine effect */}
+                                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                                        
+                                        {/* Chip */}
+                                        <div className="w-10 h-8 bg-gradient-to-r from-[#e6c15c] to-[#b38f2d] rounded-md relative opacity-80 shadow-inner">
+                                            <div className="absolute inset-0 border border-black/20 rounded-md"></div>
+                                            <div className="absolute top-1/2 left-0 w-full h-[1px] bg-black/30"></div>
+                                            <div className="absolute top-0 left-1/3 w-[1px] h-full bg-black/30"></div>
+                                            <div className="absolute top-0 right-1/3 w-[1px] h-full bg-black/30"></div>
+                                        </div>
+                                        
+                                        {/* Main Text */}
+                                        <div className="text-center relative z-10">
+                                            <h3 className="text-gold font-serif text-2xl tracking-[0.2em] text-metallic drop-shadow-md">BELOVED</h3>
+                                            <div className="text-[8px] text-gray-500 uppercase tracking-[0.4em] mt-1">THE 2026 COLLECTION</div>
+                                        </div>
+                                        
+                                        {/* Footer */}
+                                        <div className="flex justify-between items-end">
+                                            <div className="text-[10px] text-gray-400 font-mono tracking-widest text-shadow-sm">2026 / 02</div>
+                                            <div className="text-gold/60 text-[8px] font-bold tracking-widest uppercase border border-gold/30 px-2 py-0.5 rounded">MEMBER ACCESS</div>
+                                        </div>
+                                     </div>
+
+                                     <h2 className="text-xl font-serif text-metallic mb-4 tracking-widest uppercase font-bold">
+                                         {t.memberTitle}
+                                     </h2>
+                                     
+                                     <p className="text-gray-300 text-sm font-serif leading-loose whitespace-pre-wrap mb-8">
+                                         {t.memberDesc}
+                                     </p>
+
+                                     <form onSubmit={handleMemberLogin} className="space-y-6">
+                                         <div className="relative">
+                                             <input 
+                                                type="password"
+                                                autoFocus
+                                                value={memberPassword}
+                                                onChange={(e) => setMemberPassword(e.target.value)}
+                                                placeholder={t.memberPlaceholder}
+                                                className="w-full bg-black/50 border-b-2 border-white/20 px-4 py-3 text-center text-white text-lg tracking-[0.5em] focus:border-gold outline-none transition-colors placeholder:tracking-normal placeholder:text-gray-600 font-sans"
+                                             />
+                                         </div>
+                                         
+                                         {memberLoginError && (
+                                             <div className="text-red-500 text-xs tracking-widest uppercase animate-pulse">
+                                                 {t.memberError}
+                                             </div>
+                                         )}
+
+                                         <button 
+                                            type="submit"
+                                            className="w-full bg-gold text-black py-4 rounded font-bold uppercase tracking-[0.2em] hover:bg-white hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-gold/20"
+                                         >
+                                             {t.memberSubmit}
+                                         </button>
+                                     </form>
+                                </div>
+                            </div>
+                        )}
 
                         {step === AppStep.INTRO && (
                             <div className="max-w-2xl mx-auto p-8 md:p-12 text-center space-y-8 pt-12 md:pt-20 animate-fade-in relative z-10">

@@ -23,6 +23,7 @@ export enum AppStep {
   ARTIST_HOME = 'ARTIST_HOME',
   
   // Voting App Steps
+  MEMBER_LOGIN = 'MEMBER_LOGIN', // NEW STEP
   INTRO = 'INTRO',
   AUTH = 'AUTH',
   VOTING = 'VOTING',
