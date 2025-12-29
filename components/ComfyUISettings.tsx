@@ -30,18 +30,13 @@ export const ComfyUISettings: React.FC = () => {
     setTestResult(result);
     setIsTesting(false);
 
-    // If successful, try to load models
+    // If successful, try to load models using the tested server URL
     if (result.success) {
       setIsLoadingModels(true);
-      // Temporarily save config so getAvailableModels can use it
-      const tempConfig = { ...config, enabled: true };
-      saveComfyUIConfig(tempConfig);
-      const modelsResult = await getAvailableModels();
+      const modelsResult = await getAvailableModels(config.serverUrl);
       if (modelsResult.success && modelsResult.models) {
         setModels(modelsResult.models);
       }
-      // Restore original config state
-      saveComfyUIConfig(config);
       setIsLoadingModels(false);
     }
   };

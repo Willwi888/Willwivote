@@ -198,10 +198,11 @@ export const getJobStatus = async (jobId: string): Promise<ComfyUIJobStatus | nu
 };
 
 // --- HELPER: Get available models ---
-export const getAvailableModels = async (): Promise<{ success: boolean; models?: string[]; error?: string }> => {
+export const getAvailableModels = async (serverUrl?: string): Promise<{ success: boolean; models?: string[]; error?: string }> => {
   const config = getComfyUIConfig();
+  const urlToUse = serverUrl || config.serverUrl;
   
-  if (!config.enabled) {
+  if (!serverUrl && !config.enabled) {
     return {
       success: false,
       error: 'ComfyUI integration is not enabled',
@@ -209,7 +210,7 @@ export const getAvailableModels = async (): Promise<{ success: boolean; models?:
   }
 
   try {
-    const response = await fetch(`${config.serverUrl}/object_info`, {
+    const response = await fetch(`${urlToUse}/object_info`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
