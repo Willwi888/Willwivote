@@ -4,8 +4,9 @@ import { getVotes, getSongs, updateSong, getGlobalConfig, saveGlobalConfig, rest
 import { Song, User } from '../types';
 import { CheckIcon, SpinnerIcon, PlayIcon, ExternalLinkIcon, XIcon } from './Icons';
 import { supabase } from '../services/supabaseClient';
+import { ComfyUISettings } from './ComfyUISettings';
 
-type Tab = 'dashboard' | 'songs' | 'votes';
+type Tab = 'dashboard' | 'songs' | 'votes' | 'comfyui';
 type CloudStatus = 'connected' | 'offline' | 'checking' | 'missing_table_songs' | 'missing_table_votes' | 'missing_both';
 
 export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -258,6 +259,7 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-1 rounded text-xs uppercase tracking-wider ${activeTab === 'dashboard' ? 'bg-gold text-black' : 'bg-black text-gray-400 hover:text-white'}`}>Dashboard</button>
                 <button onClick={() => setActiveTab('songs')} className={`px-4 py-1 rounded text-xs uppercase tracking-wider ${activeTab === 'songs' ? 'bg-gold text-black' : 'bg-black text-gray-400 hover:text-white'}`}>Manage Songs</button>
                 <button onClick={() => setActiveTab('votes')} className={`px-4 py-1 rounded text-xs uppercase tracking-wider ${activeTab === 'votes' ? 'bg-gold text-black' : 'bg-black text-gray-400 hover:text-white'}`}>Votes & Feedback</button>
+                <button onClick={() => setActiveTab('comfyui')} className={`px-4 py-1 rounded text-xs uppercase tracking-wider ${activeTab === 'comfyui' ? 'bg-gold text-black' : 'bg-black text-gray-400 hover:text-white'}`}>ComfyUI</button>
             </div>
         </div>
         <div className="flex items-center gap-4">
@@ -471,6 +473,13 @@ export const AdminView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         </table>
                     </div>
                 </div>
+            </div>
+        )}
+
+        {/* TAB: COMFYUI */}
+        {activeTab === 'comfyui' && (
+            <div className="animate-fade-in">
+                <ComfyUISettings />
             </div>
         )}
 
