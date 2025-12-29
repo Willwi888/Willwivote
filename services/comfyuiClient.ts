@@ -4,6 +4,20 @@
  * Handles communication with local ComfyUI_WanAIO instance
  */
 
+// --- TYPES FOR COMFYUI API RESPONSES ---
+interface ComfyUIHistoryOutput {
+  images?: Array<{ filename: string; subfolder?: string; type?: string }>;
+}
+
+interface ComfyUIHistoryData {
+  status?: { completed?: boolean };
+  outputs?: Record<string, ComfyUIHistoryOutput>;
+}
+
+interface ComfyUIHistoryResponse {
+  [jobId: string]: ComfyUIHistoryData;
+}
+
 export interface ComfyUIConfig {
   serverUrl: string; // e.g., "http://localhost:8188" or "http://192.168.1.100:8188"
   enabled: boolean;
@@ -11,7 +25,7 @@ export interface ComfyUIConfig {
 
 export interface ComfyUIWorkflow {
   prompt: string;
-  workflow?: any; // ComfyUI workflow JSON
+  workflow?: Record<string, unknown>; // ComfyUI workflow JSON structure
 }
 
 export interface ComfyUIJobStatus {
@@ -146,7 +160,7 @@ export const getJobStatus = async (jobId: string): Promise<ComfyUIJobStatus | nu
       };
     }
 
-    const data = await response.json();
+    const data: ComfyUIHistoryResponse = await response.json();
     const history = data[jobId];
 
     if (!history) {
@@ -159,8 +173,8 @@ export const getJobStatus = async (jobId: string): Promise<ComfyUIJobStatus | nu
     if (history.status?.completed) {
       // Extract output images
       const outputs = history.outputs || {};
-      const imageNodes = Object.values(outputs).find((node: any) => node.images);
-      const images = imageNodes ? (imageNodes as any).images : [];
+      const imageNodes = Object.values(outputs).find((node) => node.images && node.images.length > 0);
+      const images = imageNodes?.images || [];
       
       return {
         job_id: jobId,
