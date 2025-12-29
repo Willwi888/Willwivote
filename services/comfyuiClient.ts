@@ -68,10 +68,11 @@ export const testComfyUIConnection = async (serverUrl: string): Promise<{ succes
       message: 'Connected successfully',
       version: data.system?.comfyui_version || 'Unknown',
     };
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Connection failed. Make sure ComfyUI is running and accessible.';
     return {
       success: false,
-      message: error.message || 'Connection failed. Make sure ComfyUI is running and accessible.',
+      message: errorMessage,
     };
   }
 };
@@ -112,10 +113,11 @@ export const generateImage = async (workflow: ComfyUIWorkflow): Promise<{ succes
       success: true,
       jobId: data.prompt_id,
     };
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate image';
     return {
       success: false,
-      error: error.message || 'Failed to generate image',
+      error: errorMessage,
     };
   }
 };
@@ -171,11 +173,12 @@ export const getJobStatus = async (jobId: string): Promise<ComfyUIJobStatus | nu
       job_id: jobId,
       status: 'running',
     };
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return {
       job_id: jobId,
       status: 'failed',
-      error: error.message,
+      error: errorMessage,
     };
   }
 };
@@ -216,10 +219,11 @@ export const getAvailableModels = async (): Promise<{ success: boolean; models?:
       success: true,
       models,
     };
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to get models';
     return {
       success: false,
-      error: error.message || 'Failed to get models',
+      error: errorMessage,
     };
   }
 };

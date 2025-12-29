@@ -33,10 +33,15 @@ export const ComfyUISettings: React.FC = () => {
     // If successful, try to load models
     if (result.success) {
       setIsLoadingModels(true);
+      // Temporarily save config so getAvailableModels can use it
+      const tempConfig = { ...config, enabled: true };
+      saveComfyUIConfig(tempConfig);
       const modelsResult = await getAvailableModels();
       if (modelsResult.success && modelsResult.models) {
         setModels(modelsResult.models);
       }
+      // Restore original config state
+      saveComfyUIConfig(config);
       setIsLoadingModels(false);
     }
   };
@@ -189,6 +194,9 @@ export const ComfyUISettings: React.FC = () => {
           <code className="block mt-1 text-xs text-gold bg-black/40 p-2 rounded">
             python main.py --listen 0.0.0.0 --port 8188
           </code>
+          <p className="text-xs text-gray-500 mt-2">
+            Note: You may need to use <code className="text-gold">python3</code> or activate your virtual environment first.
+          </p>
         </div>
       </div>
     </div>
