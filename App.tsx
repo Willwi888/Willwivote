@@ -63,52 +63,35 @@ const ArtistHomeView: React.FC<{
         return ARTIST_DATA.bio[lang] || ARTIST_DATA.bio.zh;
     };
 
-    return (
-        <div className="min-h-screen font-serif selection:bg-gold selection:text-black">
-             {/* Navigation */}
-            <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-black/90 backdrop-blur-md py-3 border-b border-gold/30' : 'py-6 md:py-8'}`}>
-                <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
-                    <div className="flex items-center gap-4 md:gap-10">
-                        {/* INCREASED LOGO SIZE: text-lg -> text-3xl */}
-                        <div className="text-xl md:text-3xl lg:text-4xl font-serif font-bold text-metallic tracking-widest drop-shadow-[0_0_20px_rgba(255,215,0,0.6)] animate-pulse-slow">WILLWI</div>
-                        <div className="w-[1px] h-4 bg-gold/50 hidden md:block"></div>
-                        {/* Desktop Language Switcher */}
-                        <LangSwitcher lang={lang} setLang={setLang} className="hidden md:flex gap-4" />
-                    </div>
-                    {/* Mobile Language Switcher (Explicitly Visible) */}
-                    <LangSwitcher lang={lang} setLang={setLang} className="flex md:hidden gap-1 bg-black/40 backdrop-blur-md rounded-full px-2 py-1 border border-white/10" />
-                </div>
-            </nav>
+return (
+  <AudioProvider>
+    <div style={{ color: 'white', padding: 40 }}>
+      <h1>DEBUG: App Mounted</h1>
+      <p>Step: {step}</p>
 
-            {/* Hero Section - UPDATED: min-h-screen to prevent cutoff */}
-            <header className="relative w-full min-h-screen flex items-center">
-                 
-                 {/* Video Overlay */}
-                 {playHeroVideo && (
-                     <div className="absolute inset-0 w-full h-full bg-black z-50 animate-fade-in fixed top-0 left-0">
-                         <iframe 
-                            className="w-full h-full object-cover" 
-                            src={playlistId 
-                                ? `https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1&mute=0&loop=1&controls=1&rel=0&modestbranding=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`
-                                : `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0&loop=1&playlist=${youtubeId}&controls=1&rel=0&modestbranding=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`
-                            }
-                            title="Hero Video"
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                        ></iframe>
-                        
-                         <div className="absolute top-6 right-6 z-50">
-                            <button 
-                                onClick={() => setPlayHeroVideo(false)}
-                                className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/20 text-white pl-3 pr-4 py-2 rounded-full hover:bg-gold hover:text-black hover:border-gold transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] group"
-                            >
-                                <XIcon className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-                                <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Close</span>
-                            </button>
-                         </div>
-                     </div>
-                 )}
+      {step === AppStep.ARTIST_HOME && (
+        <ArtistHomeView
+          t={t}
+          lang={lang}
+          setLang={setLang}
+          onEnterEvent={handleEnterEvent}
+          onAdmin={() => setStep(AppStep.ADMIN)}
+          featuredSong={{
+            title:
+              globalConfig.homepageSongTitle ||
+              ARTIST_DATA.featuredSong.title,
+            url:
+              globalConfig.homepageSongUrl ||
+              ARTIST_DATA.featuredSong.url,
+          }}
+          playHeroVideo={playHeroVideo}
+          setPlayHeroVideo={setPlayHeroVideo}
+        />
+      )}
+    </div>
+  </AudioProvider>
+);
+
 
                  {/* Content Layer */}
                  {!playHeroVideo && (
