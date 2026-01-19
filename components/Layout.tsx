@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Snowfall } from './Snowfall';
 
 // Shared background state for the cinematic blur
 export const BackgroundContext = React.createContext<{
@@ -17,6 +18,10 @@ export const Layout: React.FC<{ children: React.ReactNode; className?: string }>
           style={{ backgroundImage: `url(${bgImage})` }}
         />
       )}
+      
+      {/* Christmas Snowfall Effect Layer */}
+      <Snowfall />
+
       {/* 
          UPDATED: Removed max-w-[500px] and mx-auto constraints. 
          Now uses w-full to allow full-screen immersive design on desktop.
