@@ -359,8 +359,8 @@ const App: React.FC = () => {
   // Handle Member Login
   const handleMemberLogin = (e: React.FormEvent) => {
       e.preventDefault();
-      // UPDATED PASSWORD
-      if (memberPassword === '20260206') {
+      // UPDATED PASSWORD TO 0000
+      if (memberPassword === '0000') {
           setMemberLoginError(false);
           // Proceed to app logic
           if (user.email && user.votes.length > 0) {
